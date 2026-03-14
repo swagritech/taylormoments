@@ -1,0 +1,7 @@
+﻿apps/web/node_modules/
+apps/web/.next/
+apps/web/out/
+apps/web/.vercel/
+.DS_Store
+Thumbs.db
+
