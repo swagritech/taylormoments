@@ -15,8 +15,8 @@ const sans = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Tailor Moments MVP",
-  description: "Booking and transport coordination MVP for winery tour partner feedback.",
+  title: "Tailor Moments | Margaret River Tour Planning",
+  description: "Tailor Moments MVP for Margaret River winery tour booking, partner availability, and transport coordination.",
 };
 
 export default function RootLayout({
