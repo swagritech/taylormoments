@@ -4,11 +4,12 @@ import { LiveBookingFlow } from "@/components/live-booking-flow";
 export default function CustomerPage() {
   return (
     <AppShell
-      eyebrow="Guest booking"
-      title="Let guests request a tailored Margaret River day in a few calm, confident steps."
-      intro="This is now the live customer-facing surface: generate ranked itinerary options from the Azure API, then submit the chosen day into the Tailor Moments workflow."
+      eyebrow="Customer booking"
+      title="Create and submit guest booking requests"
+      intro="Capture guest details, choose preferred wineries, generate ranked itineraries, and submit directly into the live workflow."
     >
       <LiveBookingFlow />
     </AppShell>
   );
 }
+

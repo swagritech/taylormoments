@@ -6,8 +6,9 @@ export default function ApprovePage() {
   return (
     <AppShell
       eyebrow="Winery approval"
-      title="Approve a booking from one clear mobile screen."
-      intro="This action page is designed for partners who do not want a portal login. Open the link, review the action, and confirm the booking."
+      title="Approve winery booking request"
+      intro="This page is used by winery partners from email or SMS links to confirm a booking request without signing in."
+      actionMode
     >
       <Suspense fallback={null}>
         <WineryApprovalFlow />
@@ -15,3 +16,4 @@ export default function ApprovePage() {
     </AppShell>
   );
 }
+

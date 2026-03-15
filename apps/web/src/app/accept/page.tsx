@@ -6,8 +6,9 @@ export default function AcceptPage() {
   return (
     <AppShell
       eyebrow="Transport acceptance"
-      title="Let drivers and operators accept work without a detour through a dashboard."
-      intro="This page is the direct-action surface for transport links sent by Tailor Moments. One token, one decision, one clear outcome."
+      title="Accept transport job"
+      intro="This page is used by transport partners from direct links to accept a job assignment quickly on mobile."
+      actionMode
     >
       <Suspense fallback={null}>
         <TransportAcceptFlow />
@@ -15,3 +16,4 @@ export default function AcceptPage() {
     </AppShell>
   );
 }
+

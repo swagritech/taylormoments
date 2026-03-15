@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
@@ -14,14 +14,37 @@ export default function TransportPage() {
 
   return (
     <AppShell
-      eyebrow="Transport board"
-      title="Carriers can inspect routes and decide quickly whether a job suits them."
-      intro="The transport board now reacts to the active booking, so dispatch can evaluate live routes while keeping sight of the rest of the day."
+      eyebrow="Transport"
+      title="Transport job marketplace"
+      intro="Review open jobs, confirm route suitability, and move accepted jobs into dispatch."
     >
+      <div className="statsGrid">
+        <div className="statCard">
+          <p className="statLabel">Open jobs</p>
+          <p className="statValue">{jobs.filter((job) => job.status === "Open").length}</p>
+          <p className="statHint">Jobs currently available for acceptance.</p>
+        </div>
+        <div className="statCard">
+          <p className="statLabel">Assigned jobs</p>
+          <p className="statValue">{jobs.filter((job) => job.status !== "Open").length}</p>
+          <p className="statHint">Jobs already accepted or in planning.</p>
+        </div>
+        <div className="statCard">
+          <p className="statLabel">Active enquiry</p>
+          <p className="statValue">{activeBooking?.label ?? "-"}</p>
+          <p className="statHint">Booking currently driving the first live job.</p>
+        </div>
+        <div className="statCard">
+          <p className="statLabel">Pickup area</p>
+          <p className="statValue">{request.pickup}</p>
+          <p className="statHint">Current pickup zone for route planning.</p>
+        </div>
+      </div>
+
       <div className="grid two">
         <SectionCard
           title="Carrier roster"
-          description="Seeded operators to make the marketplace feel active."
+          description="Active transport partners and fleet profile."
         >
           <div className="list">
             {[
@@ -47,12 +70,9 @@ export default function TransportPage() {
         </SectionCard>
 
         <SectionCard
-          title="Open transport jobs"
-          description="Marketplace-style jobs generated from confirmed winery itineraries."
+          title="Open jobs"
+          description="Jobs generated from confirmed or near-confirmed itineraries."
         >
-          <div className="callout">
-            Active enquiry: <strong>{activeBooking?.label}</strong>. Changing the planner or winery settings updates the first job below.
-          </div>
           <div className="list">
             {jobs.map((job, index) => (
               <div key={job.id} className="listRow">
@@ -71,33 +91,13 @@ export default function TransportPage() {
                   <span className="meta">{job.payout}</span>
                 </div>
                 <div className="callout">
-                  {index === 0 && job.id.startsWith("TM-") ? "Live job" : "Recommended match"}: <strong>{job.recommendedProvider}</strong>. Pickup zone is currently <strong>{request.pickup}</strong>.
+                  {index === 0 && job.id.startsWith("TM-") ? "Live recommendation" : "Recommended provider"}: <strong>{job.recommendedProvider}</strong>
                 </div>
               </div>
             ))}
           </div>
         </SectionCard>
       </div>
-
-      <SectionCard
-        title="What to validate with transport partners"
-        description="Use these prompts while they look at the job board."
-      >
-        <div className="grid three">
-          <div className="miniCard">
-            <p className="miniLabel">Decision speed</p>
-            <p className="subtle">Is the route, passenger count, and payout enough to accept a job?</p>
-          </div>
-          <div className="miniCard">
-            <p className="miniLabel">Operational detail</p>
-            <p className="subtle">Do they need timing per leg, contact details, or special notes visible here?</p>
-          </div>
-          <div className="miniCard">
-            <p className="miniLabel">Commercial model</p>
-            <p className="subtle">Should jobs be first-come-first-served, recommended, or offered to a shortlist first?</p>
-          </div>
-        </div>
-      </SectionCard>
     </AppShell>
   );
 }

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
@@ -27,100 +27,77 @@ export default function OpsPage() {
 
   return (
     <AppShell
-      eyebrow="Operations view"
-      title="Your team gets one place to monitor the day and fix issues before they become phone calls."
-      intro="This is the heart of the business model: multiple enquiries, winery settings, and transport planning now line up in one shared operational timeline."
+      eyebrow="Operations"
+      title="Run the booking day from one board"
+      intro="Track active bookings, approvals, and transport readiness. Focus only on items that need intervention."
     >
-      <SectionCard
-        title="Booking board"
-        description="This is the working queue your tour business would manage day to day."
-      >
-        <div className="summaryRibbon bookingRibbon">
-          {bookings.map((booking) => (
-            <div key={booking.id} className={`summaryChip bookingChip ${booking.id === activeBooking?.id ? "active" : ""}`}>
-              <span className="miniLabel">{booking.stage}</span>
-              <strong>{booking.label}</strong>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-
       <div className="statsGrid">
         <div className="statCard">
-          <p className="statLabel">Bookings in play</p>
+          <p className="statLabel">Active bookings</p>
           <p className="statValue">{bookings.length}</p>
-          <p className="statHint">Live enquiries currently tracked in the planning board.</p>
+          <p className="statHint">Current enquiries in today&apos;s working set.</p>
         </div>
         <div className="statCard">
-          <p className="statLabel">Pending winery review</p>
+          <p className="statLabel">Awaiting winery</p>
           <p className="statValue">{manualReviewSelected.length}</p>
-          <p className="statHint">Current itinerary stops that still need partner confirmation.</p>
+          <p className="statHint">Stops needing manual winery confirmation.</p>
         </div>
         <div className="statCard">
           <p className="statLabel">Open transport jobs</p>
           <p className="statValue">{dispatchJobs.filter((job) => job.status === "Open").length}</p>
-          <p className="statHint">Includes the active route generated from the selected enquiry.</p>
+          <p className="statHint">Jobs still waiting for transport acceptance.</p>
         </div>
         <div className="statCard">
-          <p className="statLabel">Auto-confirm venues</p>
+          <p className="statLabel">Auto-confirm wineries</p>
           <p className="statValue">{wineries.filter((winery) => winery.status === "Auto-confirm").length}</p>
-          <p className="statHint">This number changes as winery settings are adjusted.</p>
+          <p className="statHint">Venues currently processing confirmations automatically.</p>
         </div>
       </div>
 
       <div className="grid two">
         <SectionCard
-          title="Live itinerary view"
-          description="This is how your team explains the trip to a customer, winery, or driver without switching systems."
+          title="Booking queue"
+          description="Current booking progression."
         >
-          <div className="callout">
-            Active enquiry: <strong>{activeBooking?.label}</strong> on <strong>{request.date}</strong>, pickup from <strong>{request.pickup}</strong> for <strong>{request.partySize}</strong> guests.
-          </div>
-          <div className="timeline">
-            {selectedPlan?.stops.map((stop) => (
-              <div key={stop.wineryId} className="timelineItem">
-                <div className="timelineTime">{stop.arrival}</div>
-                <div>
-                  <h3>{stop.wineryName}</h3>
-                  <p className="subtle">Depart {stop.departure}. Transit from previous stop: {stop.driveFromPreviousMinutes} minutes.</p>
-                </div>
+          <div className="summaryRibbon bookingRibbon">
+            {bookings.map((booking) => (
+              <div key={booking.id} className={`summaryChip bookingChip ${booking.id === activeBooking?.id ? "active" : ""}`}>
+                <span className="miniLabel">{booking.stage}</span>
+                <strong>{booking.label}</strong>
               </div>
             ))}
           </div>
-          <div className="callout">
-            Transport window: <strong>{selectedPlan?.transportWindow}</strong>. Suggested assigned carrier: <strong>{liveTransportJob?.recommendedProvider}</strong>
+
+          <div className="callout" style={{ marginTop: 14 }}>
+            Active booking <strong>{activeBooking?.label}</strong> on <strong>{request.date}</strong> from <strong>{request.pickup}</strong> for <strong>{request.partySize}</strong> guests.
           </div>
         </SectionCard>
 
         <SectionCard
-          title="Operational queue"
-          description="The queue now reflects both the selected booking and the winery rules set in the partner portal."
+          title="Exception queue"
+          description="Only items requiring manual action."
         >
-          <div className="list">
+          <div className="list compactList">
             <div className="listRow">
               <div className="listTop">
                 <div>
-                  <h3>
-                    {manualReviewSelected[0]?.wineryName
-                      ? `Confirm ${manualReviewSelected[0].wineryName} tasting window`
-                      : "No winery confirmation blockers"}
-                  </h3>
+                  <h3>Winery confirmations</h3>
                   <p className="subtle">
-                    {manualReviewSelected[0]
-                      ? `Manual-review partner needs approval for ${request.partySize} guests.`
-                      : "The current itinerary is fully auto-confirmable with the active winery settings."}
+                    {manualReviewSelected.length > 0
+                      ? `${manualReviewSelected.length} stops waiting for manual confirmation.`
+                      : "No winery confirmation blockers for the active itinerary."}
                   </p>
                 </div>
-                <span className={`status ${manualReviewSelected[0] ? "review" : "accepted"}`}>
-                  {manualReviewSelected[0] ? "Needs action" : "Clear"}
+                <span className={`status ${manualReviewSelected.length > 0 ? "review" : "accepted"}`}>
+                  {manualReviewSelected.length > 0 ? "Needs action" : "Clear"}
                 </span>
               </div>
             </div>
             <div className="listRow">
               <div className="listTop">
                 <div>
-                  <h3>Post transport job {liveTransportJob?.id}</h3>
-                  <p className="subtle">Live route is ready to publish once winery confirmations are locked.</p>
+                  <h3>Transport dispatch</h3>
+                  <p className="subtle">Publish open jobs once winery confirmations are complete.</p>
                 </div>
                 <span className="status ready">Ready</span>
               </div>
@@ -128,8 +105,8 @@ export default function OpsPage() {
             <div className="listRow">
               <div className="listTop">
                 <div>
-                  <h3>Send customer confirmation pack</h3>
-                  <p className="subtle">Include itinerary, pickup instructions, and venue timing summary.</p>
+                  <h3>Customer notification</h3>
+                  <p className="subtle">Send final itinerary and pickup instructions after confirmations.</p>
                 </div>
                 <span className="status queued">Queued</span>
               </div>
@@ -139,8 +116,25 @@ export default function OpsPage() {
       </div>
 
       <SectionCard
+        title="Active itinerary"
+        description="Timeline currently planned for the selected booking."
+      >
+        <div className="timeline">
+          {selectedPlan?.stops.map((stop) => (
+            <div key={stop.wineryId} className="timelineItem">
+              <div className="timelineTime">{stop.arrival}</div>
+              <div>
+                <h3>{stop.wineryName}</h3>
+                <p className="subtle">Depart {stop.departure}. Drive from prior stop: {stop.driveFromPreviousMinutes} mins.</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
+      <SectionCard
         title="Dispatch board"
-        description="A simple unified board is enough for the first production-minded iteration."
+        description="Current transport jobs and status."
       >
         <div className="tableLike">
           <div className="tableRow tableHeader">

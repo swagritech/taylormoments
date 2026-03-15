@@ -9,6 +9,7 @@ type AppShellProps = {
   title: string;
   intro: string;
   children: ReactNode;
+  actionMode?: boolean;
 };
 
 const navItems = [
@@ -19,7 +20,7 @@ const navItems = [
   { href: "/ops", label: "Ops" },
 ];
 
-export function AppShell({ eyebrow, title, intro, children }: AppShellProps) {
+export function AppShell({ eyebrow, title, intro, children, actionMode = false }: AppShellProps) {
   const partnerSignInUrl = getPartnerSignInUrl();
   const opsSignInUrl = getOpsSignInUrl();
   const customerSignInUrl = getCustomerSignInUrl();
@@ -42,46 +43,44 @@ export function AppShell({ eyebrow, title, intro, children }: AppShellProps) {
             <small>Your Way</small>
           </span>
         </Link>
-        <nav className="topnav" aria-label="Primary navigation">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href} className="navLink">
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="ctaRow authRow">
-          {customerSignInUrl ? (
-            <Link href={customerSignInUrl} className="buttonGhost">
-              Customer sign in
-            </Link>
-          ) : null}
-          {partnerSignInUrl ? (
-            <Link href={partnerSignInUrl} className="buttonGhost">
-              Partner sign in
-            </Link>
-          ) : null}
-          {opsSignInUrl ? (
-            <Link href={opsSignInUrl} className="buttonPrimary">
-              Ops sign in
-            </Link>
-          ) : null}
-        </div>
+        {!actionMode ? (
+          <>
+            <nav className="topnav" aria-label="Primary navigation">
+              {navItems.map((item) => (
+                <Link key={item.href} href={item.href} className="navLink">
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <div className="ctaRow authRow">
+              {customerSignInUrl ? (
+                <Link href={customerSignInUrl} className="buttonGhost">
+                  Customer sign in
+                </Link>
+              ) : null}
+              {partnerSignInUrl ? (
+                <Link href={partnerSignInUrl} className="buttonGhost">
+                  Partner sign in
+                </Link>
+              ) : null}
+              {opsSignInUrl ? (
+                <Link href={opsSignInUrl} className="buttonPrimary">
+                  Ops sign in
+                </Link>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <div className="status ready">Direct action page</div>
+        )}
       </header>
 
       <main className="pageFrame">
-        <section className="heroPanel">
-          <div className="heroBrandLockup">
-            <p className="eyebrow">{eyebrow}</p>
-            <h1>{title}</h1>
-            <p className="heroCopy">{intro}</p>
-            <WorkflowStatus />
-          </div>
-          <div className="heroAside">
-            <p className="miniLabel">Brand promise</p>
-            <p>
-              Relaxed luxury, coastal calm, and effortless planning for winery days that still feel deeply personal.
-            </p>
-          </div>
+        <section className="pageHeader">
+          <p className="eyebrow">{eyebrow}</p>
+          <h1>{title}</h1>
+          <p className="heroCopy">{intro}</p>
+          {!actionMode ? <WorkflowStatus /> : null}
         </section>
         {children}
       </main>
