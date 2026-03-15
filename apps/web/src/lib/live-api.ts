@@ -69,7 +69,7 @@ export type TokenActionResponse = {
 function getRequiredApiBaseUrl() {
   const apiBaseUrl = getApiBaseUrl();
   if (!apiBaseUrl) {
-    throw new Error("NEXT_PUBLIC_API_BASE_URL is not configured.");
+    throw new Error("Live API URL is not configured.");
   }
 
   return apiBaseUrl;
