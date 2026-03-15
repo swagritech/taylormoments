@@ -6,12 +6,10 @@ import { TurnstileWidget } from "@/components/turnstile-widget";
 import { pickupOptions, wineries } from "@/lib/demo-data";
 import {
   createBooking,
-  createWineryApprovalToken,
   formatDisplayTime,
   recommendItineraries,
   type BookingResponse,
   type Recommendation,
-  type TokenResponse,
 } from "@/lib/live-api";
 
 const defaultDate = "2026-04-10";
@@ -44,7 +42,6 @@ export function LiveBookingFlow() {
   const [turnstileToken, setTurnstileToken] = useState<string | undefined>();
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [booking, setBooking] = useState<BookingResponse | null>(null);
-  const [approvalToken, setApprovalToken] = useState<TokenResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [noOptionsMessage, setNoOptionsMessage] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
@@ -67,7 +64,6 @@ export function LiveBookingFlow() {
     setError(null);
     setNoOptionsMessage(null);
     setBooking(null);
-    setApprovalToken(null);
 
     try {
       const response = await recommendItineraries({
@@ -90,7 +86,7 @@ export function LiveBookingFlow() {
     }
   }
 
-  async function handleBook(selectedRecommendation: Recommendation) {
+  async function handleBook() {
     if (!leadName.trim()) {
       setError("Please add the lead guest name before requesting the trip.");
       return;
@@ -112,14 +108,6 @@ export function LiveBookingFlow() {
       });
 
       setBooking(created);
-
-      const firstStop = selectedRecommendation.stops[0];
-      if (firstStop?.winery_id) {
-        const token = await createWineryApprovalToken(created.bookingId, firstStop.winery_id);
-        setApprovalToken(token);
-      } else {
-        setApprovalToken(null);
-      }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to request this trip.");
     } finally {
@@ -241,7 +229,7 @@ export function LiveBookingFlow() {
                   label="Protects the live request flow from spam once Turnstile is configured."
                   onToken={setTurnstileToken}
                 />
-                <button type="button" className="buttonPrimary fullWidthButton" onClick={() => handleBook(expertPick)} disabled={submitting}>
+                <button type="button" className="buttonPrimary fullWidthButton" onClick={handleBook} disabled={submitting}>
                   {submitting ? "Submitting request..." : "Book this trip"}
                 </button>
               </div>
@@ -282,13 +270,8 @@ export function LiveBookingFlow() {
 
           {booking ? (
             <div className="callout successCallout">
-              <strong>Booking request received.</strong> Reference <strong>{booking.bookingId}</strong> has been saved to the live Tailor Moments workflow.
-              {approvalToken ? (
-                <>
-                  <br />
-                  First winery approval link: <a href={approvalToken.action_url}>{approvalToken.action_url}</a>
-                </>
-              ) : null}
+              <strong>Booking request received.</strong> Reference <strong>{booking.bookingId}</strong> has been saved.
+              Partner confirmations are now handled directly by Tailor Moments.
             </div>
           ) : null}
         </SectionCard>
