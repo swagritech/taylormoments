@@ -189,7 +189,15 @@ function buildFeasibleRoute(params: {
     const overlapEnd = Math.min(window.end, LUNCH_WINDOW_END);
     return overlapEnd - overlapStart >= LUNCH_BREAK_MINUTES;
   });
-  if (!hasLunchBreak) {
+  const hasLunchAtStop = stops.some((stop) => {
+    const stopStart = toTimeValue(stop.slot.startTime);
+    const stopEnd = toTimeValue(stop.slot.endTime);
+    const overlapStart = Math.max(stopStart, LUNCH_WINDOW_START);
+    const overlapEnd = Math.min(stopEnd, LUNCH_WINDOW_END);
+    return overlapEnd - overlapStart >= LUNCH_BREAK_MINUTES;
+  });
+
+  if (!hasLunchBreak && !hasLunchAtStop) {
     return null;
   }
 
@@ -225,15 +233,16 @@ function scoreRoute(params: {
 function buildRelaxedFallbackItinerary(params: {
   request: RecommendItineraryRequest;
   slotGroups: WinerySlotGroup[];
+  targetStops?: number;
 }): ItineraryOption | null {
-  const { request, slotGroups } = params;
+  const { request, slotGroups, targetStops } = params;
   const dayStart = toTimeValue(request.preferred_start_time ?? DEFAULT_DAY_START);
   const dayEnd = toTimeValue(request.preferred_end_time ?? DEFAULT_DAY_END);
   const pickupPoint = resolvePickupPoint(request.pickup_location);
 
   const selectedGroups = [...slotGroups]
     .sort((a, b) => b.slots.length - a.slots.length)
-    .slice(0, MAX_STOPS_PER_DAY);
+    .slice(0, Math.min(targetStops ?? MAX_STOPS_PER_DAY, MAX_STOPS_PER_DAY));
 
   if (selectedGroups.length === 0) {
     return null;
@@ -243,7 +252,6 @@ function buildRelaxedFallbackItinerary(params: {
   let currentTime = dayStart;
   let currentPoint = pickupPoint;
   let totalDriveMinutes = 0;
-  let lunchTaken = false;
   const stops: Array<{
     wineryId: string;
     wineryName: string;
@@ -275,17 +283,8 @@ function buildRelaxedFallbackItinerary(params: {
 
     const representativeSlot = nextGroup.slots[0];
     const slotDurationMinutes = representativeSlot
-      ? Math.max(45, Math.min(95, toTimeValue(representativeSlot.endTime) - toTimeValue(representativeSlot.startTime)))
-      : 75;
-
-    if (!lunchTaken && currentTime < LUNCH_WINDOW_END) {
-      const lunchStart = Math.max(currentTime, 12 * 60);
-      const lunchEnd = lunchStart + LUNCH_BREAK_MINUTES;
-      if (lunchStart <= LUNCH_WINDOW_END && lunchEnd <= dayEnd) {
-        currentTime = lunchEnd;
-        lunchTaken = true;
-      }
-    }
+      ? Math.max(45, Math.min(75, toTimeValue(representativeSlot.endTime) - toTimeValue(representativeSlot.startTime)))
+      : 60;
 
     const arrivalMinutes = currentTime + nextDrive;
     const departureMinutes = arrivalMinutes + slotDurationMinutes;
@@ -307,9 +306,6 @@ function buildRelaxedFallbackItinerary(params: {
   }
 
   if (stops.length === 0) {
-    return null;
-  }
-  if (!lunchTaken) {
     return null;
   }
 
@@ -410,18 +406,36 @@ export function buildCandidateItineraries(params: {
 
   const groupSubsets = buildGroupSubsets(slotGroups);
   const combinations = groupSubsets.flatMap((subset) => buildSlotCombinations(subset, 120));
-  const feasibleOptions = combinations
+  const scoredRoutes = combinations
     .map((selection) => buildFeasibleRoute({ request, selection }))
     .filter((route): route is { stops: PlannedStop[]; totalDriveMinutes: number } => Boolean(route))
     .map((route) => ({
       route,
       score: scoreRoute({ request, route }),
-    }))
+      stopCount: route.stops.length,
+    }));
+
+  const maxFeasibleStopCount = scoredRoutes.reduce(
+    (max, entry) => Math.max(max, entry.stopCount),
+    0,
+  );
+  const targetStopCount = Math.min(
+    MAX_STOPS_PER_DAY,
+    preferredSet.size > 0 ? preferredSet.size : slotGroups.length,
+  );
+
+  // Prioritize fuller itineraries: if we can schedule more selected wineries, do that first.
+  const feasibleOptions = scoredRoutes
+    .filter((entry) => entry.stopCount === maxFeasibleStopCount)
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 
-  if (feasibleOptions.length === 0) {
-    const fallback = buildRelaxedFallbackItinerary({ request, slotGroups });
+  if (feasibleOptions.length === 0 || maxFeasibleStopCount < targetStopCount) {
+    const fallback = buildRelaxedFallbackItinerary({
+      request,
+      slotGroups,
+      targetStops: targetStopCount,
+    });
     return fallback ? [fallback] : [];
   }
 
