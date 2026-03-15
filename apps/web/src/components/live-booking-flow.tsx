@@ -14,7 +14,7 @@ import {
   type TokenResponse,
 } from "@/lib/live-api";
 
-const defaultDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString().slice(0, 10);
+const defaultDate = "2026-04-10";
 
 function wineryById(id: string) {
   return wineries.find((winery) => winery.id === id);
@@ -50,6 +50,7 @@ export function LiveBookingFlow() {
   const [booking, setBooking] = useState<BookingResponse | null>(null);
   const [approvalToken, setApprovalToken] = useState<TokenResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [noOptionsMessage, setNoOptionsMessage] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
 
   const expertPick = recommendations.find((option) => option.expert_pick) ?? recommendations[0];
@@ -73,6 +74,7 @@ export function LiveBookingFlow() {
   async function handleRecommend() {
     setRequesting(true);
     setError(null);
+    setNoOptionsMessage(null);
     setBooking(null);
     setApprovalToken(null);
 
@@ -86,6 +88,11 @@ export function LiveBookingFlow() {
       });
 
       setRecommendations(response.itineraries);
+      if (response.itineraries.length === 0) {
+        setNoOptionsMessage(
+          "No available itinerary was found for this date and party size. Try 2026-04-10 or adjust guest count/wineries.",
+        );
+      }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to generate recommendations.");
     } finally {
@@ -282,6 +289,7 @@ export function LiveBookingFlow() {
           )}
 
           {error ? <div className="callout errorCallout">{error}</div> : null}
+          {noOptionsMessage ? <div className="callout">{noOptionsMessage}</div> : null}
 
           {booking ? (
             <div className="callout successCallout">
