@@ -27,6 +27,8 @@ export type CreateBookingRequest = {
   lead_email?: string;
   lead_phone?: string;
   booking_date: string;
+  preferred_start_time?: string;
+  preferred_end_time?: string;
   pickup_location: string;
   party_size: number;
   preferred_region?: string;
@@ -40,6 +42,8 @@ export type BookingResponse = {
   leadEmail?: string;
   leadPhone?: string;
   bookingDate: string;
+  preferredStartTime?: string;
+  preferredEndTime?: string;
   pickupLocation: string;
   partySize: number;
   preferredWineries: string[];

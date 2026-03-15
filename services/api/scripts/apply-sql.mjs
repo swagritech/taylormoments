@@ -13,7 +13,12 @@ async function run() {
   }
 
   const sqlDir = path.resolve(process.cwd(), "sql");
-  const scripts = ["001_init.sql", "002_seed_wineries.sql", "003_winery_partner_workflow.sql"];
+  const scripts = [
+    "001_init.sql",
+    "002_seed_wineries.sql",
+    "003_winery_partner_workflow.sql",
+    "004_booking_time_preferences.sql",
+  ];
   const client = new Client({
     connectionString,
     ssl: connectionString.includes("localhost") ? false : { rejectUnauthorized: false },

@@ -34,6 +34,8 @@ export function LiveBookingFlow() {
   const [leadEmail, setLeadEmail] = useState("");
   const [leadPhone, setLeadPhone] = useState("");
   const [bookingDate, setBookingDate] = useState(defaultDate);
+  const [preferredStartTime, setPreferredStartTime] = useState("10:00");
+  const [preferredEndTime, setPreferredEndTime] = useState("17:00");
   const [pickupLocation, setPickupLocation] = useState(pickupOptions[0]?.label ?? "Margaret River Visitor Centre");
   const [partySize, setPartySize] = useState(4);
   const [selectedWineries, setSelectedWineries] = useState<string[]>([wineries[0]?.id ?? "", wineries[1]?.id ?? ""].filter(Boolean));
@@ -101,6 +103,8 @@ export function LiveBookingFlow() {
         lead_email: leadEmail || undefined,
         lead_phone: leadPhone || undefined,
         booking_date: bookingDate,
+        preferred_start_time: preferredStartTime || undefined,
+        preferred_end_time: preferredEndTime || undefined,
         pickup_location: pickupLocation,
         party_size: partySize,
         preferred_wineries: selectedWineries.map(uuidForWinerySlug),
@@ -149,6 +153,28 @@ export function LiveBookingFlow() {
                     <option key={size} value={size}>{size} guests</option>
                   ))}
                 </select>
+              </div>
+            </div>
+            <div className="fieldRow">
+              <div className="field">
+                <label htmlFor="preferredStartTime">Start time</label>
+                <input
+                  id="preferredStartTime"
+                  type="time"
+                  className="inputLike inputField"
+                  value={preferredStartTime}
+                  onChange={(event) => setPreferredStartTime(event.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="preferredEndTime">End time</label>
+                <input
+                  id="preferredEndTime"
+                  type="time"
+                  className="inputLike inputField"
+                  value={preferredEndTime}
+                  onChange={(event) => setPreferredEndTime(event.target.value)}
+                />
               </div>
             </div>
             <div className="field">

@@ -4,6 +4,8 @@ create table if not exists booking (
   lead_phone text,
   lead_email text,
   booking_date date not null,
+  preferred_start_time time,
+  preferred_end_time time,
   pickup_location text not null,
   party_size integer not null check (party_size > 0),
   preferred_region text,

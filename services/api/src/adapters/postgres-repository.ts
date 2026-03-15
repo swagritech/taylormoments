@@ -26,6 +26,8 @@ function mapBooking(row: Record<string, unknown>): Booking {
     leadPhone: row.lead_phone ? String(row.lead_phone) : undefined,
     leadEmail: row.lead_email ? String(row.lead_email) : undefined,
     bookingDate: formatPgDate(row.booking_date),
+    preferredStartTime: row.preferred_start_time ? String(row.preferred_start_time).slice(0, 5) : undefined,
+    preferredEndTime: row.preferred_end_time ? String(row.preferred_end_time).slice(0, 5) : undefined,
     pickupLocation: String(row.pickup_location),
     partySize: Number(row.party_size),
     preferredRegion: row.preferred_region ? String(row.preferred_region) : undefined,
@@ -141,15 +143,17 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
           lead_phone,
           lead_email,
           booking_date,
+          preferred_start_time,
+          preferred_end_time,
           pickup_location,
           party_size,
           preferred_region,
           preferred_wineries,
           status
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid[], 'awaiting_winery')
-        returning booking_id, lead_name, lead_phone, lead_email, booking_date, pickup_location, party_size,
-                  preferred_region, preferred_wineries, status, created_at, updated_at
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::uuid[], 'awaiting_winery')
+        returning booking_id, lead_name, lead_phone, lead_email, booking_date, preferred_start_time, preferred_end_time,
+                  pickup_location, party_size, preferred_region, preferred_wineries, status, created_at, updated_at
       `,
       [
         bookingId,
@@ -157,6 +161,8 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
         request.lead_phone ?? null,
         request.lead_email ?? null,
         request.booking_date,
+        request.preferred_start_time ?? null,
+        request.preferred_end_time ?? null,
         request.pickup_location,
         request.party_size,
         request.preferred_region ?? null,
@@ -171,7 +177,8 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const pool = getPool();
     const result = await pool.query(
       `
-        select booking_id, lead_name, lead_phone, lead_email, booking_date, pickup_location, party_size,
+        select booking_id, lead_name, lead_phone, lead_email, booking_date, preferred_start_time, preferred_end_time,
+               pickup_location, party_size,
                preferred_region, preferred_wineries, status, created_at, updated_at
         from booking
         where booking_id = $1

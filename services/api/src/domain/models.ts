@@ -16,6 +16,8 @@ export type Booking = {
   leadPhone?: string;
   leadEmail?: string;
   bookingDate: string;
+  preferredStartTime?: string;
+  preferredEndTime?: string;
   pickupLocation: string;
   partySize: number;
   preferredRegion?: string;
@@ -127,6 +129,8 @@ export type CreateBookingRequest = RecommendItineraryRequest & {
   lead_name: string;
   lead_email?: string;
   lead_phone?: string;
+  preferred_start_time?: string;
+  preferred_end_time?: string;
   turnstile_token?: string;
 };
 

@@ -89,6 +89,8 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
       leadPhone: request.lead_phone,
       leadEmail: request.lead_email,
       bookingDate: request.booking_date,
+      preferredStartTime: request.preferred_start_time,
+      preferredEndTime: request.preferred_end_time,
       pickupLocation: request.pickup_location,
       partySize: request.party_size,
       preferredRegion: request.preferred_region,
