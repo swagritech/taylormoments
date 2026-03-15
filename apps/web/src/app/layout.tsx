@@ -7,11 +7,13 @@ const display = Cinzel({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
+  preload: false,
 });
 
 const sans = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
+  preload: false,
 });
 
 export const metadata: Metadata = {
