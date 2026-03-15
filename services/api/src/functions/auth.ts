@@ -11,6 +11,12 @@ function toUserView(user: {
   email: string;
   role: string;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  homeCountry?: string;
+  ageGroup?: string;
+  gender?: string;
   wineryId?: string;
   transportCompany?: string;
 }) {
@@ -19,6 +25,12 @@ function toUserView(user: {
     email: user.email,
     role: user.role,
     display_name: user.displayName,
+    first_name: user.firstName,
+    last_name: user.lastName,
+    phone: user.phone,
+    home_country: user.homeCountry,
+    age_group: user.ageGroup,
+    gender: user.gender,
     winery_id: user.wineryId,
     transport_company: user.transportCompany,
   };
@@ -37,6 +49,12 @@ export async function registerHandler(
 
     if (payload.role === "transport" && !payload.transport_company) {
       return badRequest("transport_company is required for transport role.");
+    }
+
+    if (payload.role === "customer") {
+      if (!payload.first_name || !payload.last_name || !payload.phone || !payload.home_country) {
+        return badRequest("first_name, last_name, phone, and home_country are required for customer role.");
+      }
     }
 
     const existing = await workflowRepository.getUserByEmail(payload.email);

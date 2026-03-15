@@ -106,6 +106,12 @@ export type UserAccount = {
   passwordHash: string;
   role: UserRole;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  homeCountry?: string;
+  ageGroup?: string;
+  gender?: string;
   wineryId?: string;
   transportCompany?: string;
   createdAt: string;
@@ -152,6 +158,12 @@ export type RegisterUserRequest = {
   password: string;
   role: UserRole;
   display_name: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  home_country?: string;
+  age_group?: string;
+  gender?: string;
   winery_id?: string;
   transport_company?: string;
 };

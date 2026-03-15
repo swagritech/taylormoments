@@ -157,6 +157,12 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     password: string;
     role: "customer" | "winery" | "transport" | "ops";
     display_name: string;
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    home_country?: string;
+    age_group?: string;
+    gender?: string;
     winery_id?: string;
     transport_company?: string;
     password_hash: string;
@@ -168,6 +174,12 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
       passwordHash: request.password_hash,
       role: request.role,
       displayName: request.display_name,
+      firstName: request.first_name,
+      lastName: request.last_name,
+      phone: request.phone,
+      homeCountry: request.home_country,
+      ageGroup: request.age_group,
+      gender: request.gender,
       wineryId: request.winery_id,
       transportCompany: request.transport_company,
       createdAt: now,

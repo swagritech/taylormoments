@@ -113,6 +113,12 @@ function mapUserAccount(row: Record<string, unknown>): UserAccount {
     passwordHash: String(row.password_hash),
     role: row.role as UserAccount["role"],
     displayName: String(row.display_name),
+    firstName: row.first_name ? String(row.first_name) : undefined,
+    lastName: row.last_name ? String(row.last_name) : undefined,
+    phone: row.phone ? String(row.phone) : undefined,
+    homeCountry: row.home_country ? String(row.home_country) : undefined,
+    ageGroup: row.age_group ? String(row.age_group) : undefined,
+    gender: row.gender ? String(row.gender) : undefined,
     wineryId: row.winery_id ? String(row.winery_id) : undefined,
     transportCompany: row.transport_company ? String(row.transport_company) : undefined,
     createdAt: new Date(String(row.created_at)).toISOString(),
@@ -306,6 +312,12 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     password: string;
     role: "customer" | "winery" | "transport" | "ops";
     display_name: string;
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    home_country?: string;
+    age_group?: string;
+    gender?: string;
     winery_id?: string;
     transport_company?: string;
     password_hash: string;
@@ -320,11 +332,18 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
           password_hash,
           role,
           display_name,
+          first_name,
+          last_name,
+          phone,
+          home_country,
+          age_group,
+          gender,
           winery_id,
           transport_company
         )
-        values ($1, $2, $3, $4, $5, $6, $7)
-        returning user_id, email, password_hash, role, display_name, winery_id, transport_company, created_at, updated_at
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        returning user_id, email, password_hash, role, display_name, first_name, last_name, phone, home_country, age_group, gender,
+                  winery_id, transport_company, created_at, updated_at
       `,
       [
         userId,
@@ -332,6 +351,12 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
         request.password_hash,
         request.role,
         request.display_name,
+        request.first_name ?? null,
+        request.last_name ?? null,
+        request.phone ?? null,
+        request.home_country ?? null,
+        request.age_group ?? null,
+        request.gender ?? null,
         request.winery_id ?? null,
         request.transport_company ?? null,
       ],
@@ -344,7 +369,8 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const pool = getPool();
     const result = await pool.query(
       `
-        select user_id, email, password_hash, role, display_name, winery_id, transport_company, created_at, updated_at
+        select user_id, email, password_hash, role, display_name, first_name, last_name, phone, home_country, age_group, gender,
+               winery_id, transport_company, created_at, updated_at
         from user_account
         where email = $1
       `,
@@ -361,7 +387,8 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const pool = getPool();
     const result = await pool.query(
       `
-        select user_id, email, password_hash, role, display_name, winery_id, transport_company, created_at, updated_at
+        select user_id, email, password_hash, role, display_name, first_name, last_name, phone, home_country, age_group, gender,
+               winery_id, transport_company, created_at, updated_at
         from user_account
         where user_id = $1
       `,

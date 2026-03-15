@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/section-card";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { pickupOptions, wineries as legacyWineries } from "@/lib/demo-data";
+import { useAuth } from "@/lib/auth-state";
 import {
   createBooking,
   formatDisplayTime,
@@ -41,6 +42,7 @@ export function LiveBookingFlow({
   onSelectedWineriesChange,
   onOpenCatalog,
 }: LiveBookingFlowProps) {
+  const { user } = useAuth();
   const [leadName, setLeadName] = useState("");
   const [leadEmail, setLeadEmail] = useState("");
   const [leadPhone, setLeadPhone] = useState("");
@@ -74,6 +76,23 @@ export function LiveBookingFlow({
 
   const expertPick = recommendations.find((option) => option.expert_pick) ?? recommendations[0];
   const alternateOptions = expertPick ? recommendations.filter((option) => option.itinerary_id !== expertPick.itinerary_id) : [];
+
+  useEffect(() => {
+    if (!user || user.role !== "customer") {
+      return;
+    }
+
+    const accountName = [user.first_name, user.last_name].filter(Boolean).join(" ").trim() || user.display_name;
+    if (accountName && !leadName.trim()) {
+      setLeadName(accountName);
+    }
+    if (user.email && !leadEmail.trim()) {
+      setLeadEmail(user.email);
+    }
+    if (user.phone && !leadPhone.trim()) {
+      setLeadPhone(user.phone);
+    }
+  }, [user, leadName, leadEmail, leadPhone]);
 
   function toggleWinery(wineryId: string) {
     setSelectedWineries((current) => {

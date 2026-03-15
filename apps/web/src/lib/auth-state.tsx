@@ -22,6 +22,12 @@ type AuthContextType = {
     password: string;
     role: "customer" | "winery" | "transport" | "ops";
     display_name: string;
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    home_country?: string;
+    age_group?: string;
+    gender?: string;
     winery_id?: string;
     transport_company?: string;
   }) => Promise<AuthUser>;
@@ -102,6 +108,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string;
     role: "customer" | "winery" | "transport" | "ops";
     display_name: string;
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    home_country?: string;
+    age_group?: string;
+    gender?: string;
     winery_id?: string;
     transport_company?: string;
   }) {

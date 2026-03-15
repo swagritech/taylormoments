@@ -55,6 +55,12 @@ export const registerUserRequestSchema = z.object({
   password: z.string().min(8),
   role: z.enum(["customer", "winery", "transport", "ops"]),
   display_name: z.string().min(1),
+  first_name: z.string().min(1).optional(),
+  last_name: z.string().min(1).optional(),
+  phone: z.string().regex(/^\+?[1-9]\d{7,14}$/).optional(),
+  home_country: z.string().min(2).optional(),
+  age_group: z.string().min(2).optional(),
+  gender: z.string().min(2).optional(),
   winery_id: z.string().uuid().optional(),
   transport_company: z.string().min(1).optional(),
 });
