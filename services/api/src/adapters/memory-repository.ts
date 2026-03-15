@@ -12,10 +12,10 @@ import type {
 import { makeId, nowIso } from "../lib/crypto.js";
 
 const wineries: Winery[] = [
-  { wineryId: "11111111-1111-1111-1111-111111111111", name: "Leeuwin Coast Estate", region: "Wilyabrup", confirmationMode: "auto_confirm", capacity: 10, active: true },
-  { wineryId: "22222222-2222-2222-2222-222222222222", name: "Redgate Ridge", region: "Redgate", confirmationMode: "manual_review", capacity: 12, active: true },
-  { wineryId: "33333333-3333-3333-3333-333333333333", name: "Caves Road Cellars", region: "Cowaramup", confirmationMode: "auto_confirm", capacity: 8, active: true },
-  { wineryId: "44444444-4444-4444-4444-444444444444", name: "Yallingup Hills Winery", region: "Yallingup Siding", confirmationMode: "manual_review", capacity: 14, active: true },
+  { wineryId: "11111111-1111-1111-1111-111111111111", name: "Vasse Felix", region: "Wilyabrup", confirmationMode: "auto_confirm", capacity: 10, active: true },
+  { wineryId: "22222222-2222-2222-2222-222222222222", name: "Cullen Wines", region: "Wilyabrup", confirmationMode: "manual_review", capacity: 12, active: true },
+  { wineryId: "33333333-3333-3333-3333-333333333333", name: "Fraser Gallop Estate", region: "Wilyabrup", confirmationMode: "auto_confirm", capacity: 8, active: true },
+  { wineryId: "44444444-4444-4444-4444-444444444444", name: "Woodlands Wines", region: "Wilyabrup", confirmationMode: "manual_review", capacity: 14, active: true },
 ];
 
 const wineryContacts = new Map<string, WineryContact>([
@@ -23,8 +23,8 @@ const wineryContacts = new Map<string, WineryContact>([
     "11111111-1111-1111-1111-111111111111",
     {
       wineryId: "11111111-1111-1111-1111-111111111111",
-      contactName: "Leeuwin Coast Cellar Door",
-      email: "bookings@leeuwincoast.example",
+      contactName: "Vasse Felix Cellar Door",
+      email: "bookings@vassefelix.example",
       phone: "+61412000001",
       preferredChannel: "email",
     },
@@ -33,8 +33,8 @@ const wineryContacts = new Map<string, WineryContact>([
     "22222222-2222-2222-2222-222222222222",
     {
       wineryId: "22222222-2222-2222-2222-222222222222",
-      contactName: "Redgate Ridge Host Team",
-      email: "hosting@redgateridge.example",
+      contactName: "Cullen Wines Host Team",
+      email: "hosting@cullenwines.example",
       phone: "+61412000002",
       preferredChannel: "email",
     },
@@ -43,8 +43,8 @@ const wineryContacts = new Map<string, WineryContact>([
     "33333333-3333-3333-3333-333333333333",
     {
       wineryId: "33333333-3333-3333-3333-333333333333",
-      contactName: "Caves Road Floor Team",
-      email: "team@cavesroadcellars.example",
+      contactName: "Fraser Gallop Concierge",
+      email: "team@frasergallop.example",
       phone: "+61412000003",
       preferredChannel: "sms",
     },
@@ -53,8 +53,8 @@ const wineryContacts = new Map<string, WineryContact>([
     "44444444-4444-4444-4444-444444444444",
     {
       wineryId: "44444444-4444-4444-4444-444444444444",
-      contactName: "Yallingup Hills Concierge",
-      email: "concierge@yallinguphills.example",
+      contactName: "Woodlands Hosting Team",
+      email: "concierge@woodlandswines.example",
       phone: "+61412000004",
       preferredChannel: "email",
     },

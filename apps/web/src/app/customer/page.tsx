@@ -1,15 +1,43 @@
+"use client";
+
+import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { CustomerWineryCatalog } from "@/components/customer-winery-catalog";
 import { LiveBookingFlow } from "@/components/live-booking-flow";
 
 export default function CustomerPage() {
+  const [selectedWineries, setSelectedWineries] = useState<string[]>(["vasse-felix", "cullen-wines"]);
+  const [stage, setStage] = useState<"catalog" | "schedule">("catalog");
+
+  function toggleWinery(wineryId: string) {
+    setSelectedWineries((current) => {
+      if (current.includes(wineryId)) {
+        return current.filter((entry) => entry !== wineryId);
+      }
+      return [...current, wineryId];
+    });
+  }
+
   return (
     <AppShell
       eyebrow="Customer booking"
       title="Plan your Margaret River winery day"
-      intro="Share your preferred date, group size, pickup point, and favourite wineries to receive a tailored itinerary recommendation."
+      intro="Discover wineries in the catalog, add your favourites to schedule cart, then generate a tailored day plan."
       showWorkflowStatus={false}
     >
-      <LiveBookingFlow />
+      {stage === "catalog" ? (
+        <CustomerWineryCatalog
+          selectedWineries={selectedWineries}
+          onToggleWinery={toggleWinery}
+          onContinue={() => setStage("schedule")}
+        />
+      ) : (
+        <LiveBookingFlow
+          selectedWineries={selectedWineries}
+          onSelectedWineriesChange={setSelectedWineries}
+          onOpenCatalog={() => setStage("catalog")}
+        />
+      )}
     </AppShell>
   );
 }

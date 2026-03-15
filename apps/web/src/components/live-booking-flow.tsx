@@ -14,22 +14,32 @@ import {
 
 const defaultDate = "2026-04-10";
 
+type LiveBookingFlowProps = {
+  selectedWineries?: string[];
+  onSelectedWineriesChange?: (wineryIds: string[]) => void;
+  onOpenCatalog?: () => void;
+};
+
 function uuidForWinerySlug(slug: string) {
   switch (slug) {
-    case "leeuwin-coast":
+    case "vasse-felix":
       return "11111111-1111-1111-1111-111111111111";
-    case "redgate-ridge":
+    case "cullen-wines":
       return "22222222-2222-2222-2222-222222222222";
-    case "caves-road-cellars":
+    case "fraser-gallop":
       return "33333333-3333-3333-3333-333333333333";
-    case "yallingup-hills":
+    case "woodlands":
       return "44444444-4444-4444-4444-444444444444";
     default:
       return slug;
   }
 }
 
-export function LiveBookingFlow() {
+export function LiveBookingFlow({
+  selectedWineries: selectedWineriesProp,
+  onSelectedWineriesChange,
+  onOpenCatalog,
+}: LiveBookingFlowProps) {
   const [leadName, setLeadName] = useState("");
   const [leadEmail, setLeadEmail] = useState("");
   const [leadPhone, setLeadPhone] = useState("");
@@ -38,7 +48,7 @@ export function LiveBookingFlow() {
   const [preferredEndTime, setPreferredEndTime] = useState("17:00");
   const [pickupLocation, setPickupLocation] = useState(pickupOptions[0]?.label ?? "Margaret River Visitor Centre");
   const [partySize, setPartySize] = useState(4);
-  const [selectedWineries, setSelectedWineries] = useState<string[]>([wineries[0]?.id ?? "", wineries[1]?.id ?? ""].filter(Boolean));
+  const [internalSelectedWineries, setInternalSelectedWineries] = useState<string[]>([wineries[0]?.id ?? "", wineries[1]?.id ?? ""].filter(Boolean));
   const [requesting, setRequesting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | undefined>();
@@ -47,6 +57,16 @@ export function LiveBookingFlow() {
   const [error, setError] = useState<string | null>(null);
   const [noOptionsMessage, setNoOptionsMessage] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
+  const selectedWineries = selectedWineriesProp ?? internalSelectedWineries;
+
+  function setSelectedWineries(next: string[] | ((current: string[]) => string[])) {
+    const current = selectedWineries;
+    const resolved = typeof next === "function" ? next(current) : next;
+    onSelectedWineriesChange?.(resolved);
+    if (!onSelectedWineriesChange) {
+      setInternalSelectedWineries(resolved);
+    }
+  }
 
   const expertPick = recommendations.find((option) => option.expert_pick) ?? recommendations[0];
   const alternateOptions = expertPick ? recommendations.filter((option) => option.itinerary_id !== expertPick.itinerary_id) : [];
@@ -187,6 +207,13 @@ export function LiveBookingFlow() {
             </div>
             <div className="field">
               <label>Preferred wineries</label>
+              {onOpenCatalog ? (
+                <div className="ctaRow">
+                  <button type="button" className="buttonGhost" onClick={onOpenCatalog}>
+                    Browse winery catalog
+                  </button>
+                </div>
+              ) : null}
               <div className="selectorList">
                 {wineries.map((winery) => {
                   const selected = selectedWineries.includes(winery.id);

@@ -1,9 +1,9 @@
 insert into winery (winery_id, name, region, confirmation_mode, capacity, active)
 values
-  ('11111111-1111-1111-1111-111111111111', 'Leeuwin Coast Estate', 'Wilyabrup', 'auto_confirm', 10, true),
-  ('22222222-2222-2222-2222-222222222222', 'Redgate Ridge', 'Redgate', 'manual_review', 12, true),
-  ('33333333-3333-3333-3333-333333333333', 'Caves Road Cellars', 'Cowaramup', 'auto_confirm', 8, true),
-  ('44444444-4444-4444-4444-444444444444', 'Yallingup Hills Winery', 'Yallingup Siding', 'manual_review', 14, true)
+  ('11111111-1111-1111-1111-111111111111', 'Vasse Felix', 'Wilyabrup', 'auto_confirm', 10, true),
+  ('22222222-2222-2222-2222-222222222222', 'Cullen Wines', 'Wilyabrup', 'manual_review', 12, true),
+  ('33333333-3333-3333-3333-333333333333', 'Fraser Gallop Estate', 'Wilyabrup', 'auto_confirm', 8, true),
+  ('44444444-4444-4444-4444-444444444444', 'Woodlands Wines', 'Wilyabrup', 'manual_review', 14, true)
 on conflict (winery_id) do update
 set
   name = excluded.name,
