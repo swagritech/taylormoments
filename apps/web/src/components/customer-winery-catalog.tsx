@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { SectionCard } from "@/components/section-card";
+import { SelectedWineriesMap } from "@/components/selected-wineries-map";
 import { wineryCatalog, wineryRegions } from "@/lib/winery-catalog";
 
 type CustomerWineryCatalogProps = {
@@ -11,10 +12,6 @@ type CustomerWineryCatalogProps = {
 };
 
 type SortMode = "top-rated" | "most-selected" | "established";
-
-function mapEmbedUrl(query: string) {
-  return `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
-}
 
 export function CustomerWineryCatalog({
   selectedWineries,
@@ -27,7 +24,6 @@ export function CustomerWineryCatalog({
   const [cellarDoorOnly, setCellarDoorOnly] = useState(false);
   const [liveBookableOnly, setLiveBookableOnly] = useState(true);
   const [sortMode, setSortMode] = useState<SortMode>("top-rated");
-  const [activeWineryId, setActiveWineryId] = useState<string | null>(selectedWineries[0] ?? null);
 
   const filtered = useMemo(() => {
     const loweredSearch = search.trim().toLowerCase();
@@ -67,11 +63,13 @@ export function CustomerWineryCatalog({
     return rows.sort((a, b) => b.rating - a.rating);
   }, [cellarDoorOnly, liveBookableOnly, organicOnly, region, search, sortMode]);
 
-  const activeWinery =
-    filtered.find((winery) => winery.id === activeWineryId) ??
-    filtered[0] ??
-    wineryCatalog.find((winery) => winery.id === selectedWineries[0]) ??
-    wineryCatalog[0];
+  const selectedWineryItems = useMemo(
+    () =>
+      selectedWineries
+        .map((wineryId) => wineryCatalog.find((entry) => entry.id === wineryId))
+        .filter((entry): entry is (typeof wineryCatalog)[number] => Boolean(entry)),
+    [selectedWineries],
+  );
 
   return (
     <SectionCard
@@ -137,8 +135,7 @@ export function CustomerWineryCatalog({
               <article
                 key={winery.id}
                 role="listitem"
-                className={`catalogRow ${activeWinery?.id === winery.id ? "active" : ""}`}
-                onMouseEnter={() => setActiveWineryId(winery.id)}
+                className={`catalogRow ${selected ? "active" : ""}`}
               >
                 <div className="catalogMedia">
                   <div className="catalogImage" aria-hidden="true">
@@ -186,17 +183,23 @@ export function CustomerWineryCatalog({
         </div>
 
         <aside className="catalogMap">
-          <h3>{activeWinery?.name ?? "Margaret River"}</h3>
-          <p className="subtle">{activeWinery?.address ?? "Margaret River, Western Australia"}</p>
-          <iframe
-            title="Selected winery map"
-            src={mapEmbedUrl(activeWinery?.mapQuery ?? "Margaret River, Western Australia")}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
+          <h3>Selected winery pins</h3>
+          <p className="subtle">Only wineries added to schedule are pinned. Map auto-zooms to show all selected venues.</p>
+          <SelectedWineriesMap wineries={selectedWineryItems} />
           <div className="cartSummary">
             <p className="miniLabel">Schedule cart</p>
             <p>{selectedWineries.length} winery options selected</p>
+            {selectedWineryItems.length > 0 ? (
+              <div className="catalogPinList">
+                {selectedWineryItems.map((item) => (
+                  <p key={item.id} className="subtle">
+                    <strong>{item.name}</strong> · {item.address}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <p className="subtle">Add wineries to show pins on the map.</p>
+            )}
             <button
               type="button"
               className="buttonPrimary fullWidthButton"
@@ -211,4 +214,3 @@ export function CustomerWineryCatalog({
     </SectionCard>
   );
 }
-

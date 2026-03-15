@@ -648,6 +648,22 @@ button {
   min-height: 320px;
 }
 
+.selectedMapCanvas {
+  width: 100%;
+  min-height: 320px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.catalogPinList {
+  display: grid;
+  gap: 4px;
+  max-height: 150px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
 .cartSummary {
   border: 1px solid var(--line-soft);
   border-radius: 12px;

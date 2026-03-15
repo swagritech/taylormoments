@@ -32,6 +32,8 @@ export type WineryCatalogItem = {
   selectedByCount: number;
   summary: string;
   mapQuery: string;
+  latitude: number;
+  longitude: number;
   liveBookable: boolean;
 };
 
@@ -54,7 +56,25 @@ function selectedCountForSlug(slug: string) {
   return 120 + (score % 980);
 }
 
+const knownCoordinates: Record<string, { latitude: number; longitude: number }> = {
+  "vasse-felix": { latitude: -33.682, longitude: 115.052 },
+  "cullen-wines": { latitude: -33.712, longitude: 115.041 },
+  "fraser-gallop": { latitude: -33.723, longitude: 115.114 },
+  woodlands: { latitude: -33.698, longitude: 115.035 },
+};
+
+function fallbackCoordinatesForSlug(slug: string) {
+  const score = scoreFromSlug(slug);
+  const latOffset = (((score % 240) - 120) / 1000);
+  const lonOffset = ((((score * 3) % 240) - 120) / 1000);
+  return {
+    latitude: -33.95 + latOffset,
+    longitude: 115.07 + lonOffset,
+  };
+}
+
 export const wineryCatalog: WineryCatalogItem[] = (wineryProspects as ProspectRow[]).map((row) => ({
+  ...(knownCoordinates[row.slug] ?? fallbackCoordinatesForSlug(row.slug)),
   id: row.slug,
   name: row.name,
   region: row.sub_region,
