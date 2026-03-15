@@ -129,6 +129,20 @@ export type WineryListResponse = {
   }>;
 };
 
+export type AuthUser = {
+  user_id: string;
+  email: string;
+  role: "customer" | "winery" | "transport" | "ops";
+  display_name: string;
+  winery_id?: string;
+  transport_company?: string;
+};
+
+export type AuthResponse = {
+  token: string;
+  user: AuthUser;
+};
+
 function getRequiredApiBaseUrl() {
   const apiBaseUrl = getApiBaseUrl();
   if (!apiBaseUrl) {
@@ -219,6 +233,59 @@ export async function getWineryPortalRequests(wineryId: string) {
   });
 
   return parseJson<WineryPortalResponse>(response);
+}
+
+export async function getWineryPortalRequestsAuthed(wineryId: string, token: string) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries/${wineryId}/requests`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return parseJson<WineryPortalResponse>(response);
+}
+
+export async function registerAccount(payload: {
+  email: string;
+  password: string;
+  role: "customer" | "winery" | "transport" | "ops";
+  display_name: string;
+  winery_id?: string;
+  transport_company?: string;
+}) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/auth/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseJson<AuthResponse>(response);
+}
+
+export async function loginAccount(payload: { email: string; password: string }) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseJson<AuthResponse>(response);
+}
+
+export async function getMe(token: string) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/auth/me`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return parseJson<{ user: AuthUser }>(response);
 }
 
 export function formatDisplayTime(isoString: string) {

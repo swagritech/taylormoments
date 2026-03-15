@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 
 export const recommendItineraryRequestSchema = z.object({
   booking_date: z.string().min(1),
@@ -15,6 +15,20 @@ export const createBookingRequestSchema = recommendItineraryRequestSchema.extend
   preferred_start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   preferred_end_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   turnstile_token: z.string().min(1).optional(),
+});
+
+export const registerUserRequestSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  role: z.enum(["customer", "winery", "transport", "ops"]),
+  display_name: z.string().min(1),
+  winery_id: z.string().uuid().optional(),
+  transport_company: z.string().min(1).optional(),
+});
+
+export const loginRequestSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
 });
 
 export const actionTokenRouteSchema = z.object({

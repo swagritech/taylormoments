@@ -1,4 +1,4 @@
-﻿export type BookingStatus =
+export type BookingStatus =
   | "draft"
   | "awaiting_winery"
   | "confirmed"
@@ -9,6 +9,7 @@
 export type ActionTokenStatus = "active" | "used" | "expired" | "revoked";
 export type ActionTokenType = "winery_approve" | "transporter_accept" | "calendar_add";
 export type WineryBookingRequestStatus = "pending" | "accepted" | "declined" | "expired";
+export type UserRole = "customer" | "winery" | "transport" | "ops";
 
 export type Booking = {
   bookingId: string;
@@ -99,6 +100,18 @@ export type WineryBookingRequest = {
   updatedAt: string;
 };
 
+export type UserAccount = {
+  userId: string;
+  email: string;
+  passwordHash: string;
+  role: UserRole;
+  displayName: string;
+  wineryId?: string;
+  transportCompany?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type RecommendItineraryRequest = {
   booking_date: string;
   party_size: number;
@@ -132,6 +145,20 @@ export type CreateBookingRequest = RecommendItineraryRequest & {
   preferred_start_time?: string;
   preferred_end_time?: string;
   turnstile_token?: string;
+};
+
+export type RegisterUserRequest = {
+  email: string;
+  password: string;
+  role: UserRole;
+  display_name: string;
+  winery_id?: string;
+  transport_company?: string;
+};
+
+export type LoginRequest = {
+  email: string;
+  password: string;
 };
 
 export type TokenActionRequest = {

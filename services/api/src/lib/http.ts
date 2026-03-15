@@ -35,3 +35,11 @@ export function notFound(message: string): HttpResponseInit {
 export function conflict(message: string): HttpResponseInit {
   return json(409, { error: message });
 }
+
+export function unauthorized(message: string): HttpResponseInit {
+  return json(401, { error: message });
+}
+
+export function forbidden(message: string): HttpResponseInit {
+  return json(403, { error: message });
+}

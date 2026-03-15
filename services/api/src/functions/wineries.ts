@@ -1,7 +1,8 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { wineryRouteSchema } from "../domain/schemas.js";
-import { badRequest, ok } from "../lib/http.js";
+import { badRequest, forbidden, ok, unauthorized } from "../lib/http.js";
 import { workflowRepository } from "../lib/repository-factory.js";
+import { hasRole, requireSession } from "../lib/auth-guard.js";
 
 export async function listWineriesHandler(
   _request: HttpRequest,
@@ -28,7 +29,19 @@ export async function listWineryRequestsHandler(
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
   try {
+    const session = requireSession(request);
+    if (!session) {
+      return unauthorized("You must be signed in.");
+    }
+    if (!hasRole(session, ["winery", "ops"])) {
+      return forbidden("You are not permitted to view winery requests.");
+    }
+
     const { wineryId } = wineryRouteSchema.parse(request.params);
+    if (session.role === "winery" && session.wineryId !== wineryId) {
+      return forbidden("You can only view requests for your own winery.");
+    }
+
     const [wineries, requests] = await Promise.all([
       workflowRepository.getWineries(),
       workflowRepository.listWineryBookingRequests(wineryId),

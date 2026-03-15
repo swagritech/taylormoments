@@ -38,6 +38,7 @@ SQL files are in `sql/`:
 - `002_seed_wineries.sql`
 - `003_winery_partner_workflow.sql`
 - `004_booking_time_preferences.sql`
+- `005_user_auth.sql`
 
 Recommended order:
 
@@ -50,6 +51,7 @@ The bootstrap script applies both SQL files in order:
 - `002_seed_wineries.sql`
 - `003_winery_partner_workflow.sql`
 - `004_booking_time_preferences.sql`
+- `005_user_auth.sql`
 
 ## Azure deployment packaging
 

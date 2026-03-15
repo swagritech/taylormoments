@@ -3,6 +3,7 @@ import type {
   ActionToken,
   Booking,
   CreateBookingRequest,
+  UserAccount,
   WineryBookingRequest,
   WineryContact,
   Winery,
@@ -71,6 +72,7 @@ const availability: WineryAvailability[] = [
 const bookings = new Map<string, Booking>();
 const tokens = new Map<string, ActionToken>();
 const wineryRequests = new Map<string, WineryBookingRequest>();
+const users = new Map<string, UserAccount>();
 
 export class MemoryWorkflowRepository implements WorkflowRepository {
   async getWineries(): Promise<Winery[]> {
@@ -148,6 +150,40 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
 
     wineryRequests.set(updated.requestId, updated);
     return updated;
+  }
+
+  async createUserAccount(request: {
+    email: string;
+    password: string;
+    role: "customer" | "winery" | "transport" | "ops";
+    display_name: string;
+    winery_id?: string;
+    transport_company?: string;
+    password_hash: string;
+  }): Promise<UserAccount> {
+    const now = nowIso();
+    const user: UserAccount = {
+      userId: makeId(),
+      email: request.email.toLowerCase(),
+      passwordHash: request.password_hash,
+      role: request.role,
+      displayName: request.display_name,
+      wineryId: request.winery_id,
+      transportCompany: request.transport_company,
+      createdAt: now,
+      updatedAt: now,
+    };
+    users.set(user.userId, user);
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<UserAccount | null> {
+    const normalized = email.toLowerCase();
+    return Array.from(users.values()).find((user) => user.email === normalized) ?? null;
+  }
+
+  async getUserById(userId: string): Promise<UserAccount | null> {
+    return users.get(userId) ?? null;
   }
 
   async saveActionToken(token: ActionToken): Promise<void> {

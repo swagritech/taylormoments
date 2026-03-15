@@ -3,6 +3,7 @@ import type {
   ActionToken,
   Booking,
   CreateBookingRequest,
+  UserAccount,
   WineryBookingRequest,
   WineryContact,
   Winery,
@@ -100,6 +101,20 @@ function mapWineryBookingRequest(row: Record<string, unknown>): WineryBookingReq
     sentRecipient: row.sent_recipient ? String(row.sent_recipient) : undefined,
     sentAt: new Date(String(row.sent_at)).toISOString(),
     approvedAt: row.approved_at ? new Date(String(row.approved_at)).toISOString() : undefined,
+    createdAt: new Date(String(row.created_at)).toISOString(),
+    updatedAt: new Date(String(row.updated_at)).toISOString(),
+  };
+}
+
+function mapUserAccount(row: Record<string, unknown>): UserAccount {
+  return {
+    userId: String(row.user_id),
+    email: String(row.email),
+    passwordHash: String(row.password_hash),
+    role: row.role as UserAccount["role"],
+    displayName: String(row.display_name),
+    wineryId: row.winery_id ? String(row.winery_id) : undefined,
+    transportCompany: row.transport_company ? String(row.transport_company) : undefined,
     createdAt: new Date(String(row.created_at)).toISOString(),
     updatedAt: new Date(String(row.updated_at)).toISOString(),
   };
@@ -284,6 +299,78 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     }
 
     return mapWineryBookingRequest(result.rows[0]);
+  }
+
+  async createUserAccount(request: {
+    email: string;
+    password: string;
+    role: "customer" | "winery" | "transport" | "ops";
+    display_name: string;
+    winery_id?: string;
+    transport_company?: string;
+    password_hash: string;
+  }): Promise<UserAccount> {
+    const pool = getPool();
+    const userId = makeId();
+    const result = await pool.query(
+      `
+        insert into user_account (
+          user_id,
+          email,
+          password_hash,
+          role,
+          display_name,
+          winery_id,
+          transport_company
+        )
+        values ($1, $2, $3, $4, $5, $6, $7)
+        returning user_id, email, password_hash, role, display_name, winery_id, transport_company, created_at, updated_at
+      `,
+      [
+        userId,
+        request.email.toLowerCase(),
+        request.password_hash,
+        request.role,
+        request.display_name,
+        request.winery_id ?? null,
+        request.transport_company ?? null,
+      ],
+    );
+
+    return mapUserAccount(result.rows[0]);
+  }
+
+  async getUserByEmail(email: string): Promise<UserAccount | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        select user_id, email, password_hash, role, display_name, winery_id, transport_company, created_at, updated_at
+        from user_account
+        where email = $1
+      `,
+      [email.toLowerCase()],
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+    return mapUserAccount(result.rows[0]);
+  }
+
+  async getUserById(userId: string): Promise<UserAccount | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        select user_id, email, password_hash, role, display_name, winery_id, transport_company, created_at, updated_at
+        from user_account
+        where user_id = $1
+      `,
+      [userId],
+    );
+    if (result.rowCount === 0) {
+      return null;
+    }
+    return mapUserAccount(result.rows[0]);
   }
 
   async saveActionToken(token: ActionToken): Promise<void> {

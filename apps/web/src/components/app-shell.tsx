@@ -1,8 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { WorkflowStatus } from "@/components/workflow-status";
-import { getCustomerSignInUrl, getOpsSignInUrl, getPartnerSignInUrl } from "@/lib/config";
+import { useAuth } from "@/lib/auth-state";
 
 type AppShellProps = {
   eyebrow: string;
@@ -29,9 +31,7 @@ export function AppShell({
   actionMode = false,
   showWorkflowStatus = true,
 }: AppShellProps) {
-  const partnerSignInUrl = getPartnerSignInUrl();
-  const opsSignInUrl = getOpsSignInUrl();
-  const customerSignInUrl = getCustomerSignInUrl();
+  const { user, logout } = useAuth();
 
   return (
     <div className="app-shell">
@@ -61,21 +61,24 @@ export function AppShell({
               ))}
             </nav>
             <div className="ctaRow authRow">
-              {customerSignInUrl ? (
-                <Link href={customerSignInUrl} className="buttonGhost">
-                  Customer sign in
-                </Link>
-              ) : null}
-              {partnerSignInUrl ? (
-                <Link href={partnerSignInUrl} className="buttonGhost">
-                  Partner sign in
-                </Link>
-              ) : null}
-              {opsSignInUrl ? (
-                <Link href={opsSignInUrl} className="buttonPrimary">
-                  Ops sign in
-                </Link>
-              ) : null}
+              {user ? (
+                <>
+                  <span className="status accepted">{user.role}</span>
+                  <span className="subtle">{user.display_name}</span>
+                  <button type="button" className="buttonGhost" onClick={logout}>
+                    Log out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/register" className="buttonGhost">
+                    Create account
+                  </Link>
+                  <Link href="/login" className="buttonPrimary">
+                    Log in
+                  </Link>
+                </>
+              )}
             </div>
           </>
         ) : (

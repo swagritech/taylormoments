@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { getDataMode } from "@/lib/config";
+import { useAuth } from "@/lib/auth-state";
 import {
   approveWineryToken,
-  getWineryPortalRequests,
+  getWineryPortalRequestsAuthed,
   listWineries,
   type WineryPortalItem,
 } from "@/lib/live-api";
@@ -36,6 +38,7 @@ function tokenFromActionUrl(actionUrl: string) {
 }
 
 export default function WineriesPage() {
+  const { user, token, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
@@ -47,7 +50,7 @@ export default function WineriesPage() {
   const dataMode = getDataMode();
 
   const loadRequests = useCallback(async (wineryId: string) => {
-    if (!wineryId) {
+    if (!wineryId || !token) {
       setRequests([]);
       setSummary({ pending: 0, accepted: 0, declined: 0, expired: 0 });
       return;
@@ -57,7 +60,7 @@ export default function WineriesPage() {
     setError(null);
 
     try {
-      const response = await getWineryPortalRequests(wineryId);
+      const response = await getWineryPortalRequestsAuthed(wineryId, token);
       setRequests(response.requests);
       setSummary(response.summary);
       setWineryName(response.winery?.name ?? "Winery");
@@ -66,15 +69,34 @@ export default function WineriesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
+    if (authLoading || !user || !token) {
+      return;
+    }
+    const currentUser = user;
+
     let active = true;
 
     async function loadWineries() {
       try {
         setLoading(true);
         setError(null);
+
+        if (currentUser.role === "winery" && currentUser.winery_id) {
+          const response = await listWineries();
+          if (!active) {
+            return;
+          }
+          const found = response.wineries.find((item) => item.winery_id === currentUser.winery_id);
+          if (found) {
+            setWineries([{ winery_id: found.winery_id, name: found.name, region: found.region }]);
+            setSelectedWineryId(found.winery_id);
+          }
+          return;
+        }
+
         const response = await listWineries();
         if (!active) {
           return;
@@ -106,7 +128,7 @@ export default function WineriesPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [authLoading, token, user]);
 
   useEffect(() => {
     void loadRequests(selectedWineryId);
@@ -141,15 +163,35 @@ export default function WineriesPage() {
     [requests],
   );
 
+  if (!authLoading && !user) {
+    return (
+      <AppShell
+        eyebrow="Winery portal"
+        title="Winery partner access"
+        intro="Log in with your winery account to view and approve booking requests."
+        showWorkflowStatus={false}
+      >
+        <div className="actionPageShell">
+          <SectionCard title="Sign in required" description="This portal is restricted to signed-in winery users and ops users.">
+            <div className="ctaRow">
+              <Link href="/login" className="buttonPrimary">Log in</Link>
+              <Link href="/register" className="buttonGhost">Create account</Link>
+            </div>
+          </SectionCard>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell
       eyebrow="Winery portal"
-      title="Bookings flow automatically to winery queues with one-click approval links."
-      intro="Each booking now creates partner requests instantly. Wineries can view pending and accepted requests, and approve directly from this screen."
+      title="Booking requests"
+      intro="Review pending requests and approve bookings for your winery."
     >
       <SectionCard
-        title="Winery queue selector"
-        description="Select a winery to review bookings waiting for action and those already accepted."
+        title="Winery queue"
+        description="Bookings waiting for action and those already accepted."
       >
         <div className="fieldRow">
           <div className="field">
@@ -159,7 +201,7 @@ export default function WineriesPage() {
               className="inputLike inputField"
               value={selectedWineryId}
               onChange={(event) => setSelectedWineryId(event.target.value)}
-              disabled={loading || wineries.length === 0}
+              disabled={loading || wineries.length === 0 || user?.role === "winery"}
             >
               {wineries.map((winery) => (
                 <option key={winery.winery_id} value={winery.winery_id}>
@@ -201,7 +243,7 @@ export default function WineriesPage() {
       <div className="grid two">
         <SectionCard
           title={`Pending approvals for ${wineryName}`}
-          description="These are requests that still need a partner action."
+          description="These requests need a response."
         >
           <div className="list">
             {pendingItems.length === 0 ? (
@@ -246,7 +288,7 @@ export default function WineriesPage() {
 
         <SectionCard
           title="Accepted requests"
-          description="Accepted bookings remain visible so winery teams can review what they have committed to."
+          description="History of accepted bookings."
         >
           <div className="list">
             {acceptedItems.length === 0 ? (

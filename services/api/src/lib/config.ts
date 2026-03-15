@@ -8,6 +8,10 @@ export function getActionTokenSecret() {
   return getEnv("TM_ACTION_TOKEN_SECRET", "replace-me");
 }
 
+export function getAuthTokenSecret() {
+  return getEnv("TM_AUTH_TOKEN_SECRET", getActionTokenSecret());
+}
+
 export function getDataMode() {
   return getEnv("TM_DATA_MODE", "memory");
 }
