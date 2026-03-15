@@ -6,7 +6,7 @@ import { CustomerWineryCatalog } from "@/components/customer-winery-catalog";
 import { LiveBookingFlow } from "@/components/live-booking-flow";
 
 export default function CustomerPage() {
-  const [selectedWineries, setSelectedWineries] = useState<string[]>(["vasse-felix", "cullen-wines"]);
+  const [selectedWineries, setSelectedWineries] = useState<string[]>([]);
   const [stage, setStage] = useState<"catalog" | "schedule">("catalog");
 
   function toggleWinery(wineryId: string) {
@@ -30,6 +30,7 @@ export default function CustomerPage() {
           selectedWineries={selectedWineries}
           onToggleWinery={toggleWinery}
           onContinue={() => setStage("schedule")}
+          onClearCart={() => setSelectedWineries([])}
         />
       ) : (
         <LiveBookingFlow

@@ -9,6 +9,7 @@ type CustomerWineryCatalogProps = {
   selectedWineries: string[];
   onToggleWinery: (wineryId: string) => void;
   onContinue: () => void;
+  onClearCart: () => void;
 };
 
 type SortMode = "top-rated" | "most-selected" | "established";
@@ -17,6 +18,7 @@ export function CustomerWineryCatalog({
   selectedWineries,
   onToggleWinery,
   onContinue,
+  onClearCart,
 }: CustomerWineryCatalogProps) {
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState("All regions");
@@ -207,6 +209,14 @@ export function CustomerWineryCatalog({
               disabled={selectedWineries.length === 0}
             >
               Continue to scheduling
+            </button>
+            <button
+              type="button"
+              className="buttonClear fullWidthButton"
+              onClick={onClearCart}
+              disabled={selectedWineries.length === 0}
+            >
+              Clear cart
             </button>
           </div>
         </aside>
