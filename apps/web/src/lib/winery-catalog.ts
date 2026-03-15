@@ -35,13 +35,6 @@ export type WineryCatalogItem = {
   liveBookable: boolean;
 };
 
-const liveBookableSlugs = new Set([
-  "vasse-felix",
-  "cullen-wines",
-  "fraser-gallop",
-  "woodlands",
-]);
-
 function scoreFromSlug(slug: string) {
   let score = 0;
   for (const char of slug) {
@@ -77,10 +70,9 @@ export const wineryCatalog: WineryCatalogItem[] = (wineryProspects as ProspectRo
   selectedByCount: selectedCountForSlug(row.slug),
   summary: `${row.known_for}. Experience: ${row.special_experiences}.`,
   mapQuery: `${row.name}, ${row.full_address}, Margaret River, Western Australia`,
-  liveBookable: liveBookableSlugs.has(row.slug),
+  liveBookable: true,
 }));
 
 export const wineryRegions = Array.from(new Set(wineryCatalog.map((winery) => winery.region))).sort((a, b) =>
   a.localeCompare(b),
 );
-
