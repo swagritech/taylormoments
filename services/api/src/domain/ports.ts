@@ -16,6 +16,7 @@ export interface WorkflowRepository {
   getAvailabilityForDate(serviceDate: string): Promise<WineryAvailability[]>;
   createBooking(request: CreateBookingRequest): Promise<Booking>;
   getBooking(bookingId: string): Promise<Booking | null>;
+  listBookingsByLeadEmail(email: string): Promise<Booking[]>;
   getWineryContact(wineryId: string): Promise<WineryContact | null>;
   createWineryBookingRequest(request: Omit<WineryBookingRequest, "createdAt" | "updatedAt">): Promise<WineryBookingRequest>;
   listWineryBookingRequests(wineryId: string): Promise<WineryBookingRequest[]>;

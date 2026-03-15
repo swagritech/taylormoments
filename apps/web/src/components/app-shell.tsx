@@ -16,8 +16,9 @@ type AppShellProps = {
   navMode?: "public" | "partner";
 };
 
-const publicNavItems = [
+const publicNavItemsDefault = [
   { href: "/", label: "Overview" },
+  { href: "/customer/dashboard", label: "Dashboard" },
   { href: "/customer", label: "Plan a day" },
   { href: "/partner", label: "Partner login" },
 ];
@@ -52,7 +53,15 @@ export function AppShell({
   navMode = "public",
 }: AppShellProps) {
   const { user, logout } = useAuth();
-  const navItems = navMode === "partner" ? getPartnerNavItems(user?.role) : publicNavItems;
+  const navItems = navMode === "partner"
+    ? getPartnerNavItems(user?.role)
+    : user?.role === "customer"
+      ? [
+          { href: "/", label: "Overview" },
+          { href: "/customer/dashboard", label: "Dashboard" },
+          { href: "/customer", label: "Plan a day" },
+        ]
+      : publicNavItemsDefault;
 
   return (
     <div className="app-shell">

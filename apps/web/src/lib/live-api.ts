@@ -87,6 +87,24 @@ export type BookingResponse = {
   };
 };
 
+export type MyBookingsResponse = {
+  bookings: Array<{
+    bookingId: string;
+    leadName: string;
+    leadEmail?: string;
+    leadPhone?: string;
+    bookingDate: string;
+    preferredStartTime?: string;
+    preferredEndTime?: string;
+    pickupLocation: string;
+    partySize: number;
+    preferredWineries: string[];
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+};
+
 export type TokenResponse = {
   token_id: string;
   action_url: string;
@@ -217,6 +235,17 @@ export async function createBooking(payload: CreateBookingRequest) {
   });
 
   return parseJson<BookingResponse>(response);
+}
+
+export async function getMyBookings(token: string) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/bookings/mine`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return parseJson<MyBookingsResponse>(response);
 }
 
 export async function createWineryApprovalToken(bookingId: string, wineryId: string) {

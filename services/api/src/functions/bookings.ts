@@ -1,10 +1,11 @@
 ﻿import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { createBookingRequestSchema } from "../domain/schemas.js";
 import { workflowRepository } from "../lib/repository-factory.js";
-import { badRequest, created, notFound, ok } from "../lib/http.js";
+import { badRequest, created, forbidden, notFound, ok, unauthorized } from "../lib/http.js";
 import { normalizeRequest } from "../lib/config.js";
 import { verifyTurnstileToken } from "../lib/turnstile.js";
 import { dispatchWineryApprovalRequests } from "../lib/winery-workflow.js";
+import { hasRole, requireSession } from "../lib/auth-guard.js";
 
 export async function createBookingHandler(
   request: HttpRequest,
@@ -60,6 +61,33 @@ export async function getBookingHandler(
   }
 }
 
+export async function listMyBookingsHandler(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  try {
+    const session = requireSession(request);
+    if (!session) {
+      return unauthorized("You must be signed in.");
+    }
+
+    if (!hasRole(session, ["customer"])) {
+      return forbidden("Customer account required.");
+    }
+
+    const user = await workflowRepository.getUserById(session.userId);
+    if (!user) {
+      return unauthorized("Session is no longer valid.");
+    }
+
+    const bookings = await workflowRepository.listBookingsByLeadEmail(user.email);
+    return ok({ bookings });
+  } catch (error) {
+    context.error(error);
+    return badRequest(error instanceof Error ? error.message : "Unable to fetch bookings.");
+  }
+}
+
 app.http("create-booking", {
   methods: ["POST"],
   authLevel: "anonymous",
@@ -72,4 +100,11 @@ app.http("get-booking", {
   authLevel: "anonymous",
   route: "v1/bookings/{bookingId}",
   handler: getBookingHandler,
+});
+
+app.http("list-my-bookings", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: "v1/bookings/mine",
+  handler: listMyBookingsHandler,
 });

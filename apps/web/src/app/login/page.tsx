@@ -23,7 +23,7 @@ export default function LoginPage() {
     try {
       const signedIn = await login({ email, password });
       if (signedIn.role === "customer") {
-        router.push("/customer");
+        router.push("/customer/dashboard");
       } else {
         router.push("/partner/login");
       }

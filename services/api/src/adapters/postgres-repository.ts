@@ -214,6 +214,22 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     return mapBooking(result.rows[0]);
   }
 
+  async listBookingsByLeadEmail(email: string): Promise<Booking[]> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        select booking_id, lead_name, lead_phone, lead_email, booking_date, preferred_start_time, preferred_end_time,
+               pickup_location, party_size, preferred_region, preferred_wineries, status, created_at, updated_at
+        from booking
+        where lower(lead_email) = lower($1)
+        order by created_at desc
+      `,
+      [email],
+    );
+
+    return result.rows.map((row) => mapBooking(row));
+  }
+
   async getWineryContact(wineryId: string): Promise<WineryContact | null> {
     const pool = getPool();
     const result = await pool.query(

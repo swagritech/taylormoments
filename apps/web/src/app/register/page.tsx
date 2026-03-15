@@ -38,7 +38,7 @@ export default function RegisterPage() {
         age_group: ageGroup || undefined,
         gender: gender || undefined,
       });
-      router.push("/customer");
+      router.push("/customer/dashboard");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to create account.");
     } finally {

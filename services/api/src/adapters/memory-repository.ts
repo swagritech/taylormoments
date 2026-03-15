@@ -110,6 +110,13 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     return bookings.get(bookingId) ?? null;
   }
 
+  async listBookingsByLeadEmail(email: string): Promise<Booking[]> {
+    const normalized = email.trim().toLowerCase();
+    return Array.from(bookings.values())
+      .filter((booking) => (booking.leadEmail ?? "").trim().toLowerCase() === normalized)
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }
+
   async getWineryContact(wineryId: string): Promise<WineryContact | null> {
     return wineryContacts.get(wineryId) ?? null;
   }
