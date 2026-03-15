@@ -9,10 +9,13 @@ import { makeId } from "../lib/crypto.js";
 
 type Point = { lat: number; lon: number };
 type PlannedStop = { winery: Winery; slot: WineryAvailability; driveMinutes: number };
+type WinerySlotGroup = { winery: Winery; slots: WineryAvailability[] };
 
 const DEFAULT_DAY_START = "09:30";
 const DEFAULT_DAY_END = "17:30";
 const DEFAULT_DRIVE_MINUTES = 20;
+const MAX_STOPS_PER_DAY = 3;
+const MIN_STOPS_PER_DAY = 2;
 
 const wineryPoints: Record<string, Point> = {
   "11111111-1111-1111-1111-111111111111": { lat: -33.682, lon: 115.052 }, // Vasse Felix
@@ -37,6 +40,17 @@ function scoreCandidate(winery: Winery, availability: WineryAvailability, partyS
 function toTimeValue(value: string) {
   const [hour, minute] = value.split(":").map((part) => Number(part));
   return hour * 60 + minute;
+}
+
+function toClockValue(minutes: number) {
+  const normalized = Math.max(0, Math.min(23 * 60 + 59, minutes));
+  const hour = Math.floor(normalized / 60);
+  const minute = normalized % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function toLocalIso(serviceDate: string, hhmm: string) {
+  return `${serviceDate}T${hhmm}:00`;
 }
 
 function haversineKm(from: Point, to: Point) {
@@ -79,7 +93,7 @@ function resolvePickupPoint(pickupLocation: string) {
 }
 
 function buildSlotCombinations(
-  slotGroups: Array<{ winery: Winery; slots: WineryAvailability[] }>,
+  slotGroups: WinerySlotGroup[],
   maxCombinations = 180,
 ) {
   const combinations: Array<Array<{ winery: Winery; slot: WineryAvailability }>> = [];
@@ -194,42 +208,131 @@ function scoreRoute(params: {
 
 function buildRelaxedFallbackItinerary(params: {
   request: RecommendItineraryRequest;
-  slotGroups: Array<{ winery: Winery; slots: WineryAvailability[] }>;
+  slotGroups: WinerySlotGroup[];
 }): ItineraryOption | null {
   const { request, slotGroups } = params;
   const dayStart = toTimeValue(request.preferred_start_time ?? DEFAULT_DAY_START);
+  const dayEnd = toTimeValue(request.preferred_end_time ?? DEFAULT_DAY_END);
+  const pickupPoint = resolvePickupPoint(request.pickup_location);
 
-  const stops: PlannedStop[] = slotGroups
-    .map((entry) => {
-      const preferredSlot =
-        entry.slots.find((slot) => toTimeValue(slot.startTime) >= dayStart) ?? entry.slots[0];
-      if (!preferredSlot) {
-        return null;
+  const selectedGroups = [...slotGroups]
+    .sort((a, b) => b.slots.length - a.slots.length)
+    .slice(0, MAX_STOPS_PER_DAY);
+
+  if (selectedGroups.length === 0) {
+    return null;
+  }
+
+  const unvisited = [...selectedGroups];
+  let currentTime = dayStart;
+  let currentPoint = pickupPoint;
+  let totalDriveMinutes = 0;
+  const stops: Array<{
+    wineryId: string;
+    wineryName: string;
+    arrivalTime: string;
+    departureTime: string;
+    driveMinutes: number;
+  }> = [];
+
+  while (unvisited.length > 0 && stops.length < MAX_STOPS_PER_DAY) {
+    let nextIndex = 0;
+    let nextDrive = Number.MAX_SAFE_INTEGER;
+
+    for (let index = 0; index < unvisited.length; index += 1) {
+      const group = unvisited[index];
+      if (!group) {
+        continue;
       }
-      return { winery: entry.winery, slot: preferredSlot, driveMinutes: DEFAULT_DRIVE_MINUTES };
-    })
-    .filter((entry): entry is PlannedStop => Boolean(entry))
-    .sort((a, b) => toTimeValue(a.slot.startTime) - toTimeValue(b.slot.startTime));
+      const drive = estimateDriveMinutes(currentPoint, wineryPoints[group.winery.wineryId]);
+      if (drive < nextDrive) {
+        nextDrive = drive;
+        nextIndex = index;
+      }
+    }
+
+    const nextGroup = unvisited.splice(nextIndex, 1)[0];
+    if (!nextGroup) {
+      continue;
+    }
+
+    const representativeSlot = nextGroup.slots[0];
+    const slotDurationMinutes = representativeSlot
+      ? Math.max(45, Math.min(95, toTimeValue(representativeSlot.endTime) - toTimeValue(representativeSlot.startTime)))
+      : 75;
+
+    const arrivalMinutes = currentTime + nextDrive;
+    const departureMinutes = arrivalMinutes + slotDurationMinutes;
+    if (departureMinutes > dayEnd) {
+      continue;
+    }
+
+    totalDriveMinutes += nextDrive;
+    stops.push({
+      wineryId: nextGroup.winery.wineryId,
+      wineryName: nextGroup.winery.name,
+      arrivalTime: toLocalIso(request.booking_date, toClockValue(arrivalMinutes)),
+      departureTime: toLocalIso(request.booking_date, toClockValue(departureMinutes)),
+      driveMinutes: nextDrive,
+    });
+
+    currentTime = departureMinutes;
+    currentPoint = wineryPoints[nextGroup.winery.wineryId];
+  }
 
   if (stops.length === 0) {
     return null;
   }
 
+  const averageDrive = totalDriveMinutes / Math.max(1, stops.length);
+  const score = Math.max(62, Math.min(86, Math.round(84 - averageDrive / 2)));
+
   return {
     itineraryId: makeId(),
     expertPick: true,
     justification:
-      "Testing fallback schedule generated from open availability while strict timing is being refined.",
-    score: 72,
+      "Sequenced fallback route generated with non-overlapping stops and estimated inter-venue travel timings.",
+    score,
     label: "TailorMoments Expert Pick",
-    stops: stops.map((stop) => ({
-      wineryId: stop.winery.wineryId,
-      wineryName: stop.winery.name,
-      arrivalTime: `${stop.slot.serviceDate}T${stop.slot.startTime}:00Z`,
-      departureTime: `${stop.slot.serviceDate}T${stop.slot.endTime}:00Z`,
-      driveMinutes: stop.driveMinutes,
-    })),
+    stops,
   };
+}
+
+function buildGroupSubsets(slotGroups: WinerySlotGroup[]) {
+  const maxSize = Math.min(MAX_STOPS_PER_DAY, slotGroups.length);
+  const minSize = Math.min(MIN_STOPS_PER_DAY, maxSize);
+  const subsets: WinerySlotGroup[][] = [];
+
+  function walk(start: number, size: number, current: WinerySlotGroup[]) {
+    if (current.length === size) {
+      subsets.push([...current]);
+      return;
+    }
+    for (let index = start; index < slotGroups.length; index += 1) {
+      const group = slotGroups[index];
+      if (!group) {
+        continue;
+      }
+      current.push(group);
+      walk(index + 1, size, current);
+      current.pop();
+      if (subsets.length >= 36) {
+        return;
+      }
+    }
+  }
+
+  for (let size = maxSize; size >= minSize; size -= 1) {
+    walk(0, size, []);
+    if (subsets.length >= 36) {
+      break;
+    }
+  }
+
+  if (subsets.length === 0) {
+    return [slotGroups];
+  }
+  return subsets;
 }
 
 export function buildCandidateItineraries(params: {
@@ -276,7 +379,8 @@ export function buildCandidateItineraries(params: {
     return [];
   }
 
-  const combinations = buildSlotCombinations(slotGroups);
+  const groupSubsets = buildGroupSubsets(slotGroups);
+  const combinations = groupSubsets.flatMap((subset) => buildSlotCombinations(subset, 120));
   const feasibleOptions = combinations
     .map((selection) => buildFeasibleRoute({ request, selection }))
     .filter((route): route is { stops: PlannedStop[]; totalDriveMinutes: number } => Boolean(route))
@@ -304,8 +408,8 @@ export function buildCandidateItineraries(params: {
     stops: route.stops.map((stop) => ({
       wineryId: stop.winery.wineryId,
       wineryName: stop.winery.name,
-      arrivalTime: `${stop.slot.serviceDate}T${stop.slot.startTime}:00Z`,
-      departureTime: `${stop.slot.serviceDate}T${stop.slot.endTime}:00Z`,
+      arrivalTime: toLocalIso(stop.slot.serviceDate, stop.slot.startTime),
+      departureTime: toLocalIso(stop.slot.serviceDate, stop.slot.endTime),
       driveMinutes: stop.driveMinutes,
     })),
   }));
