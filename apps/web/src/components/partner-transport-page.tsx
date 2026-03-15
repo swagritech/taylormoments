@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { useDemoState } from "@/lib/demo-state";
@@ -11,9 +13,21 @@ function transportStatusClass(value: string) {
 }
 
 export function PartnerTransportPage() {
+  const router = useRouter();
   const { user, loading } = useAuth();
   const { activeBooking, cannedTransportJobs, liveTransportJob, request } = useDemoState();
   const jobs = liveTransportJob ? [liveTransportJob, ...cannedTransportJobs] : cannedTransportJobs;
+
+  useEffect(() => {
+    if (loading || !user) {
+      return;
+    }
+    if (user.role === "winery") {
+      router.replace("/partner/wineries");
+    } else if (user.role === "customer") {
+      router.replace("/customer");
+    }
+  }, [loading, router, user]);
 
   if (!loading && !user) {
     return (

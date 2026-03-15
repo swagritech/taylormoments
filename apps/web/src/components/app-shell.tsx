@@ -29,6 +29,19 @@ const partnerNavItems = [
   { href: "/partner/ops", label: "Ops" },
 ];
 
+function getPartnerNavItems(role?: string) {
+  if (role === "winery") {
+    return partnerNavItems.filter((item) => item.href === "/partner" || item.href === "/partner/wineries");
+  }
+  if (role === "transport") {
+    return partnerNavItems.filter((item) => item.href === "/partner" || item.href === "/partner/transport");
+  }
+  if (role === "ops") {
+    return partnerNavItems;
+  }
+  return [{ href: "/partner", label: "Partner home" }];
+}
+
 export function AppShell({
   eyebrow,
   title,
@@ -39,7 +52,7 @@ export function AppShell({
   navMode = "public",
 }: AppShellProps) {
   const { user, logout } = useAuth();
-  const navItems = navMode === "partner" ? partnerNavItems : publicNavItems;
+  const navItems = navMode === "partner" ? getPartnerNavItems(user?.role) : publicNavItems;
 
   return (
     <div className="app-shell">
@@ -79,10 +92,10 @@ export function AppShell({
                 </>
               ) : (
                 <>
-                  <Link href="/register" className="buttonGhost">
+                  <Link href={navMode === "partner" ? "/partner/register" : "/register"} className="buttonGhost">
                     Create account
                   </Link>
-                  <Link href="/login" className="buttonPrimary">
+                  <Link href={navMode === "partner" ? "/partner/login" : "/login"} className="buttonPrimary">
                     Log in
                   </Link>
                 </>

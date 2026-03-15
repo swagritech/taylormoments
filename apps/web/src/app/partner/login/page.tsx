@@ -7,7 +7,7 @@ import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { useAuth } from "@/lib/auth-state";
 
-export default function LoginPage() {
+export default function PartnerLoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
@@ -22,10 +22,14 @@ export default function LoginPage() {
 
     try {
       const signedIn = await login({ email, password });
-      if (signedIn.role === "customer") {
-        router.push("/customer");
+      if (signedIn.role === "winery") {
+        router.push("/partner/wineries");
+      } else if (signedIn.role === "transport") {
+        router.push("/partner/transport");
+      } else if (signedIn.role === "ops") {
+        router.push("/partner/ops");
       } else {
-        router.push("/partner/login");
+        setError("Customer accounts should use customer login.");
       }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to log in.");
@@ -36,14 +40,14 @@ export default function LoginPage() {
 
   return (
     <AppShell
-      eyebrow="Customer access"
-      title="Customer login"
-      intro="Sign in to manage your winery day bookings."
+      eyebrow="Partner access"
+      title="Partner login"
+      intro="Sign in as cellar door, transport, or ops."
       showWorkflowStatus={false}
-      navMode="public"
+      navMode="partner"
     >
       <div className="actionPageShell">
-        <SectionCard title="Customer login" description="Use your customer email and password.">
+        <SectionCard title="Partner login" description="Use your partner account credentials.">
           <form className="formPreview" onSubmit={handleSubmit}>
             <div className="field">
               <label htmlFor="email">Email</label>
@@ -73,8 +77,8 @@ export default function LoginPage() {
             </button>
           </form>
           <div className="ctaRow" style={{ marginTop: 10 }}>
-            <span className="subtle">Are you a partner?</span>
-            <Link href="/partner/login" className="buttonGhost">Partner login</Link>
+            <span className="subtle">Need a new partner account?</span>
+            <Link href="/partner/register" className="buttonGhost">Create account</Link>
           </div>
         </SectionCard>
       </div>

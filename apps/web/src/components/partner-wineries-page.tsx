@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { getDataMode } from "@/lib/config";
@@ -38,6 +39,7 @@ function tokenFromActionUrl(actionUrl: string) {
 }
 
 export function PartnerWineriesPage() {
+  const router = useRouter();
   const { user, token, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +72,17 @@ export function PartnerWineriesPage() {
       setLoading(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    if (authLoading || !user) {
+      return;
+    }
+    if (user.role === "transport") {
+      router.replace("/partner/transport");
+    } else if (user.role === "customer") {
+      router.replace("/customer");
+    }
+  }, [authLoading, router, user]);
 
   useEffect(() => {
     if (authLoading || !user || !token) {

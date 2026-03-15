@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { useDemoState } from "@/lib/demo-state";
@@ -11,6 +13,7 @@ function statusClass(value: string) {
 }
 
 export function PartnerOpsPage() {
+  const router = useRouter();
   const { user, loading } = useAuth();
   const {
     activeBooking,
@@ -21,6 +24,19 @@ export function PartnerOpsPage() {
     selectedPlan,
     wineries,
   } = useDemoState();
+
+  useEffect(() => {
+    if (loading || !user) {
+      return;
+    }
+    if (user.role === "winery") {
+      router.replace("/partner/wineries");
+    } else if (user.role === "transport") {
+      router.replace("/partner/transport");
+    } else if (user.role === "customer") {
+      router.replace("/customer");
+    }
+  }, [loading, router, user]);
 
   if (!loading && !user) {
     return (
