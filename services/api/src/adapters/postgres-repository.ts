@@ -3,6 +3,8 @@ import type {
   ActionToken,
   Booking,
   CreateBookingRequest,
+  WineryBookingRequest,
+  WineryContact,
   Winery,
   WineryAvailability,
 } from "../domain/models.js";
@@ -74,6 +76,33 @@ function mapActionToken(row: Record<string, unknown>): ActionToken {
   };
 }
 
+function mapWineryContact(row: Record<string, unknown>): WineryContact {
+  return {
+    wineryId: String(row.winery_id),
+    contactName: row.contact_name ? String(row.contact_name) : undefined,
+    email: row.email ? String(row.email) : undefined,
+    phone: row.phone ? String(row.phone) : undefined,
+    preferredChannel: row.preferred_channel as WineryContact["preferredChannel"],
+  };
+}
+
+function mapWineryBookingRequest(row: Record<string, unknown>): WineryBookingRequest {
+  return {
+    requestId: String(row.request_id),
+    bookingId: String(row.booking_id),
+    wineryId: String(row.winery_id),
+    actionTokenId: String(row.action_token_id),
+    actionUrl: String(row.action_url),
+    status: row.status as WineryBookingRequest["status"],
+    sentChannel: row.sent_channel as WineryBookingRequest["sentChannel"],
+    sentRecipient: row.sent_recipient ? String(row.sent_recipient) : undefined,
+    sentAt: new Date(String(row.sent_at)).toISOString(),
+    approvedAt: row.approved_at ? new Date(String(row.approved_at)).toISOString() : undefined,
+    createdAt: new Date(String(row.created_at)).toISOString(),
+    updatedAt: new Date(String(row.updated_at)).toISOString(),
+  };
+}
+
 export class PostgresWorkflowRepository implements WorkflowRepository {
   async getWineries(): Promise<Winery[]> {
     const pool = getPool();
@@ -118,7 +147,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
           preferred_wineries,
           status
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid[], 'draft')
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid[], 'awaiting_winery')
         returning booking_id, lead_name, lead_phone, lead_email, booking_date, pickup_location, party_size,
                   preferred_region, preferred_wineries, status, created_at, updated_at
       `,
@@ -155,6 +184,99 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     }
 
     return mapBooking(result.rows[0]);
+  }
+
+  async getWineryContact(wineryId: string): Promise<WineryContact | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        select winery_id, contact_name, email, phone, preferred_channel
+        from winery_contact
+        where winery_id = $1
+      `,
+      [wineryId],
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapWineryContact(result.rows[0]);
+  }
+
+  async createWineryBookingRequest(
+    request: Omit<WineryBookingRequest, "createdAt" | "updatedAt">,
+  ): Promise<WineryBookingRequest> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        insert into winery_booking_request (
+          request_id,
+          booking_id,
+          winery_id,
+          action_token_id,
+          action_url,
+          status,
+          sent_channel,
+          sent_recipient,
+          sent_at,
+          approved_at
+        )
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        returning request_id, booking_id, winery_id, action_token_id, action_url, status,
+                  sent_channel, sent_recipient, sent_at, approved_at, created_at, updated_at
+      `,
+      [
+        request.requestId,
+        request.bookingId,
+        request.wineryId,
+        request.actionTokenId,
+        request.actionUrl,
+        request.status,
+        request.sentChannel,
+        request.sentRecipient ?? null,
+        request.sentAt,
+        request.approvedAt ?? null,
+      ],
+    );
+
+    return mapWineryBookingRequest(result.rows[0]);
+  }
+
+  async listWineryBookingRequests(wineryId: string): Promise<WineryBookingRequest[]> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        select request_id, booking_id, winery_id, action_token_id, action_url, status,
+               sent_channel, sent_recipient, sent_at, approved_at, created_at, updated_at
+        from winery_booking_request
+        where winery_id = $1
+        order by created_at desc
+      `,
+      [wineryId],
+    );
+
+    return result.rows.map((row) => mapWineryBookingRequest(row));
+  }
+
+  async markWineryBookingRequestAccepted(tokenId: string): Promise<WineryBookingRequest | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        update winery_booking_request
+        set status = 'accepted', approved_at = now(), updated_at = now()
+        where action_token_id = $1
+        returning request_id, booking_id, winery_id, action_token_id, action_url, status,
+                  sent_channel, sent_recipient, sent_at, approved_at, created_at, updated_at
+      `,
+      [tokenId],
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapWineryBookingRequest(result.rows[0]);
   }
 
   async saveActionToken(token: ActionToken): Promise<void> {
@@ -228,4 +350,3 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     return mapActionToken(result.rows[0]);
   }
 }
-

@@ -8,6 +8,7 @@
 
 export type ActionTokenStatus = "active" | "used" | "expired" | "revoked";
 export type ActionTokenType = "winery_approve" | "transporter_accept" | "calendar_add";
+export type WineryBookingRequestStatus = "pending" | "accepted" | "declined" | "expired";
 
 export type Booking = {
   bookingId: string;
@@ -31,6 +32,14 @@ export type Winery = {
   confirmationMode: "auto_confirm" | "manual_review";
   capacity: number;
   active: boolean;
+};
+
+export type WineryContact = {
+  wineryId: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  preferredChannel: "email" | "sms";
 };
 
 export type WineryAvailability = {
@@ -71,6 +80,21 @@ export type ActionToken = {
   status: ActionTokenStatus;
   usedAt?: string;
   createdAt: string;
+};
+
+export type WineryBookingRequest = {
+  requestId: string;
+  bookingId: string;
+  wineryId: string;
+  actionTokenId: string;
+  actionUrl: string;
+  status: WineryBookingRequestStatus;
+  sentChannel: "email" | "sms" | "preview";
+  sentRecipient?: string;
+  sentAt: string;
+  approvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type RecommendItineraryRequest = {

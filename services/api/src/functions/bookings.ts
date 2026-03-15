@@ -4,6 +4,7 @@ import { workflowRepository } from "../lib/repository-factory.js";
 import { badRequest, created, notFound, ok } from "../lib/http.js";
 import { normalizeRequest } from "../lib/config.js";
 import { verifyTurnstileToken } from "../lib/turnstile.js";
+import { dispatchWineryApprovalRequests } from "../lib/winery-workflow.js";
 
 export async function createBookingHandler(
   request: HttpRequest,
@@ -18,7 +19,19 @@ export async function createBookingHandler(
     });
     const input = { ...payload, ...normalizeRequest(payload) };
     const booking = await workflowRepository.createBooking(input);
-    return created(booking);
+    const partnerDispatch = await dispatchWineryApprovalRequests({
+      repository: workflowRepository,
+      bookingId: booking.bookingId,
+      wineryIds: input.preferred_wineries ?? [],
+    });
+
+    return created({
+      ...booking,
+      partner_dispatch: {
+        winery_requests_created: partnerDispatch.length,
+        winery_requests: partnerDispatch,
+      },
+    });
   } catch (error) {
     context.error(error);
     return badRequest(error instanceof Error ? error.message : "Unable to create booking.");

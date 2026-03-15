@@ -36,6 +36,7 @@ npm run db:bootstrap
 SQL files are in `sql/`:
 - `001_init.sql`
 - `002_seed_wineries.sql`
+- `003_winery_partner_workflow.sql`
 
 Recommended order:
 
@@ -46,6 +47,7 @@ TM_POSTGRES_URL="postgres://..." npm run db:bootstrap
 The bootstrap script applies both SQL files in order:
 - `001_init.sql`
 - `002_seed_wineries.sql`
+- `003_winery_partner_workflow.sql`
 
 ## Azure deployment packaging
 
@@ -61,6 +63,6 @@ This creates a `release/` folder containing the compiled function app, package m
 
 The API now supports:
 - memory repository for fast development
-- PostgreSQL repository for bookings, wineries, availability, and action tokens
+- PostgreSQL repository for bookings, wineries, availability, action tokens, and winery request queues
 
 The PostgreSQL adapter is intended for Tailor Moments only and should point to a dedicated Tailor Moments database.

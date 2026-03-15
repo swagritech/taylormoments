@@ -67,6 +67,7 @@ export async function approveByTokenHandler(
     }
 
     const usedToken = await workflowRepository.markActionTokenUsed(tokenId);
+    await workflowRepository.markWineryBookingRequestAccepted(tokenId);
     return ok({ status: "confirmed", booking_id: usedToken?.bookingId, token_id: tokenId });
   } catch (error) {
     context.error(error);

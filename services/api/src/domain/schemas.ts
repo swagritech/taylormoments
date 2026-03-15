@@ -19,6 +19,10 @@ export const actionTokenRouteSchema = z.object({
   tokenId: z.string().uuid(),
 });
 
+export const wineryRouteSchema = z.object({
+  wineryId: z.string().uuid(),
+});
+
 export const tokenActionRequestSchema = z.object({
   turnstile_token: z.string().min(1).optional(),
 });

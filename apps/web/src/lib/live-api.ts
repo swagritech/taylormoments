@@ -46,6 +46,21 @@ export type BookingResponse = {
   status: string;
   createdAt: string;
   updatedAt: string;
+  partner_dispatch?: {
+    winery_requests_created: number;
+    winery_requests: Array<{
+      winery_id: string;
+      token_id: string;
+      action_url: string;
+      expires_at: string;
+      notification: {
+        channel: string;
+        configured: boolean;
+        recipient?: string;
+        message: string;
+      };
+    }>;
+  };
 };
 
 export type TokenResponse = {
@@ -64,6 +79,50 @@ export type TokenActionResponse = {
   status: string;
   booking_id: string;
   token_id: string;
+};
+
+export type WineryPortalItem = {
+  request_id: string;
+  booking_id: string;
+  status: "pending" | "accepted" | "declined" | "expired";
+  action_url: string;
+  sent_channel: "email" | "sms" | "preview";
+  sent_recipient?: string;
+  sent_at: string;
+  approved_at?: string;
+  booking: {
+    bookingId: string;
+    leadName: string;
+    bookingDate: string;
+    pickupLocation: string;
+    partySize: number;
+    status: string;
+  } | null;
+};
+
+export type WineryPortalResponse = {
+  winery: {
+    winery_id: string;
+    name: string;
+    region: string;
+    confirmation_mode: "auto_confirm" | "manual_review";
+  } | null;
+  summary: {
+    pending: number;
+    accepted: number;
+    declined: number;
+    expired: number;
+  };
+  requests: WineryPortalItem[];
+};
+
+export type WineryListResponse = {
+  wineries: Array<{
+    winery_id: string;
+    name: string;
+    region: string;
+    confirmation_mode: "auto_confirm" | "manual_review";
+  }>;
 };
 
 function getRequiredApiBaseUrl() {
@@ -140,6 +199,22 @@ export async function acceptTransportToken(tokenId: string) {
   });
 
   return parseJson<TokenActionResponse>(response);
+}
+
+export async function listWineries() {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries`, {
+    method: "GET",
+  });
+
+  return parseJson<WineryListResponse>(response);
+}
+
+export async function getWineryPortalRequests(wineryId: string) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries/${wineryId}/requests`, {
+    method: "GET",
+  });
+
+  return parseJson<WineryPortalResponse>(response);
 }
 
 export function formatDisplayTime(isoString: string) {

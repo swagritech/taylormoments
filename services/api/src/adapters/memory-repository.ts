@@ -1,8 +1,10 @@
-﻿import type { WorkflowRepository } from "../domain/ports.js";
+import type { WorkflowRepository } from "../domain/ports.js";
 import type {
   ActionToken,
   Booking,
   CreateBookingRequest,
+  WineryBookingRequest,
+  WineryContact,
   Winery,
   WineryAvailability,
 } from "../domain/models.js";
@@ -15,6 +17,49 @@ const wineries: Winery[] = [
   { wineryId: "44444444-4444-4444-4444-444444444444", name: "Yallingup Hills Winery", region: "Yallingup Siding", confirmationMode: "manual_review", capacity: 14, active: true },
 ];
 
+const wineryContacts = new Map<string, WineryContact>([
+  [
+    "11111111-1111-1111-1111-111111111111",
+    {
+      wineryId: "11111111-1111-1111-1111-111111111111",
+      contactName: "Leeuwin Coast Cellar Door",
+      email: "bookings@leeuwincoast.example",
+      phone: "+61412000001",
+      preferredChannel: "email",
+    },
+  ],
+  [
+    "22222222-2222-2222-2222-222222222222",
+    {
+      wineryId: "22222222-2222-2222-2222-222222222222",
+      contactName: "Redgate Ridge Host Team",
+      email: "hosting@redgateridge.example",
+      phone: "+61412000002",
+      preferredChannel: "email",
+    },
+  ],
+  [
+    "33333333-3333-3333-3333-333333333333",
+    {
+      wineryId: "33333333-3333-3333-3333-333333333333",
+      contactName: "Caves Road Floor Team",
+      email: "team@cavesroadcellars.example",
+      phone: "+61412000003",
+      preferredChannel: "sms",
+    },
+  ],
+  [
+    "44444444-4444-4444-4444-444444444444",
+    {
+      wineryId: "44444444-4444-4444-4444-444444444444",
+      contactName: "Yallingup Hills Concierge",
+      email: "concierge@yallinguphills.example",
+      phone: "+61412000004",
+      preferredChannel: "email",
+    },
+  ],
+]);
+
 const availability: WineryAvailability[] = [
   { availabilityId: makeId(), wineryId: wineries[0].wineryId, serviceDate: "2026-04-10", startTime: "10:00", endTime: "11:15", remainingCapacity: 8, status: "open" },
   { availabilityId: makeId(), wineryId: wineries[1].wineryId, serviceDate: "2026-04-10", startTime: "11:30", endTime: "12:30", remainingCapacity: 10, status: "open" },
@@ -25,6 +70,7 @@ const availability: WineryAvailability[] = [
 
 const bookings = new Map<string, Booking>();
 const tokens = new Map<string, ActionToken>();
+const wineryRequests = new Map<string, WineryBookingRequest>();
 
 export class MemoryWorkflowRepository implements WorkflowRepository {
   async getWineries(): Promise<Winery[]> {
@@ -36,6 +82,7 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
   }
 
   async createBooking(request: CreateBookingRequest): Promise<Booking> {
+    const now = nowIso();
     const booking: Booking = {
       bookingId: makeId(),
       leadName: request.lead_name,
@@ -46,9 +93,9 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
       partySize: request.party_size,
       preferredRegion: request.preferred_region,
       preferredWineries: request.preferred_wineries ?? [],
-      status: "draft",
-      createdAt: nowIso(),
-      updatedAt: nowIso(),
+      status: "awaiting_winery",
+      createdAt: now,
+      updatedAt: now,
     };
 
     bookings.set(booking.bookingId, booking);
@@ -57,6 +104,48 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
 
   async getBooking(bookingId: string): Promise<Booking | null> {
     return bookings.get(bookingId) ?? null;
+  }
+
+  async getWineryContact(wineryId: string): Promise<WineryContact | null> {
+    return wineryContacts.get(wineryId) ?? null;
+  }
+
+  async createWineryBookingRequest(
+    request: Omit<WineryBookingRequest, "createdAt" | "updatedAt">,
+  ): Promise<WineryBookingRequest> {
+    const now = nowIso();
+    const saved: WineryBookingRequest = {
+      ...request,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    wineryRequests.set(saved.requestId, saved);
+    return saved;
+  }
+
+  async listWineryBookingRequests(wineryId: string): Promise<WineryBookingRequest[]> {
+    return Array.from(wineryRequests.values())
+      .filter((request) => request.wineryId === wineryId)
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }
+
+  async markWineryBookingRequestAccepted(tokenId: string): Promise<WineryBookingRequest | null> {
+    const request = Array.from(wineryRequests.values()).find((item) => item.actionTokenId === tokenId);
+    if (!request) {
+      return null;
+    }
+
+    const now = nowIso();
+    const updated: WineryBookingRequest = {
+      ...request,
+      status: "accepted",
+      approvedAt: now,
+      updatedAt: now,
+    };
+
+    wineryRequests.set(updated.requestId, updated);
+    return updated;
   }
 
   async saveActionToken(token: ActionToken): Promise<void> {

@@ -1,136 +1,248 @@
-﻿"use client";
+"use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
-import { useDemoState } from "@/lib/demo-state";
+import { getDataMode } from "@/lib/config";
+import { getWineryPortalRequests, listWineries, type WineryPortalItem } from "@/lib/live-api";
 
-function wineryStatusClass(value: string) {
-  return value.replace(/\s+/g, "").toLowerCase();
+function formatDateTime(value?: string) {
+  if (!value) {
+    return "-";
+  }
+
+  return new Date(value).toLocaleString("en-AU", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+function statusClass(value: string) {
+  return value.replace(/[^a-z]+/gi, "").toLowerCase();
 }
 
 export default function WineriesPage() {
-  const { activeBooking, request, updateWinerySlots, updateWineryStatus, wineries } = useDemoState();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [wineries, setWineries] = useState<Array<{ winery_id: string; name: string; region: string }>>([]);
+  const [selectedWineryId, setSelectedWineryId] = useState<string>("");
+  const [requests, setRequests] = useState<WineryPortalItem[]>([]);
+  const [summary, setSummary] = useState({ pending: 0, accepted: 0, declined: 0, expired: 0 });
+  const [wineryName, setWineryName] = useState<string>("Winery");
+  const dataMode = getDataMode();
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadWineries() {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await listWineries();
+        if (!active) {
+          return;
+        }
+
+        const sorted = response.wineries.map((item) => ({
+          winery_id: item.winery_id,
+          name: item.name,
+          region: item.region,
+        }));
+
+        setWineries(sorted);
+        setSelectedWineryId((current) => current || sorted[0]?.winery_id || "");
+      } catch (loadError) {
+        if (!active) {
+          return;
+        }
+
+        setError(loadError instanceof Error ? loadError.message : "Unable to load winery list.");
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadWineries();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedWineryId) {
+      setRequests([]);
+      setSummary({ pending: 0, accepted: 0, declined: 0, expired: 0 });
+      return;
+    }
+
+    let active = true;
+
+    async function loadRequests() {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getWineryPortalRequests(selectedWineryId);
+        if (!active) {
+          return;
+        }
+
+        setRequests(response.requests);
+        setSummary(response.summary);
+        setWineryName(response.winery?.name ?? "Winery");
+      } catch (loadError) {
+        if (!active) {
+          return;
+        }
+
+        setError(loadError instanceof Error ? loadError.message : "Unable to load winery request queue.");
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadRequests();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedWineryId]);
+
+  const pendingItems = useMemo(
+    () => requests.filter((item) => item.status === "pending"),
+    [requests],
+  );
+
+  const acceptedItems = useMemo(
+    () => requests.filter((item) => item.status === "accepted"),
+    [requests],
+  );
 
   return (
     <AppShell
       eyebrow="Winery portal"
-      title="Partners manage availability in a simple browser portal, not in your inbox."
-      intro="This view is now live: winery settings here feed directly back into the planner, operations queue, and transport readiness."
+      title="Bookings flow automatically to winery queues with one-click approval links."
+      intro="Each booking now creates partner requests instantly. Wineries can view pending and accepted requests, and approve directly from email/SMS links."
     >
       <SectionCard
-        title="Current booking context"
-        description="This tells a winery exactly which enquiry is being planned right now."
+        title="Winery queue selector"
+        description="Select a winery to review bookings waiting for action and those already accepted."
       >
-        <div className="summaryRibbon">
+        <div className="fieldRow">
+          <div className="field">
+            <label htmlFor="winerySelect">Winery</label>
+            <select
+              id="winerySelect"
+              className="inputLike inputField"
+              value={selectedWineryId}
+              onChange={(event) => setSelectedWineryId(event.target.value)}
+              disabled={loading || wineries.length === 0}
+            >
+              {wineries.map((winery) => (
+                <option key={winery.winery_id} value={winery.winery_id}>
+                  {winery.name} ({winery.region})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>Mode</label>
+            <div className="inputLike" style={{ display: "flex", alignItems: "center" }}>
+              {dataMode === "remote" ? "Remote API" : "Demo mode"}
+            </div>
+          </div>
+        </div>
+
+        <div className="summaryRibbon" style={{ marginTop: 14 }}>
           <div className="summaryChip">
-            <span className="miniLabel">Active enquiry</span>
-            <strong>{activeBooking?.label}</strong>
+            <span className="miniLabel">Pending</span>
+            <strong>{summary.pending}</strong>
           </div>
           <div className="summaryChip">
-            <span className="miniLabel">Date</span>
-            <strong>{request.date}</strong>
+            <span className="miniLabel">Accepted</span>
+            <strong>{summary.accepted}</strong>
           </div>
           <div className="summaryChip">
-            <span className="miniLabel">Pickup</span>
-            <strong>{request.pickup}</strong>
+            <span className="miniLabel">Declined</span>
+            <strong>{summary.declined}</strong>
           </div>
           <div className="summaryChip">
-            <span className="miniLabel">Guests</span>
-            <strong>{request.partySize}</strong>
+            <span className="miniLabel">Expired</span>
+            <strong>{summary.expired}</strong>
           </div>
         </div>
       </SectionCard>
+
+      {error ? <div className="callout errorCallout">{error}</div> : null}
 
       <div className="grid two">
         <SectionCard
-          title="Partner value proposition"
-          description="Use this screen to show wineries they stay in control while the itinerary updates elsewhere in the product."
+          title={`Pending approvals for ${wineryName}`}
+          description="These are requests that still need a partner action."
         >
           <div className="list">
-            <div className="listRow">
-              <h3>Availability with almost no training</h3>
-              <p className="subtle">Teams can change slot patterns, switch confirmation mode, and immediately see how that impacts planning.</p>
-            </div>
-            <div className="listRow">
-              <h3>Visibility into what is coming</h3>
-              <p className="subtle">Upcoming visits, group size, and transport timing are visible before the bus arrives.</p>
-            </div>
-            <div className="listRow">
-              <h3>Optional calendar exports later</h3>
-              <p className="subtle">Start with the portal now, then layer in Google or Outlook feeds when partners are ready.</p>
-            </div>
+            {pendingItems.length === 0 ? (
+              <div className="listRow">
+                <p className="subtle">No pending requests right now.</p>
+              </div>
+            ) : (
+              pendingItems.map((item) => (
+                <div key={item.request_id} className="listRow">
+                  <div className="listTop">
+                    <div>
+                      <h3>{item.booking?.leadName ?? "Guest booking"}</h3>
+                      <p className="subtle">
+                        {item.booking?.bookingDate} | {item.booking?.pickupLocation} | {item.booking?.partySize} guests
+                      </p>
+                    </div>
+                    <span className={`status ${statusClass(item.status)}`}>{item.status}</span>
+                  </div>
+                  <div className="metaRow">
+                    <span className="meta">Sent via {item.sent_channel}</span>
+                    <span className="meta">Recipient {item.sent_recipient ?? "(not configured)"}</span>
+                    <span className="meta">Sent {formatDateTime(item.sent_at)}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </SectionCard>
 
         <SectionCard
-          title="Live availability controls"
-          description="Edit confirmation mode and slots here to see the planner react on the customer and ops pages."
+          title="Accepted requests"
+          description="Accepted bookings remain visible so winery teams can review what they have committed to."
         >
           <div className="list">
-            {wineries.map((winery) => (
-              <div key={winery.id} className="listRow">
-                <div className="listTop">
-                  <div>
-                    <h3>{winery.name}</h3>
-                    <p className="subtle">{winery.region}</p>
-                  </div>
-                  <select
-                    className="inputLike inputField statusSelect"
-                    value={winery.status}
-                    onChange={(event) => updateWineryStatus(winery.id, event.target.value as typeof winery.status)}
-                  >
-                    <option value="Auto-confirm">Auto-confirm</option>
-                    <option value="Manual review">Manual review</option>
-                  </select>
-                </div>
-                <div className="metaRow">
-                  <span className="meta">Capacity {winery.capacity}</span>
-                  <span className="meta">{winery.tastingDurationMinutes} min tasting</span>
-                  <span className={`status ${wineryStatusClass(winery.status)}`}>{winery.status}</span>
-                </div>
-                <div className="field">
-                  <label htmlFor={`slots-${winery.id}`}>Available slots</label>
-                  <input
-                    id={`slots-${winery.id}`}
-                    className="inputLike inputField"
-                    value={winery.availableSlots.join(", ")}
-                    onChange={(event) =>
-                      updateWinerySlots(
-                        winery.id,
-                        event.target.value
-                          .split(",")
-                          .map((slot) => slot.trim())
-                          .filter(Boolean),
-                      )
-                    }
-                  />
-                </div>
-                <p className="subtle">{winery.notes}</p>
+            {acceptedItems.length === 0 ? (
+              <div className="listRow">
+                <p className="subtle">No accepted requests yet.</p>
               </div>
-            ))}
+            ) : (
+              acceptedItems.map((item) => (
+                <div key={item.request_id} className="listRow">
+                  <div className="listTop">
+                    <div>
+                      <h3>{item.booking?.leadName ?? "Guest booking"}</h3>
+                      <p className="subtle">
+                        {item.booking?.bookingDate} | {item.booking?.pickupLocation} | {item.booking?.partySize} guests
+                      </p>
+                    </div>
+                    <span className={`status ${statusClass(item.status)}`}>{item.status}</span>
+                  </div>
+                  <div className="metaRow">
+                    <span className="meta">Approved {formatDateTime(item.approved_at)}</span>
+                    <span className="meta">Booking {item.booking_id}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </SectionCard>
       </div>
-
-      <SectionCard
-        title="What wineries should react to"
-        description="This is now a functional feedback session, not just a visual walkthrough."
-      >
-        <div className="grid three">
-          <div className="miniCard">
-            <p className="miniLabel">Ease of use</p>
-            <p className="subtle">Can a cellar-door manager update slots or confirmation mode in under two minutes?</p>
-          </div>
-          <div className="miniCard">
-            <p className="miniLabel">Control</p>
-            <p className="subtle">Does switching between auto-confirm and manual review create the right behavior elsewhere?</p>
-          </div>
-          <div className="miniCard">
-            <p className="miniLabel">Trust</p>
-            <p className="subtle">Do partners feel the system reflects their actual operational guardrails?</p>
-          </div>
-        </div>
-      </SectionCard>
     </AppShell>
   );
 }
