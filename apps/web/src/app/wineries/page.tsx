@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { getDataMode } from "@/lib/config";
-import { getWineryPortalRequests, listWineries, type WineryPortalItem } from "@/lib/live-api";
+import {
+  approveWineryToken,
+  getWineryPortalRequests,
+  listWineries,
+  type WineryPortalItem,
+} from "@/lib/live-api";
 
 function formatDateTime(value?: string) {
   if (!value) {
@@ -21,15 +26,47 @@ function statusClass(value: string) {
   return value.replace(/[^a-z]+/gi, "").toLowerCase();
 }
 
+function tokenFromActionUrl(actionUrl: string) {
+  try {
+    const url = new URL(actionUrl);
+    return url.searchParams.get("token") ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export default function WineriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
   const [wineries, setWineries] = useState<Array<{ winery_id: string; name: string; region: string }>>([]);
   const [selectedWineryId, setSelectedWineryId] = useState<string>("");
   const [requests, setRequests] = useState<WineryPortalItem[]>([]);
   const [summary, setSummary] = useState({ pending: 0, accepted: 0, declined: 0, expired: 0 });
   const [wineryName, setWineryName] = useState<string>("Winery");
   const dataMode = getDataMode();
+
+  const loadRequests = useCallback(async (wineryId: string) => {
+    if (!wineryId) {
+      setRequests([]);
+      setSummary({ pending: 0, accepted: 0, declined: 0, expired: 0 });
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await getWineryPortalRequests(wineryId);
+      setRequests(response.requests);
+      setSummary(response.summary);
+      setWineryName(response.winery?.name ?? "Winery");
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load winery request queue.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -72,45 +109,27 @@ export default function WineriesPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedWineryId) {
-      setRequests([]);
-      setSummary({ pending: 0, accepted: 0, declined: 0, expired: 0 });
+    void loadRequests(selectedWineryId);
+  }, [loadRequests, selectedWineryId]);
+
+  async function handleApprove(item: WineryPortalItem) {
+    const tokenId = tokenFromActionUrl(item.action_url);
+    if (!tokenId) {
+      setError("Approval token could not be parsed for this booking.");
       return;
     }
 
-    let active = true;
-
-    async function loadRequests() {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await getWineryPortalRequests(selectedWineryId);
-        if (!active) {
-          return;
-        }
-
-        setRequests(response.requests);
-        setSummary(response.summary);
-        setWineryName(response.winery?.name ?? "Winery");
-      } catch (loadError) {
-        if (!active) {
-          return;
-        }
-
-        setError(loadError instanceof Error ? loadError.message : "Unable to load winery request queue.");
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
+    try {
+      setApprovingRequestId(item.request_id);
+      setError(null);
+      await approveWineryToken(tokenId);
+      await loadRequests(selectedWineryId);
+    } catch (approveError) {
+      setError(approveError instanceof Error ? approveError.message : "Unable to approve this booking.");
+    } finally {
+      setApprovingRequestId(null);
     }
-
-    void loadRequests();
-
-    return () => {
-      active = false;
-    };
-  }, [selectedWineryId]);
+  }
 
   const pendingItems = useMemo(
     () => requests.filter((item) => item.status === "pending"),
@@ -126,7 +145,7 @@ export default function WineriesPage() {
     <AppShell
       eyebrow="Winery portal"
       title="Bookings flow automatically to winery queues with one-click approval links."
-      intro="Each booking now creates partner requests instantly. Wineries can view pending and accepted requests, and approve directly from email/SMS links."
+      intro="Each booking now creates partner requests instantly. Wineries can view pending and accepted requests, and approve directly from this screen."
     >
       <SectionCard
         title="Winery queue selector"
@@ -205,6 +224,19 @@ export default function WineriesPage() {
                     <span className="meta">Sent via {item.sent_channel}</span>
                     <span className="meta">Recipient {item.sent_recipient ?? "(not configured)"}</span>
                     <span className="meta">Sent {formatDateTime(item.sent_at)}</span>
+                  </div>
+                  <div className="ctaRow">
+                    <button
+                      type="button"
+                      className="buttonPrimary"
+                      onClick={() => handleApprove(item)}
+                      disabled={approvingRequestId === item.request_id}
+                    >
+                      {approvingRequestId === item.request_id ? "Approving..." : "Approve booking"}
+                    </button>
+                    <a className="buttonGhost" href={item.action_url} target="_blank" rel="noreferrer">
+                      Open magic link
+                    </a>
                   </div>
                 </div>
               ))
