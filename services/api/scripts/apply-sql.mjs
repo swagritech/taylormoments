@@ -19,6 +19,7 @@ async function run() {
     "003_winery_partner_workflow.sql",
     "004_booking_time_preferences.sql",
     "005_user_auth.sql",
+    "006_customer_profile_fields.sql",
   ];
   const client = new Client({
     connectionString,
