@@ -1,4 +1,4 @@
-﻿import { makeId, nowIso, addHoursIso, hashToken } from "../lib/crypto.js";
+import { makeId, nowIso, addHoursIso, hashToken } from "../lib/crypto.js";
 import { getActionTokenSecret, getMagicLinkBaseUrl } from "../lib/config.js";
 import type { ActionToken, ActionTokenType } from "../domain/models.js";
 
@@ -10,6 +10,7 @@ export function createActionToken(params: {
 }) {
   const rawToken = makeId();
   const secret = getActionTokenSecret();
+  const baseUrl = getMagicLinkBaseUrl(params.tokenType);
 
   const token: ActionToken = {
     tokenId: rawToken,
@@ -25,7 +26,7 @@ export function createActionToken(params: {
 
   return {
     token,
-    actionUrl: `${getMagicLinkBaseUrl(params.tokenType)}/${rawToken}`,
+    actionUrl: `${baseUrl}?token=${encodeURIComponent(rawToken)}`,
   };
 }
 

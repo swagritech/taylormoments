@@ -1,4 +1,4 @@
-﻿import type { WorkflowRepository } from "../domain/ports.js";
+import type { WorkflowRepository } from "../domain/ports.js";
 import type {
   ActionToken,
   Booking,
@@ -118,7 +118,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
           preferred_wineries,
           status
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8::uuid[], 'draft')
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid[], 'draft')
         returning booking_id, lead_name, lead_phone, lead_email, booking_date, pickup_location, party_size,
                   preferred_region, preferred_wineries, status, created_at, updated_at
       `,
@@ -228,3 +228,4 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     return mapActionToken(result.rows[0]);
   }
 }
+

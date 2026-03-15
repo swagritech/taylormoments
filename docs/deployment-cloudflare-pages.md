@@ -1,4 +1,4 @@
-﻿# Cloudflare Pages Deployment
+# Cloudflare Pages Deployment
 
 This project is deployed to Cloudflare Pages as a static Next.js export.
 
@@ -17,26 +17,36 @@ This project is deployed to Cloudflare Pages as a static Next.js export.
 
 ## Environment variables
 
-For demo mode:
-
-- `NEXT_PUBLIC_DATA_MODE=demo`
-- `NEXT_PUBLIC_API_BASE_URL=`
-
-For Azure-backed workflow mode later:
+Use these in the Cloudflare Pages production environment:
 
 - `NEXT_PUBLIC_DATA_MODE=remote`
-- `NEXT_PUBLIC_API_BASE_URL=https://your-azure-api-host`
+- `NEXT_PUBLIC_API_BASE_URL=https://swagri-tailormoments-api-01.azurewebsites.net`
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY=`
+- `NEXT_PUBLIC_CUSTOMER_SIGN_IN_URL=`
+- `NEXT_PUBLIC_PARTNER_SIGN_IN_URL=`
+- `NEXT_PUBLIC_OPS_SIGN_IN_URL=`
 
-Expected remote endpoint shape:
+Recommended rollout:
 
-- `GET /api/v1/workbench-state`
-- `PUT /api/v1/workbench-state`
+1. Set `NEXT_PUBLIC_DATA_MODE=remote`
+2. Set `NEXT_PUBLIC_API_BASE_URL=https://swagri-tailormoments-api-01.azurewebsites.net`
+3. Redeploy Pages
+4. Test `/customer`, `/approve`, and `/accept`
+5. Add the Turnstile site key after the Cloudflare widget is created
 
-The app now consumes workflow data through a repository layer, so switching from demo mode to Azure mode is driven by configuration instead of a UI rewrite.
+## Live frontend behavior
 
-## Why this works
+The frontend now supports:
 
-The current app uses static routes and client-side workflow state. That makes Cloudflare Pages a good fit while the backend APIs are still being introduced.
+- live itinerary recommendations via `POST /api/v1/itinerary/recommend`
+- live booking requests via `POST /api/v1/bookings`
+- winery approval token links via `POST /api/v1/action-tokens/winery-approve`
+- mobile approval flow on `/approve?token=...`
+- mobile transport acceptance flow on `/accept?token=...`
+
+## Why this works on Pages
+
+The routes remain static pages and the token-handling happens client-side, so Cloudflare Pages can host the UX while Azure Functions handles the workflow API.
 
 ## Current hosting posture
 
@@ -53,13 +63,18 @@ Appropriate uses:
 Validate:
 - home page loads correctly
 - `/customer`
+- `/approve`
+- `/accept`
 - `/wineries`
 - `/transport`
 - `/ops`
-- booking switching works
-- winery edits affect planning and ops
-- the workflow status badge shows the correct data source mode
+- customer recommendation requests reach Azure
+- booking requests create records successfully
+- winery approval links land on the approve screen with the token filled in
 
 ## Next deployment step
 
-When Azure APIs are ready, set the environment variables above and test the same UI against the real backend contracts.
+After the frontend is confirmed against the live API, the next environment additions are:
+- Entra External ID sign-in URLs
+- Cloudflare Turnstile site key
+- Azure Communication Services sender details on the API side

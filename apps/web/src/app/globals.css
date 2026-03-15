@@ -654,3 +654,89 @@ button {
     max-width: 180px;
   }
 }
+.bookingExperience {
+  align-items: start;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.recommendationStack,
+.actionCardStack {
+  display: grid;
+  gap: 16px;
+}
+
+.expertPickCard,
+.emptyStateCard {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 24px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.95), rgba(169, 201, 193, 0.2));
+  border: 1px solid rgba(62, 127, 122, 0.14);
+}
+
+.compactTimeline .timelineItem {
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.alternateBlock {
+  display: grid;
+  gap: 14px;
+}
+
+.fullWidthButton {
+  width: 100%;
+}
+
+.successCallout {
+  background: linear-gradient(135deg, rgba(111, 168, 154, 0.24), rgba(255, 255, 255, 0.72));
+}
+
+.errorCallout {
+  background: linear-gradient(135deg, rgba(200, 169, 107, 0.28), rgba(255, 255, 255, 0.82));
+}
+
+.turnstileBlock {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(244, 239, 231, 0.78);
+  border: 1px solid rgba(62, 127, 122, 0.12);
+}
+
+.turnstileMount {
+  min-height: 68px;
+}
+
+.turnstilePlaceholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  border-radius: 16px;
+  border: 1px dashed rgba(62, 127, 122, 0.24);
+  color: rgba(47, 47, 47, 0.68);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.actionPageShell {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.partnerFooterNote {
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 760px) {
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+}

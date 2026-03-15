@@ -7,7 +7,7 @@ const releaseDir = path.join(cwd, "release");
 await rm(releaseDir, { recursive: true, force: true });
 await mkdir(releaseDir, { recursive: true });
 
-for (const file of ["host.json", "package.json", "package-lock.json"]) {
+for (const file of ["host.json", "package.json", "package-lock.json", "index.js"]) {
   await cp(path.join(cwd, file), path.join(releaseDir, file));
 }
 
