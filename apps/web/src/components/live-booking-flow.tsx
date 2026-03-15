@@ -5,6 +5,7 @@ import { SectionCard } from "@/components/section-card";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { pickupOptions, wineries as legacyWineries } from "@/lib/demo-data";
 import { useAuth } from "@/lib/auth-state";
+import { slugToWineryUuid } from "@/lib/winery-id";
 import {
   createBooking,
   formatDisplayTime,
@@ -23,18 +24,7 @@ type LiveBookingFlowProps = {
 };
 
 function uuidForWinerySlug(slug: string) {
-  switch (slug) {
-    case "vasse-felix":
-      return "11111111-1111-1111-1111-111111111111";
-    case "cullen-wines":
-      return "22222222-2222-2222-2222-222222222222";
-    case "fraser-gallop":
-      return "33333333-3333-3333-3333-333333333333";
-    case "woodlands":
-      return "44444444-4444-4444-4444-444444444444";
-    default:
-      return slug;
-  }
+  return slugToWineryUuid(slug);
 }
 
 export function LiveBookingFlow({
