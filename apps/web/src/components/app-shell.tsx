@@ -13,14 +13,20 @@ type AppShellProps = {
   children: ReactNode;
   actionMode?: boolean;
   showWorkflowStatus?: boolean;
+  navMode?: "public" | "partner";
 };
 
-const navItems = [
+const publicNavItems = [
   { href: "/", label: "Overview" },
   { href: "/customer", label: "Plan a day" },
-  { href: "/wineries", label: "Wineries" },
-  { href: "/transport", label: "Transport" },
-  { href: "/ops", label: "Ops" },
+  { href: "/partner", label: "Partner login" },
+];
+
+const partnerNavItems = [
+  { href: "/partner", label: "Partner home" },
+  { href: "/partner/wineries", label: "Wineries" },
+  { href: "/partner/transport", label: "Transport" },
+  { href: "/partner/ops", label: "Ops" },
 ];
 
 export function AppShell({
@@ -30,8 +36,10 @@ export function AppShell({
   children,
   actionMode = false,
   showWorkflowStatus = true,
+  navMode = "public",
 }: AppShellProps) {
   const { user, logout } = useAuth();
+  const navItems = navMode === "partner" ? partnerNavItems : publicNavItems;
 
   return (
     <div className="app-shell">

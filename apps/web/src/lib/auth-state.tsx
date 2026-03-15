@@ -16,7 +16,7 @@ type AuthContextType = {
   user: AuthUser | null;
   token: string;
   loading: boolean;
-  login: (params: { email: string; password: string }) => Promise<void>;
+  login: (params: { email: string; password: string }) => Promise<AuthUser>;
   register: (params: {
     email: string;
     password: string;
@@ -24,7 +24,7 @@ type AuthContextType = {
     display_name: string;
     winery_id?: string;
     transport_company?: string;
-  }) => Promise<void>;
+  }) => Promise<AuthUser>;
   logout: () => void;
 };
 
@@ -94,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persistAuth(response);
     setToken(response.token);
     setUser(response.user);
+    return response.user;
   }
 
   async function register(params: {
@@ -108,6 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persistAuth(response);
     setToken(response.token);
     setUser(response.user);
+    return response.user;
   }
 
   function logout() {

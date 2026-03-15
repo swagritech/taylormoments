@@ -28,28 +28,10 @@ export default function Home() {
             <div className="listRow">
               <div className="listTop">
                 <div>
-                  <h3>Winery portal</h3>
-                  <p className="subtle">Review pending requests and approve bookings.</p>
+                  <h3>Partner portal</h3>
+                  <p className="subtle">Winery, transport, and ops teams can sign in from a dedicated partner area.</p>
                 </div>
-                <Link href="/wineries" className="buttonGhost">Open</Link>
-              </div>
-            </div>
-            <div className="listRow">
-              <div className="listTop">
-                <div>
-                  <h3>Transport board</h3>
-                  <p className="subtle">Inspect open jobs and route coverage.</p>
-                </div>
-                <Link href="/transport" className="buttonGhost">Open</Link>
-              </div>
-            </div>
-            <div className="listRow">
-              <div className="listTop">
-                <div>
-                  <h3>Ops queue</h3>
-                  <p className="subtle">Track exceptions and active day-of-tour tasks.</p>
-                </div>
-                <Link href="/ops" className="buttonGhost">Open</Link>
+                <Link href="/partner" className="buttonGhost">Open</Link>
               </div>
             </div>
           </div>

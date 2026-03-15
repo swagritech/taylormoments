@@ -20,8 +20,18 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await login({ email, password });
-      router.push("/");
+      const signedIn = await login({ email, password });
+      if (signedIn.role === "customer") {
+        router.push("/customer");
+      } else if (signedIn.role === "winery") {
+        router.push("/partner/wineries");
+      } else if (signedIn.role === "transport") {
+        router.push("/partner/transport");
+      } else if (signedIn.role === "ops") {
+        router.push("/partner/ops");
+      } else {
+        router.push("/partner");
+      }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to log in.");
     } finally {

@@ -50,7 +50,7 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      await register({
+      const created = await register({
         display_name: displayName,
         email,
         password,
@@ -58,7 +58,17 @@ export default function RegisterPage() {
         winery_id: role === "winery" ? wineryId || undefined : undefined,
         transport_company: role === "transport" ? transportCompany || undefined : undefined,
       });
-      router.push("/");
+      if (created.role === "customer") {
+        router.push("/customer");
+      } else if (created.role === "winery") {
+        router.push("/partner/wineries");
+      } else if (created.role === "transport") {
+        router.push("/partner/transport");
+      } else if (created.role === "ops") {
+        router.push("/partner/ops");
+      } else {
+        router.push("/partner");
+      }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to create account.");
     } finally {
