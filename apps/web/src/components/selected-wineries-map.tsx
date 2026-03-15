@@ -17,23 +17,16 @@ function mapEmbedUrl(wineries: WineryCatalogItem[]) {
     return `https://www.google.com/maps?q=${encodeURIComponent(`${only?.name ?? "Winery"}, ${only?.address ?? "Margaret River"}`)}&output=embed`;
   }
 
-  const origin = wineries[0];
-  const destination = wineries[wineries.length - 1];
-  const waypoints = wineries.slice(1, -1);
-  const waypointParam = waypoints
-    .map((entry) => `${entry.name}, ${entry.address}`)
+  const markerQuery = wineries
+    .map((entry) => `loc:${entry.latitude},${entry.longitude}`)
     .join("|");
 
-  const base = new URL("https://www.google.com/maps/dir/");
-  base.searchParams.set("api", "1");
-  base.searchParams.set("origin", `${origin?.name ?? "Origin"}, ${origin?.address ?? "Margaret River"}`);
-  base.searchParams.set("destination", `${destination?.name ?? "Destination"}, ${destination?.address ?? "Margaret River"}`);
-  if (waypointParam) {
-    base.searchParams.set("waypoints", waypointParam);
-  }
-  base.searchParams.set("travelmode", "driving");
-  base.searchParams.set("output", "embed");
-  return base.toString();
+  const centerLat =
+    wineries.reduce((sum, entry) => sum + entry.latitude, 0) / wineries.length;
+  const centerLon =
+    wineries.reduce((sum, entry) => sum + entry.longitude, 0) / wineries.length;
+
+  return `https://www.google.com/maps?q=${encodeURIComponent(markerQuery)}&ll=${centerLat},${centerLon}&z=10&output=embed`;
 }
 
 export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
