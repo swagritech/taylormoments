@@ -48,10 +48,12 @@ export function TurnstileWidget({
   action,
   label,
   onToken,
+  showWhenDisabled = false,
 }: {
   action: "request_quote" | "winery_confirm";
   label: string;
   onToken: (token?: string) => void;
+  showWhenDisabled?: boolean;
 }) {
   const siteKey = getTurnstileSiteKey();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -96,19 +98,25 @@ export function TurnstileWidget({
     };
   }, [action, onToken, siteKey]);
 
-  const helper = useMemo(() => {
-    if (siteKey) {
-      return label;
-    }
+  const helper = useMemo(() => label, [label]);
 
-    return "Turnstile is not configured yet. The flow still works while security is disabled in the API.";
-  }, [label, siteKey]);
+  if (!siteKey && !showWhenDisabled) {
+    return null;
+  }
 
   return (
     <div className="turnstileBlock">
       <p className="miniLabel">Security check</p>
-      <p className="subtle">{helper}</p>
-      {siteKey ? <div ref={containerRef} className="turnstileMount" /> : <div className="turnstilePlaceholder">Turnstile ready when site key is added</div>}
+      <p className="subtle">
+        {siteKey
+          ? helper
+          : "Security checks are currently disabled for testing and will be enabled before launch."}
+      </p>
+      {siteKey ? (
+        <div ref={containerRef} className="turnstileMount" />
+      ) : (
+        <div className="turnstilePlaceholder">Turnstile will appear once a site key is configured</div>
+      )}
       {loadError ? <p className="subtle">{loadError}</p> : null}
     </div>
   );

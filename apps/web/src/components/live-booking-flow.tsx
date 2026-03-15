@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { SectionCard } from "@/components/section-card";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { pickupOptions, wineries } from "@/lib/demo-data";
@@ -15,10 +15,6 @@ import {
 } from "@/lib/live-api";
 
 const defaultDate = "2026-04-10";
-
-function wineryById(id: string) {
-  return wineries.find((winery) => winery.id === id);
-}
 
 function uuidForWinerySlug(slug: string) {
   switch (slug) {
@@ -56,11 +52,6 @@ export function LiveBookingFlow() {
   const expertPick = recommendations.find((option) => option.expert_pick) ?? recommendations[0];
   const alternateOptions = expertPick ? recommendations.filter((option) => option.itinerary_id !== expertPick.itinerary_id) : [];
 
-  const selectedRegion = useMemo(() => {
-    const primary = wineryById(selectedWineries[0]);
-    return primary?.region;
-  }, [selectedWineries]);
-
   function toggleWinery(wineryId: string) {
     setSelectedWineries((current) => {
       if (current.includes(wineryId)) {
@@ -83,7 +74,6 @@ export function LiveBookingFlow() {
         booking_date: bookingDate,
         pickup_location: pickupLocation,
         party_size: partySize,
-        preferred_region: selectedRegion,
         preferred_wineries: selectedWineries.map(uuidForWinerySlug),
       });
 
@@ -117,7 +107,6 @@ export function LiveBookingFlow() {
         booking_date: bookingDate,
         pickup_location: pickupLocation,
         party_size: partySize,
-        preferred_region: selectedRegion,
         preferred_wineries: selectedWineries.map(uuidForWinerySlug),
         turnstile_token: turnstileToken,
       });

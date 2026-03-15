@@ -13,6 +13,10 @@ function scoreCandidate(winery: Winery, availability: WineryAvailability, partyS
   return 70 + Math.min(20, capacityFactor) + confirmationBoost;
 }
 
+function toTimeValue(value: string) {
+  return Number(value.replace(":", ""));
+}
+
 export function buildCandidateItineraries(params: {
   request: RecommendItineraryRequest;
   wineries: Winery[];
@@ -32,31 +36,62 @@ export function buildCandidateItineraries(params: {
     (slot) => slot.serviceDate === request.booking_date && slot.remainingCapacity >= request.party_size && slot.status === "open",
   );
 
-  const options = filteredWineries
-    .flatMap((winery) => {
-      const slots = openAvailability.filter((slot) => slot.wineryId === winery.wineryId);
-      return slots.map((slot, index) => ({ winery, slot, index }));
-    })
-    .slice(0, 5)
-    .map(({ winery, slot }, index) => ({
+  const wineriesWithSlots = filteredWineries
+    .map((winery) => ({
+      winery,
+      slots: openAvailability
+        .filter((slot) => slot.wineryId === winery.wineryId)
+        .sort((a, b) => toTimeValue(a.startTime) - toTimeValue(b.startTime)),
+    }))
+    .filter((entry) => entry.slots.length > 0);
+
+  const maxVariants = Math.min(
+    3,
+    Math.max(1, ...wineriesWithSlots.map((entry) => entry.slots.length)),
+  );
+
+  const options: ItineraryOption[] = [];
+
+  for (let variantIndex = 0; variantIndex < maxVariants; variantIndex += 1) {
+    const stopBundle = wineriesWithSlots
+      .map(({ winery, slots }) => {
+        const slot = slots[Math.min(variantIndex, slots.length - 1)];
+        return { winery, slot };
+      })
+      .filter((entry) => entry.slot);
+
+    const sortedStops = stopBundle.sort(
+      (a, b) => toTimeValue(a.slot.startTime) - toTimeValue(b.slot.startTime),
+    );
+
+    if (sortedStops.length === 0) {
+      continue;
+    }
+
+    const scoreBase =
+      sortedStops.reduce(
+        (sum, item) => sum + scoreCandidate(item.winery, item.slot, request.party_size),
+        0,
+      ) / sortedStops.length;
+
+    options.push({
       itineraryId: makeId(),
-      expertPick: index === 0,
+      expertPick: variantIndex === 0,
       justification:
-        index === 0
-          ? "Best fit for your group size, timing, and partner reliability in Margaret River."
+        variantIndex === 0
+          ? `Best fit for your group size with ${sortedStops.length} winery stops aligned into a practical day.`
           : "Strong backup option with available capacity and practical travel timing.",
-      score: scoreCandidate(winery, slot, request.party_size) - index * 3,
-      label: index === 0 ? "TailorMoments Expert Pick" : `Option ${index + 1}`,
-      stops: [
-        {
-          wineryId: winery.wineryId,
-          wineryName: winery.name,
-          arrivalTime: `${slot.serviceDate}T${slot.startTime}:00Z`,
-          departureTime: `${slot.serviceDate}T${slot.endTime}:00Z`,
-          driveMinutes: 18 + index * 4,
-        },
-      ],
-    }));
+      score: Math.round(scoreBase - variantIndex * 4),
+      label: variantIndex === 0 ? "TailorMoments Expert Pick" : `Option ${variantIndex + 1}`,
+      stops: sortedStops.map((item, stopIndex) => ({
+        wineryId: item.winery.wineryId,
+        wineryName: item.winery.name,
+        arrivalTime: `${item.slot.serviceDate}T${item.slot.startTime}:00Z`,
+        departureTime: `${item.slot.serviceDate}T${item.slot.endTime}:00Z`,
+        driveMinutes: stopIndex === 0 ? 22 : 14 + stopIndex * 4,
+      })),
+    });
+  }
 
   return options;
 }
