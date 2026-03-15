@@ -10,6 +10,7 @@ type AppShellProps = {
   intro: string;
   children: ReactNode;
   actionMode?: boolean;
+  showWorkflowStatus?: boolean;
 };
 
 const navItems = [
@@ -20,7 +21,14 @@ const navItems = [
   { href: "/ops", label: "Ops" },
 ];
 
-export function AppShell({ eyebrow, title, intro, children, actionMode = false }: AppShellProps) {
+export function AppShell({
+  eyebrow,
+  title,
+  intro,
+  children,
+  actionMode = false,
+  showWorkflowStatus = true,
+}: AppShellProps) {
   const partnerSignInUrl = getPartnerSignInUrl();
   const opsSignInUrl = getOpsSignInUrl();
   const customerSignInUrl = getCustomerSignInUrl();
@@ -80,7 +88,7 @@ export function AppShell({ eyebrow, title, intro, children, actionMode = false }
           <p className="eyebrow">{eyebrow}</p>
           <h1>{title}</h1>
           <p className="heroCopy">{intro}</p>
-          {!actionMode ? <WorkflowStatus /> : null}
+          {!actionMode && showWorkflowStatus ? <WorkflowStatus /> : null}
         </section>
         {children}
       </main>

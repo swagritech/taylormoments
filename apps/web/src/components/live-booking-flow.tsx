@@ -120,7 +120,7 @@ export function LiveBookingFlow() {
       <div className="splitPanel bookingExperience">
         <SectionCard
           title="Plan a tailored day"
-          description="Capture a real guest request, generate ranked options, and submit the booking into the live Tailor Moments API."
+          description="Tell us who is travelling and what wineries they prefer."
         >
           <div className="formPreview">
             <div className="field">
@@ -226,7 +226,7 @@ export function LiveBookingFlow() {
                 </div>
                 <TurnstileWidget
                   action="request_quote"
-                  label="Protects the live request flow from spam once Turnstile is configured."
+                  label="Security check for booking requests."
                   onToken={setTurnstileToken}
                 />
                 <button type="button" className="buttonPrimary fullWidthButton" onClick={handleBook} disabled={submitting}>
@@ -261,7 +261,7 @@ export function LiveBookingFlow() {
             <div className="emptyStateCard">
               <p className="miniLabel">Next step</p>
               <h3>Generate a recommendation</h3>
-              <p className="subtle">Once you request options, the best itinerary will appear here as the featured path for the guest.</p>
+              <p className="subtle">Recommended itinerary options will appear here after you submit the guest details.</p>
             </div>
           )}
 
@@ -270,8 +270,7 @@ export function LiveBookingFlow() {
 
           {booking ? (
             <div className="callout successCallout">
-              <strong>Booking request received.</strong> Reference <strong>{booking.bookingId}</strong> has been saved.
-              Partner confirmations are now handled directly by Tailor Moments.
+              <strong>Booking request received.</strong> Reference <strong>{booking.bookingId}</strong> is confirmed and we will coordinate partner confirmations.
             </div>
           ) : null}
         </SectionCard>

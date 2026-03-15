@@ -5,8 +5,9 @@ export default function CustomerPage() {
   return (
     <AppShell
       eyebrow="Customer booking"
-      title="Create and submit guest booking requests"
-      intro="Capture guest details, choose preferred wineries, generate ranked itineraries, and submit directly into the live workflow."
+      title="Plan your Margaret River winery day"
+      intro="Share your preferred date, group size, pickup point, and favourite wineries to receive a tailored itinerary recommendation."
+      showWorkflowStatus={false}
     >
       <LiveBookingFlow />
     </AppShell>

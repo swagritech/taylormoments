@@ -5,44 +5,22 @@ import { SectionCard } from "@/components/section-card";
 export default function Home() {
   return (
     <AppShell
-      eyebrow="Operations dashboard"
+      eyebrow="Tailor Moments"
       title="Tailor Moments"
-      intro="Manage guest bookings, winery approvals, transport acceptance, and exceptions from one connected workspace."
+      intro="Create personalised Margaret River winery days with easy confirmations for wineries and transport partners."
+      showWorkflowStatus={false}
     >
-      <div className="statsGrid">
-        <div className="statCard">
-          <p className="statLabel">Customer requests</p>
-          <p className="statValue">Live</p>
-          <p className="statHint">Customers can submit booking requests through the live flow.</p>
-        </div>
-        <div className="statCard">
-          <p className="statLabel">Winery confirmations</p>
-          <p className="statValue">Auto dispatch</p>
-          <p className="statHint">Requests and approval links are generated when a booking is created.</p>
-        </div>
-        <div className="statCard">
-          <p className="statLabel">Transport decisions</p>
-          <p className="statValue">Ready</p>
-          <p className="statHint">Transport partners can accept from direct links and action pages.</p>
-        </div>
-        <div className="statCard">
-          <p className="statLabel">Deployment</p>
-          <p className="statValue">Cloudflare + Azure</p>
-          <p className="statHint">Frontend and backend are connected for live partner testing.</p>
-        </div>
-      </div>
-
       <div className="grid two">
         <SectionCard
-          title="Primary workflows"
-          description="Open the operational surfaces used by customers, partners, and internal staff."
+          title="Start here"
+          description="Choose what you need to do."
         >
           <div className="list compactList">
             <div className="listRow">
               <div className="listTop">
                 <div>
-                  <h3>Customer booking</h3>
-                  <p className="subtle">Create itinerary recommendations and submit bookings.</p>
+                  <h3>Plan a booking</h3>
+                  <p className="subtle">Enter guest details and receive recommended winery itineraries.</p>
                 </div>
                 <Link href="/customer" className="buttonPrimary">Open</Link>
               </div>
@@ -78,21 +56,21 @@ export default function Home() {
         </SectionCard>
 
         <SectionCard
-          title="Current behavior"
-          description="What is automatic today."
+          title="How it works"
+          description="Simple booking flow for guests and partners."
         >
           <div className="list compactList">
             <div className="listRow">
-              <h3>Booking creation</h3>
-              <p className="subtle">Creates the booking and immediately generates winery action tokens for selected venues.</p>
+              <h3>1. Guest submits request</h3>
+              <p className="subtle">Guests choose date, pickup, group size, and preferred wineries.</p>
             </div>
             <div className="listRow">
-              <h3>Winery queue</h3>
-              <p className="subtle">Pending and accepted states are visible on the winery portal per venue.</p>
+              <h3>2. Wineries confirm quickly</h3>
+              <p className="subtle">Wineries can approve from a direct link or from their portal queue.</p>
             </div>
             <div className="listRow">
-              <h3>Token safety</h3>
-              <p className="subtle">Approval/accept tokens are single-use with expiry protection.</p>
+              <h3>3. Transport is arranged</h3>
+              <p className="subtle">Transport jobs can be reviewed and accepted with minimal steps.</p>
             </div>
           </div>
         </SectionCard>
