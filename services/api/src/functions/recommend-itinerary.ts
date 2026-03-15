@@ -14,6 +14,9 @@ export async function recommendItineraryHandler(
     const wineries = await workflowRepository.getWineries();
     const availability = await workflowRepository.getAvailabilityForDate(input.booking_date);
     const response = await recommendItineraries({ request: input, wineries, availability });
+    if (response.scheduling_trace) {
+      context.log("scheduling_trace", JSON.stringify(response.scheduling_trace));
+    }
 
     return ok(response);
   } catch (error) {

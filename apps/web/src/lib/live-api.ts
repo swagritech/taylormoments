@@ -20,6 +20,26 @@ export type Recommendation = {
 export type RecommendResponse = {
   generated_at: string;
   itineraries: Recommendation[];
+  scheduling_trace?: {
+    requested_wineries_count: number;
+    recognized_preferred_count: number;
+    considered_wineries_count: number;
+    wineries_with_slots_count: number;
+    combinations_tested: number;
+    feasible_routes_found: number;
+    generated_options_count: number;
+    used_fallback: boolean;
+    requested_time_window: {
+      start: string;
+      end: string;
+    };
+    dropped_wineries: Array<{
+      winery_id: string;
+      winery_name: string;
+      reason: string;
+      slot_count: number;
+    }>;
+  };
 };
 
 export type CreateBookingRequest = {

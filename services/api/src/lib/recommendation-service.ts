@@ -435,8 +435,73 @@ export async function recommendItineraries(params: {
   wineries: Winery[];
   availability: WineryAvailability[];
 }): Promise<RecommendItineraryResponse> {
+  const { request, wineries, availability } = params;
+  const preferredIds = request.preferred_wineries ?? [];
+  const activeWineryIds = new Set(wineries.map((winery) => winery.wineryId));
+  const recognizedPreferredIds = preferredIds.filter((id) => activeWineryIds.has(id));
+  const preferredSet = new Set(recognizedPreferredIds);
+  const dayStart = toTimeValue(request.preferred_start_time ?? DEFAULT_DAY_START);
+  const dayEnd = toTimeValue(request.preferred_end_time ?? DEFAULT_DAY_END);
+
+  const filteredWineries = wineries.filter((winery) => {
+    const regionMatch = request.preferred_region ? winery.region === request.preferred_region : true;
+    const preferredMatch = preferredSet.size > 0 ? preferredSet.has(winery.wineryId) : true;
+    return winery.active && regionMatch && preferredMatch;
+  });
+
+  const openAvailability = availability.filter(
+    (slot) =>
+      slot.serviceDate === request.booking_date &&
+      slot.remainingCapacity >= request.party_size &&
+      slot.status === "open",
+  );
+
+  const slotGroups = filteredWineries
+    .map((winery) => ({
+      winery,
+      slots: openAvailability
+        .filter((slot) => slot.wineryId === winery.wineryId)
+        .filter((slot) => {
+          const slotStart = toTimeValue(slot.startTime);
+          const slotEnd = toTimeValue(slot.endTime);
+          return slotStart >= dayStart && slotEnd <= dayEnd;
+        })
+        .sort((a, b) => toTimeValue(a.startTime) - toTimeValue(b.startTime)),
+    }))
+    .filter((entry) => entry.slots.length > 0);
+
+  const droppedWineries = filteredWineries
+    .map((winery) => {
+      const slotCount = openAvailability.filter((slot) => {
+        if (slot.wineryId !== winery.wineryId) {
+          return false;
+        }
+        const slotStart = toTimeValue(slot.startTime);
+        const slotEnd = toTimeValue(slot.endTime);
+        return slotStart >= dayStart && slotEnd <= dayEnd;
+      }).length;
+      return { winery, slotCount };
+    })
+    .filter((entry) => entry.slotCount === 0)
+    .map((entry) => ({
+      winery_id: entry.winery.wineryId,
+      winery_name: entry.winery.name,
+      reason: "no_slots_in_requested_time_window",
+      slot_count: 0,
+    }));
+
+  const groupSubsets = slotGroups.length > 0 ? buildGroupSubsets(slotGroups) : [];
+  const combinations = groupSubsets.flatMap((subset) => buildSlotCombinations(subset, 120));
+  const feasibleCount = combinations
+    .map((selection) => buildFeasibleRoute({ request, selection }))
+    .filter((route): route is { stops: PlannedStop[]; totalDriveMinutes: number } => Boolean(route))
+    .length;
+
   const candidates = buildCandidateItineraries(params);
   const ranked = await rankItinerariesWithAi(candidates);
+  const usedFallback =
+    ranked.length > 0 &&
+    ranked[0]?.justification.toLowerCase().includes("fallback");
 
   return {
     generated_at: new Date().toISOString(),
@@ -454,5 +519,20 @@ export async function recommendItineraries(params: {
         drive_minutes: stop.driveMinutes,
       })),
     })),
+    scheduling_trace: {
+      requested_wineries_count: preferredIds.length,
+      recognized_preferred_count: recognizedPreferredIds.length,
+      considered_wineries_count: filteredWineries.length,
+      wineries_with_slots_count: slotGroups.length,
+      combinations_tested: combinations.length,
+      feasible_routes_found: feasibleCount,
+      generated_options_count: ranked.length,
+      used_fallback: usedFallback,
+      requested_time_window: {
+        start: request.preferred_start_time ?? DEFAULT_DAY_START,
+        end: request.preferred_end_time ?? DEFAULT_DAY_END,
+      },
+      dropped_wineries: droppedWineries,
+    },
   };
 }

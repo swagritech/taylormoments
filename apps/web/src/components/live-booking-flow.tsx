@@ -111,9 +111,16 @@ export function LiveBookingFlow({
       });
 
       setRecommendations(response.itineraries);
+      if (response.scheduling_trace) {
+        console.info("Tailor Moments scheduling trace", response.scheduling_trace);
+      }
       if (response.itineraries.length === 0) {
+        const trace = response.scheduling_trace;
+        const traceHint = trace
+          ? ` Considered ${trace.considered_wineries_count} wineries, found slots for ${trace.wineries_with_slots_count}, and feasible routes ${trace.feasible_routes_found}.`
+          : "";
         setNoOptionsMessage(
-          "No available itinerary was found for this date and party size. Try 2026-04-10 or adjust guest count/wineries.",
+          `No available itinerary was found for this date and party size. Try 2026-04-10 or adjust guest count/wineries.${traceHint}`,
         );
       }
     } catch (requestError) {
