@@ -192,6 +192,46 @@ function scoreRoute(params: {
   );
 }
 
+function buildRelaxedFallbackItinerary(params: {
+  request: RecommendItineraryRequest;
+  slotGroups: Array<{ winery: Winery; slots: WineryAvailability[] }>;
+}): ItineraryOption | null {
+  const { request, slotGroups } = params;
+  const dayStart = toTimeValue(request.preferred_start_time ?? DEFAULT_DAY_START);
+
+  const stops: PlannedStop[] = slotGroups
+    .map((entry) => {
+      const preferredSlot =
+        entry.slots.find((slot) => toTimeValue(slot.startTime) >= dayStart) ?? entry.slots[0];
+      if (!preferredSlot) {
+        return null;
+      }
+      return { winery: entry.winery, slot: preferredSlot, driveMinutes: DEFAULT_DRIVE_MINUTES };
+    })
+    .filter((entry): entry is PlannedStop => Boolean(entry))
+    .sort((a, b) => toTimeValue(a.slot.startTime) - toTimeValue(b.slot.startTime));
+
+  if (stops.length === 0) {
+    return null;
+  }
+
+  return {
+    itineraryId: makeId(),
+    expertPick: true,
+    justification:
+      "Testing fallback schedule generated from open availability while strict timing is being refined.",
+    score: 72,
+    label: "TailorMoments Expert Pick",
+    stops: stops.map((stop) => ({
+      wineryId: stop.winery.wineryId,
+      wineryName: stop.winery.name,
+      arrivalTime: `${stop.slot.serviceDate}T${stop.slot.startTime}:00Z`,
+      departureTime: `${stop.slot.serviceDate}T${stop.slot.endTime}:00Z`,
+      driveMinutes: stop.driveMinutes,
+    })),
+  };
+}
+
 export function buildCandidateItineraries(params: {
   request: RecommendItineraryRequest;
   wineries: Winery[];
@@ -199,11 +239,13 @@ export function buildCandidateItineraries(params: {
 }): ItineraryOption[] {
   const { request, wineries, availability } = params;
   const preferredIds = request.preferred_wineries ?? [];
-  const preferredSet = new Set(preferredIds);
+  const activeWineryIds = new Set(wineries.map((winery) => winery.wineryId));
+  const recognizedPreferredIds = preferredIds.filter((id) => activeWineryIds.has(id));
+  const preferredSet = new Set(recognizedPreferredIds);
 
   const filteredWineries = wineries.filter((winery) => {
     const regionMatch = request.preferred_region ? winery.region === request.preferred_region : true;
-    const preferredMatch = preferredIds.length ? preferredSet.has(winery.wineryId) : true;
+    const preferredMatch = preferredSet.size > 0 ? preferredSet.has(winery.wineryId) : true;
     return winery.active && regionMatch && preferredMatch;
   });
 
@@ -244,6 +286,11 @@ export function buildCandidateItineraries(params: {
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
+
+  if (feasibleOptions.length === 0) {
+    const fallback = buildRelaxedFallbackItinerary({ request, slotGroups });
+    return fallback ? [fallback] : [];
+  }
 
   return feasibleOptions.map(({ route, score }, index) => ({
     itineraryId: makeId(),
@@ -305,4 +352,3 @@ export async function recommendItineraries(params: {
     })),
   };
 }
-
