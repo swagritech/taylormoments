@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SectionCard } from "@/components/section-card";
 import { TurnstileWidget } from "@/components/turnstile-widget";
-import { pickupOptions, wineries } from "@/lib/demo-data";
+import { pickupOptions, wineries as legacyWineries } from "@/lib/demo-data";
 import {
   createBooking,
   formatDisplayTime,
@@ -11,6 +11,7 @@ import {
   type BookingResponse,
   type Recommendation,
 } from "@/lib/live-api";
+import { wineryCatalog } from "@/lib/winery-catalog";
 
 const defaultDate = "2026-04-10";
 
@@ -48,7 +49,7 @@ export function LiveBookingFlow({
   const [preferredEndTime, setPreferredEndTime] = useState("17:00");
   const [pickupLocation, setPickupLocation] = useState(pickupOptions[0]?.label ?? "Margaret River Visitor Centre");
   const [partySize, setPartySize] = useState(4);
-  const [internalSelectedWineries, setInternalSelectedWineries] = useState<string[]>([wineries[0]?.id ?? "", wineries[1]?.id ?? ""].filter(Boolean));
+  const [internalSelectedWineries, setInternalSelectedWineries] = useState<string[]>([legacyWineries[0]?.id ?? "", legacyWineries[1]?.id ?? ""].filter(Boolean));
   const [requesting, setRequesting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | undefined>();
@@ -58,6 +59,9 @@ export function LiveBookingFlow({
   const [noOptionsMessage, setNoOptionsMessage] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
   const selectedWineries = selectedWineriesProp ?? internalSelectedWineries;
+  const selectedCatalogWineries = selectedWineries
+    .map((id) => wineryCatalog.find((entry) => entry.id === id))
+    .filter((entry): entry is (typeof wineryCatalog)[number] => Boolean(entry));
 
   function setSelectedWineries(next: string[] | ((current: string[]) => string[])) {
     const current = selectedWineries;
@@ -215,7 +219,7 @@ export function LiveBookingFlow({
                 </div>
               ) : null}
               <div className="selectorList">
-                {wineries.map((winery) => {
+                {selectedCatalogWineries.map((winery) => {
                   const selected = selectedWineries.includes(winery.id);
                   return (
                     <button
@@ -227,19 +231,26 @@ export function LiveBookingFlow({
                       <div className="listTop">
                         <div>
                           <strong>{winery.name}</strong>
-                          <p className="subtle">{winery.region}</p>
+                          <p className="subtle">{winery.region} · {winery.address}</p>
                         </div>
-                        <span className={`status ${selected ? "accepted" : "review"}`}>{selected ? "Selected" : "Add"}</span>
+                        <span className={`status ${selected ? "accepted" : "review"}`}>{selected ? "In cart" : "Add"}</span>
                       </div>
                       <div className="metaRow">
-                        <span className="meta">{winery.tastingDurationMinutes} min tasting</span>
-                        <span className="meta">Capacity {winery.capacity}</span>
-                        <span className={`status ${winery.status.toLowerCase().replace(/[^a-z]+/g, "")}`}>{winery.status}</span>
+                        <span className="meta">{winery.rating} stars</span>
+                        <span className="meta">Organic: {winery.organicStatus}</span>
+                        <span className={`status ${winery.liveBookable ? "accepted" : "review"}`}>
+                          {winery.liveBookable ? "Live booking available" : "Prospect"}
+                        </span>
                       </div>
                     </button>
                   );
                 })}
               </div>
+              {selectedCatalogWineries.length === 0 ? (
+                <div className="callout">
+                  No wineries selected yet. Open the catalog and add options to your schedule cart.
+                </div>
+              ) : null}
             </div>
             <div className="ctaRow">
               <button type="button" className="buttonPrimary" onClick={handleRecommend} disabled={requesting || selectedWineries.length === 0}>
