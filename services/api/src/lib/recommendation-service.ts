@@ -14,8 +14,11 @@ type WinerySlotGroup = { winery: Winery; slots: WineryAvailability[] };
 const DEFAULT_DAY_START = "09:30";
 const DEFAULT_DAY_END = "17:30";
 const DEFAULT_DRIVE_MINUTES = 20;
-const MAX_STOPS_PER_DAY = 3;
+const MAX_STOPS_PER_DAY = 4;
 const MIN_STOPS_PER_DAY = 2;
+const LUNCH_WINDOW_START = 11 * 60 + 30;
+const LUNCH_WINDOW_END = 14 * 60;
+const LUNCH_BREAK_MINUTES = 45;
 
 const wineryPoints: Record<string, Point> = {
   "11111111-1111-1111-1111-111111111111": { lat: -33.682, lon: 115.052 }, // Vasse Felix
@@ -148,6 +151,7 @@ function buildFeasibleRoute(params: {
   let currentPoint = pickupPoint;
   let totalDriveMinutes = 0;
   const stops: PlannedStop[] = [];
+  const idleWindows: Array<{ start: number; end: number }> = [];
 
   for (const item of sorted) {
     const slotStart = toTimeValue(item.slot.startTime);
@@ -158,6 +162,9 @@ function buildFeasibleRoute(params: {
 
     if (earliestArrival > slotStart || slotEnd > dayEnd) {
       return null;
+    }
+    if (slotStart > earliestArrival) {
+      idleWindows.push({ start: earliestArrival, end: slotStart });
     }
 
     totalDriveMinutes += drive;
@@ -176,6 +183,15 @@ function buildFeasibleRoute(params: {
     return null;
   }
   totalDriveMinutes += returnDrive;
+
+  const hasLunchBreak = idleWindows.some((window) => {
+    const overlapStart = Math.max(window.start, LUNCH_WINDOW_START);
+    const overlapEnd = Math.min(window.end, LUNCH_WINDOW_END);
+    return overlapEnd - overlapStart >= LUNCH_BREAK_MINUTES;
+  });
+  if (!hasLunchBreak) {
+    return null;
+  }
 
   return { stops, totalDriveMinutes };
 }
@@ -227,6 +243,7 @@ function buildRelaxedFallbackItinerary(params: {
   let currentTime = dayStart;
   let currentPoint = pickupPoint;
   let totalDriveMinutes = 0;
+  let lunchTaken = false;
   const stops: Array<{
     wineryId: string;
     wineryName: string;
@@ -261,6 +278,15 @@ function buildRelaxedFallbackItinerary(params: {
       ? Math.max(45, Math.min(95, toTimeValue(representativeSlot.endTime) - toTimeValue(representativeSlot.startTime)))
       : 75;
 
+    if (!lunchTaken && currentTime < LUNCH_WINDOW_END) {
+      const lunchStart = Math.max(currentTime, 12 * 60);
+      const lunchEnd = lunchStart + LUNCH_BREAK_MINUTES;
+      if (lunchStart <= LUNCH_WINDOW_END && lunchEnd <= dayEnd) {
+        currentTime = lunchEnd;
+        lunchTaken = true;
+      }
+    }
+
     const arrivalMinutes = currentTime + nextDrive;
     const departureMinutes = arrivalMinutes + slotDurationMinutes;
     if (departureMinutes > dayEnd) {
@@ -281,6 +307,9 @@ function buildRelaxedFallbackItinerary(params: {
   }
 
   if (stops.length === 0) {
+    return null;
+  }
+  if (!lunchTaken) {
     return null;
   }
 
