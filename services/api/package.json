@@ -1,0 +1,26 @@
+{
+  "name": "tailormoments-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node ./scripts/clean.mjs",
+    "db:bootstrap": "node ./scripts/apply-sql.mjs",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "package:azure": "npm run clean && npm run build && node ./scripts/package-azure.mjs",
+    "start": "func start",
+    "prestart": "npm run build"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.11.2",
+    "@types/pg": "^8.18.0",
+    "pg": "^8.20.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.24",
+    "typescript": "^5.8.2"
+  }
+}

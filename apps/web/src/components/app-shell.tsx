@@ -1,5 +1,8 @@
-﻿import Link from "next/link";
+import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
+import { WorkflowStatus } from "@/components/workflow-status";
+import { getCustomerSignInUrl, getOpsSignInUrl, getPartnerSignInUrl } from "@/lib/config";
 
 type AppShellProps = {
   eyebrow: string;
@@ -10,21 +13,33 @@ type AppShellProps = {
 
 const navItems = [
   { href: "/", label: "Overview" },
-  { href: "/customer", label: "Customer journey" },
-  { href: "/wineries", label: "Winery portal" },
-  { href: "/transport", label: "Transport board" },
-  { href: "/ops", label: "Ops view" },
+  { href: "/customer", label: "Plan a day" },
+  { href: "/wineries", label: "Wineries" },
+  { href: "/transport", label: "Transport" },
+  { href: "/ops", label: "Ops" },
 ];
 
 export function AppShell({ eyebrow, title, intro, children }: AppShellProps) {
+  const partnerSignInUrl = getPartnerSignInUrl();
+  const opsSignInUrl = getOpsSignInUrl();
+  const customerSignInUrl = getCustomerSignInUrl();
+
   return (
     <div className="app-shell">
       <header className="topbar">
         <Link href="/" className="brand">
-          <span className="brandMark">TM</span>
+          <div className="brandBadge">
+            <Image
+              src="/brand/tailormoments-logo.jpeg"
+              alt="Tailor Moments"
+              fill
+              sizes="120px"
+              className="brandLogoImage"
+            />
+          </div>
           <span>
             <strong>Tailor Moments</strong>
-            <small>Partner feedback MVP</small>
+            <small>Your Way</small>
           </span>
         </Link>
         <nav className="topnav" aria-label="Primary navigation">
@@ -34,17 +49,42 @@ export function AppShell({ eyebrow, title, intro, children }: AppShellProps) {
             </Link>
           ))}
         </nav>
+        <div className="ctaRow authRow">
+          {customerSignInUrl ? (
+            <Link href={customerSignInUrl} className="buttonGhost">
+              Customer sign in
+            </Link>
+          ) : null}
+          {partnerSignInUrl ? (
+            <Link href={partnerSignInUrl} className="buttonGhost">
+              Partner sign in
+            </Link>
+          ) : null}
+          {opsSignInUrl ? (
+            <Link href={opsSignInUrl} className="buttonPrimary">
+              Ops sign in
+            </Link>
+          ) : null}
+        </div>
       </header>
 
       <main className="pageFrame">
         <section className="heroPanel">
-          <p className="eyebrow">{eyebrow}</p>
-          <h1>{title}</h1>
-          <p className="heroCopy">{intro}</p>
+          <div className="heroBrandLockup">
+            <p className="eyebrow">{eyebrow}</p>
+            <h1>{title}</h1>
+            <p className="heroCopy">{intro}</p>
+            <WorkflowStatus />
+          </div>
+          <div className="heroAside">
+            <p className="miniLabel">Brand promise</p>
+            <p>
+              Relaxed luxury, coastal calm, and effortless planning for winery days that still feel deeply personal.
+            </p>
+          </div>
         </section>
         {children}
       </main>
     </div>
   );
 }
-

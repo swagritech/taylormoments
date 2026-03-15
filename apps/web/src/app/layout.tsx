@@ -1,22 +1,23 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Providers } from "@/components/providers";
-import { Cormorant_Garamond, Manrope } from "next/font/google";
+import { Cinzel, Inter } from "next/font/google";
 import "./globals.css";
 
-const display = Cormorant_Garamond({
+const display = Cinzel({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
 });
 
-const sans = Manrope({
+const sans = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Tailor Moments | Margaret River Tour Planning",
-  description: "Tailor Moments MVP for Margaret River winery tour booking, partner availability, and transport coordination.",
+  title: "Tailor Moments | Your Way",
+  description:
+    "Tailor Moments is a premium Margaret River booking platform for curated winery visits, transport coordination, and partner approvals.",
 };
 
 export default function RootLayout({

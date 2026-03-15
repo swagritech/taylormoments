@@ -1,0 +1,13 @@
+﻿{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "TM_DATA_MODE": "memory",
+    "TM_OPENAI_MODEL": "gpt-4o-mini",
+    "TM_OPENAI_API_KEY": "",
+    "TM_POSTGRES_URL": "postgres://username:password@hostname:5432/tailormoments_dev?sslmode=require",
+    "TM_ACTION_TOKEN_SECRET": "replace-me",
+    "TM_SITE_BASE_URL": "https://booking.swagritech.com.au"
+  }
+}

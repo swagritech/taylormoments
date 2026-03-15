@@ -1,0 +1,94 @@
+﻿flowchart TB
+    classDef edge fill:#f5efe6,stroke:#c9b89d,color:#2c2118,stroke-width:1.2px;
+    classDef app fill:#fffaf4,stroke:#7b5e45,color:#241a14,stroke-width:1.4px;
+    classDef core fill:#f6e4d2,stroke:#9a5b2a,color:#241a14,stroke-width:1.6px;
+    classDef data fill:#f9f1da,stroke:#a07d2f,color:#241a14,stroke-width:1.4px;
+    classDef ai fill:#efe3ec,stroke:#8b4d73,color:#241a14,stroke-width:1.4px;
+    classDef ops fill:#e6efe4,stroke:#5d7b52,color:#241a14,stroke-width:1.4px;
+
+    C[Customer]
+    W[Winery Partner]
+    T[Transport Provider]
+    O[SwagriTech Ops Team]
+    class C,W,T,O edge
+
+    CF[Cloudflare<br/>DNS / CDN / WAF / Access]
+    FE[Next.js Web App<br/>booking.swagritech.com.au]
+    class CF edge
+    class FE app
+
+    UIState[Client State + API Layer<br/>Current: demo adapter<br/>Later: Azure APIs]
+    class UIState core
+
+    BQ[Booking Board<br/>multiple enquiries]
+    PLAN[Itinerary Planner<br/>availability + route logic]
+    WIN[Winery Controls<br/>slots / capacity / confirm mode]
+    DISPATCH[Transport Planning<br/>live jobs + carrier match]
+    OPS[Unified Ops View]
+    class BQ,PLAN,WIN,DISPATCH core
+    class OPS ops
+
+    DB[(Tailor Moments Data Model<br/>bookings / wineries / jobs / partners)]
+    M365[Microsoft 365 / Entra<br/>internal ops only]
+    AZ[SwagriTech Azure Backend<br/>future integration target]
+    class DB data
+    class M365 ops
+    class AZ core
+
+    AI[OpenAI Layer<br/>ranking / suggestions / copilot]
+    class AI ai
+
+    NOTIFY[Email / SMS / Calendar Feeds]
+    class NOTIFY edge
+
+    C --> CF --> FE
+    W --> CF
+    T --> CF
+    O --> CF
+
+    FE --> UIState
+
+    UIState --> BQ
+    UIState --> PLAN
+    UIState --> WIN
+    UIState --> DISPATCH
+    UIState --> OPS
+
+    BQ --> DB
+    PLAN --> DB
+    WIN --> DB
+    DISPATCH --> DB
+    OPS --> DB
+
+    PLAN --> AI
+    OPS --> AI
+
+    WIN --> NOTIFY
+    DISPATCH --> NOTIFY
+    OPS --> NOTIFY
+
+    OPS --> M365
+    M365 --> O
+
+    UIState -. later .-> AZ
+    AZ -. source of truth later .-> DB
+
+    C -->|submits preferences| BQ
+    W -->|sets availability| WIN
+    T -->|accepts jobs| DISPATCH
+    PLAN -->|creates itinerary| DISPATCH
+    WIN -->|changes partner rules| PLAN
+    BQ -->|select active booking| OPS
+    DISPATCH -->|live route| OPS
+
+    subgraph Journey[Operational Flow]
+        J1[1. Customer creates enquiry]
+        J2[2. Planner checks winery rules]
+        J3[3. Best itinerary is produced]
+        J4[4. Transport need is generated]
+        J5[5. Ops monitors and resolves blockers]
+        J6[6. Notifications go to partners and guests]
+    end
+    class J1,J2,J3,J4,J5,J6 edge
+
+    BQ --> J1 --> PLAN --> J2 --> J3 --> DISPATCH --> J4 --> OPS --> J5 --> NOTIFY --> J6

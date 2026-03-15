@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   createContext,
@@ -6,18 +6,27 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { BookingRecord, TourRequest, Winery } from "@/lib/demo-data";
-import { localDemoApi } from "@/lib/demo-api";
+import type { AppStoreState } from "@/lib/app-state";
+import { createDefaultAppState } from "@/lib/app-state";
+import { createRepository } from "@/lib/repository";
 import { buildLivePlans, buildLiveTransportJob, deriveBookingStage } from "@/lib/planning";
+
+type SyncStatus = "loading" | "ready" | "saving" | "error";
 
 type DemoStateValue = {
   bookings: BookingRecord[];
   activeBookingId: string;
   activeBooking: BookingRecord | undefined;
   wineries: Winery[];
-  cannedTransportJobs: ReturnType<typeof localDemoApi.loadState>["transportJobs"];
+  cannedTransportJobs: AppStoreState["transportJobs"];
+  dataSourceLabel: string;
+  dataSourceMode: "demo" | "remote";
+  syncStatus: SyncStatus;
+  syncError: string | null;
   setActiveBookingId: (bookingId: string) => void;
   createBooking: () => void;
   request: TourRequest;
@@ -34,6 +43,7 @@ type DemoStateValue = {
 };
 
 const DemoStateContext = createContext<DemoStateValue | null>(null);
+const repository = createRepository();
 
 function makeBookingId() {
   return `booking-${Math.random().toString(36).slice(2, 8)}`;
@@ -55,16 +65,86 @@ const emptyRequest: TourRequest = {
 };
 
 export function DemoStateProvider({ children }: { children: ReactNode }) {
-  const [store, setStore] = useState(() => {
-    const initial = localDemoApi.loadState();
-    return {
-      ...initial,
-      bookings: rederiveStages(initial.bookings, initial.wineries),
-    };
-  });
+  const [store, setStore] = useState<AppStoreState>(createDefaultAppState);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("loading");
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const hasLoaded = useRef(false);
 
   useEffect(() => {
-    localDemoApi.saveState(store);
+    let isMounted = true;
+
+    async function load() {
+      setSyncStatus("loading");
+      setSyncError(null);
+
+      try {
+        const initial = await repository.loadState();
+        if (!isMounted) {
+          return;
+        }
+
+        setStore({
+          ...initial,
+          bookings: rederiveStages(initial.bookings, initial.wineries),
+        });
+        hasLoaded.current = true;
+        setSyncStatus("ready");
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        hasLoaded.current = true;
+        setStore(createDefaultAppState());
+        setSyncStatus("error");
+        setSyncError(
+          error instanceof Error ? error.message : "Unable to load workflow data.",
+        );
+      }
+    }
+
+    void load();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoaded.current) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function save() {
+      setSyncStatus((current) => (current === "loading" ? current : "saving"));
+      setSyncError(null);
+
+      try {
+        await repository.saveState(store);
+        if (!isMounted) {
+          return;
+        }
+
+        setSyncStatus("ready");
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setSyncStatus("error");
+        setSyncError(
+          error instanceof Error ? error.message : "Unable to save workflow data.",
+        );
+      }
+    }
+
+    void save();
+
+    return () => {
+      isMounted = false;
+    };
   }, [store]);
 
   const activeBooking = useMemo(
@@ -76,7 +156,12 @@ export function DemoStateProvider({ children }: { children: ReactNode }) {
   const plans = useMemo(() => buildLivePlans(request, store.wineries), [request, store.wineries]);
   const selectedPlan = plans[0];
   const liveTransportJob = useMemo(
-    () => buildLiveTransportJob(request, selectedPlan, activeBooking ? `TM-${activeBooking.id.slice(-4).toUpperCase()}` : "TM-LIVE"),
+    () =>
+      buildLiveTransportJob(
+        request,
+        selectedPlan,
+        activeBooking ? `TM-${activeBooking.id.slice(-4).toUpperCase()}` : "TM-LIVE",
+      ),
     [activeBooking, request, selectedPlan],
   );
 
@@ -99,6 +184,10 @@ export function DemoStateProvider({ children }: { children: ReactNode }) {
     activeBooking,
     wineries: store.wineries,
     cannedTransportJobs: store.transportJobs,
+    dataSourceLabel: repository.info.label,
+    dataSourceMode: repository.info.mode,
+    syncStatus,
+    syncError,
     setActiveBookingId: (bookingId) =>
       setStore((current) => ({ ...current, activeBookingId: bookingId })),
     createBooking: () =>

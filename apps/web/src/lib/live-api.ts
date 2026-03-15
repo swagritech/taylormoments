@@ -1,0 +1,150 @@
+import { getApiBaseUrl } from "@/lib/config";
+
+export type RecommendationStop = {
+  winery_id: string;
+  winery_name: string;
+  arrival_time: string;
+  departure_time: string;
+  drive_minutes: number;
+};
+
+export type Recommendation = {
+  itinerary_id: string;
+  expert_pick: boolean;
+  justification: string;
+  score: number;
+  label: string;
+  stops: RecommendationStop[];
+};
+
+export type RecommendResponse = {
+  generated_at: string;
+  itineraries: Recommendation[];
+};
+
+export type CreateBookingRequest = {
+  lead_name: string;
+  lead_email?: string;
+  lead_phone?: string;
+  booking_date: string;
+  pickup_location: string;
+  party_size: number;
+  preferred_region?: string;
+  preferred_wineries: string[];
+  turnstile_token?: string;
+};
+
+export type BookingResponse = {
+  bookingId: string;
+  leadName: string;
+  leadEmail?: string;
+  leadPhone?: string;
+  bookingDate: string;
+  pickupLocation: string;
+  partySize: number;
+  preferredWineries: string[];
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TokenResponse = {
+  token_id: string;
+  action_url: string;
+  expires_at: string;
+  notification?: {
+    channel: string;
+    configured: boolean;
+    recipient?: string;
+    message: string;
+  };
+};
+
+export type TokenActionResponse = {
+  status: string;
+  booking_id: string;
+  token_id: string;
+};
+
+function getRequiredApiBaseUrl() {
+  const apiBaseUrl = getApiBaseUrl();
+  if (!apiBaseUrl) {
+    throw new Error("NEXT_PUBLIC_API_BASE_URL is not configured.");
+  }
+
+  return apiBaseUrl;
+}
+
+async function parseJson<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Request failed (${response.status})`);
+  }
+
+  return (await response.json()) as T;
+}
+
+export async function recommendItineraries(payload: {
+  booking_date: string;
+  pickup_location: string;
+  party_size: number;
+  preferred_region?: string;
+  preferred_wineries: string[];
+}) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/itinerary/recommend`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseJson<RecommendResponse>(response);
+}
+
+export async function createBooking(payload: CreateBookingRequest) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/bookings`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseJson<BookingResponse>(response);
+}
+
+export async function createWineryApprovalToken(bookingId: string, wineryId: string) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/action-tokens/winery-approve?booking_id=${bookingId}&winery_id=${wineryId}`, {
+    method: "POST",
+  });
+
+  return parseJson<TokenResponse>(response);
+}
+
+export async function approveWineryToken(tokenId: string, turnstileToken?: string) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/action-tokens/${tokenId}/approve`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ turnstile_token: turnstileToken }),
+  });
+
+  return parseJson<TokenActionResponse>(response);
+}
+
+export async function acceptTransportToken(tokenId: string) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/action-tokens/${tokenId}/accept`, {
+    method: "POST",
+  });
+
+  return parseJson<TokenActionResponse>(response);
+}
+
+export function formatDisplayTime(isoString: string) {
+  return new Date(isoString).toLocaleTimeString("en-AU", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}

@@ -1,50 +1,52 @@
 ﻿# Cloudflare Pages Deployment
 
-This project can be deployed to Cloudflare Pages as a static Next.js export.
+This project is deployed to Cloudflare Pages as a static Next.js export.
 
 ## Repository settings
 
 - Repository: `swagritech/taylormoments`
 - Production branch: `main`
 - Root directory: `apps/web`
-- Recommended temporary custom domain: `tailormoments.swagritech.com.au`
+- Current custom domain: `booking.swagritech.com.au`
 
 ## Build settings
 
-- Framework preset: `Next.js (Static HTML Export)`
+- Framework preset: `None`
 - Build command: `npm run build`
 - Build output directory: `out`
 
+## Environment variables
+
+For demo mode:
+
+- `NEXT_PUBLIC_DATA_MODE=demo`
+- `NEXT_PUBLIC_API_BASE_URL=`
+
+For Azure-backed workflow mode later:
+
+- `NEXT_PUBLIC_DATA_MODE=remote`
+- `NEXT_PUBLIC_API_BASE_URL=https://your-azure-api-host`
+
+Expected remote endpoint shape:
+
+- `GET /api/v1/workbench-state`
+- `PUT /api/v1/workbench-state`
+
+The app now consumes workflow data through a repository layer, so switching from demo mode to Azure mode is driven by configuration instead of a UI rewrite.
+
 ## Why this works
 
-The current app uses static routes and client-side state, so `Next.js` static export is a good fit for the hosted MVP.
+The current app uses static routes and client-side workflow state. That makes Cloudflare Pages a good fit while the backend APIs are still being introduced.
 
-## Recommended first deployment posture
+## Current hosting posture
 
-Use the first Cloudflare deployment as a demo environment, not a production launch.
+Use the current deployment as a live workflow prototype.
 
-Recommended protections:
-- Cloudflare Access or another lightweight gate if you want partner-only viewing
-- no indexing until the production site exists
-- use a SwagriTech subdomain now and move to the Tailor Moments domain later
-
-## Custom domain setup
-
-Recommended first hostname:
-
-- `tailormoments.swagritech.com.au`
-
-Cloudflare Pages custom domain flow:
-
-1. Create the Pages project first.
-2. In the Pages project, go to `Custom domains`.
-3. Add `tailormoments.swagritech.com.au`.
-4. If `swagritech.com.au` is already a Cloudflare zone on the same account, Cloudflare can create the DNS record for you.
-5. If the DNS is elsewhere, add the CNAME only after associating the custom domain in the Pages dashboard.
-
-Important:
-
-Do not add the CNAME manually before associating the domain in the Pages dashboard, or resolution may fail.
+Appropriate uses:
+- partner demos
+- internal operations testing
+- UX redesign rounds
+- early backend contract validation
 
 ## After deployment
 
@@ -54,8 +56,10 @@ Validate:
 - `/wineries`
 - `/transport`
 - `/ops`
-- local client-side state still persists in the browser
+- booking switching works
+- winery edits affect planning and ops
+- the workflow status badge shows the correct data source mode
 
 ## Next deployment step
 
-When Azure APIs are introduced, reassess whether the app should stay fully static or move to a different deployment mode.
+When Azure APIs are ready, set the environment variables above and test the same UI against the real backend contracts.
