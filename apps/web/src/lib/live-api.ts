@@ -167,6 +167,8 @@ export async function recommendItineraries(payload: {
   party_size: number;
   preferred_region?: string;
   preferred_wineries: string[];
+  preferred_start_time?: string;
+  preferred_end_time?: string;
 }) {
   const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/itinerary/recommend`, {
     method: "POST",

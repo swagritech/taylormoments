@@ -118,6 +118,8 @@ export type RecommendItineraryRequest = {
   pickup_location: string;
   preferred_wineries?: string[];
   preferred_region?: string;
+  preferred_start_time?: string;
+  preferred_end_time?: string;
 };
 
 export type RecommendItineraryResponse = {
@@ -142,8 +144,6 @@ export type CreateBookingRequest = RecommendItineraryRequest & {
   lead_name: string;
   lead_email?: string;
   lead_phone?: string;
-  preferred_start_time?: string;
-  preferred_end_time?: string;
   turnstile_token?: string;
 };
 

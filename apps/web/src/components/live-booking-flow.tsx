@@ -96,6 +96,8 @@ export function LiveBookingFlow({
         booking_date: bookingDate,
         pickup_location: pickupLocation,
         party_size: partySize,
+        preferred_start_time: preferredStartTime || undefined,
+        preferred_end_time: preferredEndTime || undefined,
         preferred_wineries: selectedWineries.map(uuidForWinerySlug),
       });
 

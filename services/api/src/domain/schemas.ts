@@ -1,21 +1,54 @@
 import { z } from "zod";
 
-export const recommendItineraryRequestSchema = z.object({
+const baseItineraryRequestSchema = z.object({
   booking_date: z.string().min(1),
   party_size: z.number().int().positive(),
   pickup_location: z.string().min(1),
   preferred_wineries: z.array(z.string()).optional(),
   preferred_region: z.string().optional(),
+  preferred_start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  preferred_end_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
 });
 
-export const createBookingRequestSchema = recommendItineraryRequestSchema.extend({
+function hasValidTimeWindow(value: {
+  preferred_start_time?: string;
+  preferred_end_time?: string;
+}) {
+  return (
+    !value.preferred_start_time ||
+    !value.preferred_end_time ||
+    value.preferred_start_time < value.preferred_end_time
+  );
+}
+
+export const recommendItineraryRequestSchema = baseItineraryRequestSchema.refine(
+  (value) =>
+    hasValidTimeWindow({
+      preferred_start_time: value.preferred_start_time,
+      preferred_end_time: value.preferred_end_time,
+    }),
+  {
+    message: "preferred_start_time must be earlier than preferred_end_time.",
+    path: ["preferred_end_time"],
+  },
+);
+
+export const createBookingRequestSchema = baseItineraryRequestSchema.extend({
   lead_name: z.string().min(1),
   lead_email: z.string().email().optional(),
   lead_phone: z.string().min(5).optional(),
-  preferred_start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  preferred_end_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   turnstile_token: z.string().min(1).optional(),
-});
+}).refine(
+  (value) =>
+    hasValidTimeWindow({
+      preferred_start_time: value.preferred_start_time,
+      preferred_end_time: value.preferred_end_time,
+    }),
+  {
+    message: "preferred_start_time must be earlier than preferred_end_time.",
+    path: ["preferred_end_time"],
+  },
+);
 
 export const registerUserRequestSchema = z.object({
   email: z.string().email(),
