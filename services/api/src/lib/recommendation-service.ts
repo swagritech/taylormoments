@@ -373,7 +373,7 @@ export function buildCandidateItineraries(params: {
 
   const filteredWineries = wineries.filter((winery) => {
     const regionMatch = request.preferred_region ? winery.region === request.preferred_region : true;
-    const preferredMatch = preferredSet.size > 0 ? preferredSet.has(winery.wineryId) : true;
+    const preferredMatch = preferredIds.length > 0 ? preferredSet.has(winery.wineryId) : true;
     return winery.active && regionMatch && preferredMatch;
   });
 
@@ -488,7 +488,7 @@ export async function recommendItineraries(params: {
 
   const filteredWineries = wineries.filter((winery) => {
     const regionMatch = request.preferred_region ? winery.region === request.preferred_region : true;
-    const preferredMatch = preferredSet.size > 0 ? preferredSet.has(winery.wineryId) : true;
+    const preferredMatch = preferredIds.length > 0 ? preferredSet.has(winery.wineryId) : true;
     return winery.active && regionMatch && preferredMatch;
   });
 

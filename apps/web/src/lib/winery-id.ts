@@ -4,7 +4,6 @@ const canonicalWineryIds: Record<string, string> = {
   "fraser-gallop": "33333333-3333-3333-3333-333333333333",
   woodlands: "44444444-4444-4444-4444-444444444444",
 };
-const canonicalWineryPool = Object.values(canonicalWineryIds);
 
 function hashToHex(seed: string) {
   let h1 = 0x811c9dc5;
@@ -32,6 +31,5 @@ export function slugToWineryUuid(slug: string) {
   }
 
   const hashHex = hashToHex(`tailormoments:${slug}`);
-  const bucket = Number.parseInt(hashHex.slice(0, 8), 16) % canonicalWineryPool.length;
-  return canonicalWineryPool[bucket] ?? canonicalWineryPool[0] ?? canonicalWineryIds["vasse-felix"];
+  return `${hashHex.slice(0, 8)}-${hashHex.slice(8, 12)}-${hashHex.slice(12, 16)}-${hashHex.slice(16, 20)}-${hashHex.slice(20, 32)}`;
 }
