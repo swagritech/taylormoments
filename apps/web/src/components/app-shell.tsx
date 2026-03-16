@@ -17,7 +17,6 @@ type AppShellProps = {
 };
 
 const publicNavItemsDefault = [
-  { href: "/", label: "Overview" },
   { href: "/explore", label: "Explore" },
   { href: "/customer/dashboard", label: "Dashboard" },
   { href: "/plan", label: "Plan a day" },
@@ -58,7 +57,6 @@ export function AppShell({
     ? getPartnerNavItems(user?.role)
     : user?.role === "customer"
       ? [
-          { href: "/", label: "Overview" },
           { href: "/explore", label: "Explore" },
           { href: "/customer/dashboard", label: "Dashboard" },
           { href: "/plan", label: "Plan a day" },
@@ -68,7 +66,7 @@ export function AppShell({
   return (
     <div className="app-shell">
       <header className="topbar">
-        <Link href="/" className="brand">
+        <Link href="/explore" className="brand">
           <div className="brandBadge">
             <Image
               src="/brand/TM_logo_white-beta.png"
