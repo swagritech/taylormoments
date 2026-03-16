@@ -83,9 +83,16 @@ export function CustomerWineryCatalog({
             return null;
           }
           const remoteProfile = profilesById[slugToWineryUuid(winery.id)];
+          const hasRemoteCoordinates =
+            remoteProfile?.latitude !== undefined &&
+            remoteProfile?.longitude !== undefined &&
+            Number.isFinite(remoteProfile.latitude) &&
+            Number.isFinite(remoteProfile.longitude);
           return {
             ...winery,
             address: remoteProfile?.address ?? "",
+            latitude: hasRemoteCoordinates ? remoteProfile.latitude : winery.latitude,
+            longitude: hasRemoteCoordinates ? remoteProfile.longitude : winery.longitude,
           };
         })
         .filter((entry): entry is (typeof wineryCatalog)[number] => Boolean(entry)),
