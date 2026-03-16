@@ -662,6 +662,34 @@ button {
   gap: 10px;
 }
 
+.profileCompactRow {
+  grid-template-columns: minmax(150px, 220px) minmax(180px, 240px) minmax(0, 1fr);
+}
+
+.compactField .inputLike {
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+.currencyInputWrap {
+  position: relative;
+}
+
+.currencyPrefix {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #4d5a54;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.currencyInput {
+  padding-left: 28px;
+}
+
 .recommendationStack,
 .actionCardStack,
 .alternateBlock,

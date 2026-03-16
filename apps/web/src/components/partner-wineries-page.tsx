@@ -592,8 +592,8 @@ export function PartnerWineriesPage() {
         title="Winery profile settings"
         description="Set tasting price, winery details, and experience offers shown to guests."
       >
-        <div className="fieldRow">
-          <div className="field">
+        <div className="fieldRow profileCompactRow">
+          <div className="field compactField">
             <label htmlFor="wineryCapacity">Guest capacity</label>
             <input
               id="wineryCapacity"
@@ -606,18 +606,21 @@ export function PartnerWineriesPage() {
               placeholder="20"
             />
           </div>
-          <div className="field">
+          <div className="field compactField">
             <label htmlFor="tastingPrice">Tasting price (AUD)</label>
-            <input
-              id="tastingPrice"
-              type="number"
-              min={0}
-              step="0.01"
-              className="inputLike inputField"
-              value={tastingPrice}
-              onChange={(event) => setTastingPrice(event.target.value)}
-              placeholder="35"
-            />
+            <div className="currencyInputWrap">
+              <span className="currencyPrefix" aria-hidden="true">$</span>
+              <input
+                id="tastingPrice"
+                type="number"
+                min={0}
+                step="0.01"
+                className="inputLike inputField currencyInput"
+                value={tastingPrice}
+                onChange={(event) => setTastingPrice(event.target.value)}
+                placeholder="35"
+              />
+            </div>
           </div>
           <div className="field">
             <label htmlFor="famousFor">What is your winery famous for?</label>
