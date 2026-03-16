@@ -327,6 +327,9 @@ export default function ExplorePage() {
     setRecommendation(null);
 
     try {
+      const hasCheeseBoardMatch = (winery: WineryCatalogItem) =>
+        toSearchProfile(winery, profilesById[slugToWineryUuid(winery.id)]).hasCheeseBoard;
+
       const filterByPreferences = (includeVibePreference: boolean) => wineryCatalog.filter((winery) => {
         const profile = toSearchProfile(winery, profilesById[slugToWineryUuid(winery.id)]);
         if (includeLunch === "yes" && !profile.hasLunchExperience) {
@@ -336,9 +339,6 @@ export default function ExplorePage() {
           return false;
         }
         if (prefSpecialExperience && !profile.hasSpecialExperience) {
-          return false;
-        }
-        if (prefCheeseBoard && !profile.hasCheeseBoard) {
           return false;
         }
         if (includeVibePreference && vibe && profile.vibeTag !== vibe) {
@@ -359,16 +359,44 @@ export default function ExplorePage() {
         return true;
       });
 
-      const shortlist = filterByPreferences(true)
+      let candidatePool = filterByPreferences(true);
+      const shortlist = candidatePool
         .sort((a, b) => b.rating - a.rating)
         .slice(0, 14);
       let routeOptimized = pickNearestRoute(shortlist, timeWindow.stops, profilesById);
 
       if (routeOptimized.length < 2 && vibe) {
-        const relaxedShortlist = filterByPreferences(false)
+        candidatePool = filterByPreferences(false);
+        const relaxedShortlist = candidatePool
           .sort((a, b) => b.rating - a.rating)
           .slice(0, 14);
         routeOptimized = pickNearestRoute(relaxedShortlist, timeWindow.stops, profilesById);
+      }
+
+      if (prefCheeseBoard) {
+        const cheeseCandidates = candidatePool.filter(hasCheeseBoardMatch);
+        if (cheeseCandidates.length === 0) {
+          setError("No cheeseboard wineries currently match this preference set. Try relaxing one filter.");
+          return;
+        }
+
+        const routeHasCheese = routeOptimized.some(hasCheeseBoardMatch);
+        if (!routeHasCheese) {
+          const requiredCheese =
+            cheeseCandidates.find((candidate) => !routeOptimized.some((stop) => stop.id === candidate.id)) ??
+            cheeseCandidates[0];
+
+          if (requiredCheese) {
+            const seeded = [...routeOptimized, requiredCheese];
+            const dedupedSeed = Array.from(new Map(seeded.map((entry) => [entry.id, entry])).values());
+            routeOptimized = pickNearestRoute(dedupedSeed, timeWindow.stops, profilesById);
+
+            if (!routeOptimized.some(hasCheeseBoardMatch)) {
+              const withoutLast = routeOptimized.slice(0, Math.max(0, timeWindow.stops - 1));
+              routeOptimized = [...withoutLast, requiredCheese];
+            }
+          }
+        }
       }
 
       setMatchedWineries(routeOptimized);
