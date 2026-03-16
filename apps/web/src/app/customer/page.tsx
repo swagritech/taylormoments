@@ -4,9 +4,13 @@ import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { CustomerWineryCatalog } from "@/components/customer-winery-catalog";
 import { LiveBookingFlow } from "@/components/live-booking-flow";
+import { loadExplorePreferences } from "@/lib/explore-preferences";
 
 export default function CustomerPage() {
-  const [selectedWineries, setSelectedWineries] = useState<string[]>([]);
+  const [selectedWineries, setSelectedWineries] = useState<string[]>(() => {
+    const saved = loadExplorePreferences();
+    return (saved?.matchedWineryIds ?? []).slice(0, 6);
+  });
   const [stage, setStage] = useState<"catalog" | "schedule">("catalog");
 
   function toggleWinery(wineryId: string) {

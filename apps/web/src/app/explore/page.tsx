@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import {
@@ -12,6 +12,11 @@ import {
 } from "@/lib/live-api";
 import { wineryCatalog, type WineryCatalogItem } from "@/lib/winery-catalog";
 import { slugToWineryUuid } from "@/lib/winery-id";
+import {
+  loadExplorePreferences,
+  saveExplorePreferences,
+  type ExplorePreferences,
+} from "@/lib/explore-preferences";
 
 type TripLength = "half-day" | "full-day" | "multi-day";
 type YesNo = "yes" | "no";
@@ -21,6 +26,7 @@ type SearchProfile = {
   hasLunchExperience: boolean;
   organicFriendly: boolean;
   hasSpecialExperience: boolean;
+  hasCheeseBoard: boolean;
   vibeTag: "popular" | "lesser-known";
   transportSuitable: boolean;
   supportsHalfDay: boolean;
@@ -61,6 +67,10 @@ function toSearchProfile(winery: WineryCatalogItem): SearchProfile {
       lowerExperiences.includes("private") ||
       lowerExperiences.includes("behind the scenes") ||
       lowerExperiences.includes("masterclass"),
+    hasCheeseBoard:
+      lowerExperiences.includes("cheese") ||
+      lowerExperiences.includes("platter") ||
+      lowerExperiences.includes("nougat"),
     vibeTag: winery.selectedByCount >= 500 ? "popular" : "lesser-known",
     transportSuitable: true,
     supportsHalfDay: true,
@@ -122,24 +132,62 @@ function pickNearestRoute(wineries: WineryCatalogItem[], maxStops: number) {
 }
 
 export default function ExplorePage() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [groupSize, setGroupSize] = useState(4);
-  const [needTransport, setNeedTransport] = useState<YesNo>("yes");
-  const [tripLength, setTripLength] = useState<TripLength>("full-day");
-  const [includeLunch, setIncludeLunch] = useState<YesNo>("yes");
-  const [prefOrganic, setPrefOrganic] = useState(false);
-  const [prefSpecialExperience, setPrefSpecialExperience] = useState(false);
-  const [vibe, setVibe] = useState<Vibe>("popular");
+  const initialPreferences = useMemo(() => loadExplorePreferences(), []);
+  const [name, setName] = useState(initialPreferences?.name ?? "");
+  const [email, setEmail] = useState(initialPreferences?.email ?? "");
+  const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
+  const [needTransport, setNeedTransport] = useState<YesNo>(initialPreferences?.needTransport ?? "yes");
+  const [tripLength, setTripLength] = useState<TripLength>(initialPreferences?.tripLength ?? "full-day");
+  const [includeLunch, setIncludeLunch] = useState<YesNo>(initialPreferences?.includeLunch ?? "yes");
+  const [prefOrganic, setPrefOrganic] = useState(initialPreferences?.prefOrganic ?? false);
+  const [prefSpecialExperience, setPrefSpecialExperience] = useState(initialPreferences?.prefSpecialExperience ?? false);
+  const [prefCheeseBoard, setPrefCheeseBoard] = useState(initialPreferences?.prefCheeseBoard ?? false);
+  const [vibe, setVibe] = useState<Vibe>(initialPreferences?.vibe ?? "popular");
   const [requesting, setRequesting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [matchedWineries, setMatchedWineries] = useState<WineryCatalogItem[]>([]);
-  const [previewDate, setPreviewDate] = useState<string>("");
+  const [matchedWineries, setMatchedWineries] = useState<WineryCatalogItem[]>(
+    () =>
+      (initialPreferences?.matchedWineryIds ?? [])
+        .map((entry) => wineryCatalog.find((item) => item.id === entry))
+        .filter((entry): entry is WineryCatalogItem => Boolean(entry)),
+  );
+  const [previewDate, setPreviewDate] = useState<string>(initialPreferences?.previewDate ?? "");
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [booking, setBooking] = useState<BookingResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
+
+  useEffect(() => {
+    const payload: ExplorePreferences = {
+      name,
+      email,
+      groupSize,
+      needTransport,
+      tripLength,
+      includeLunch,
+      prefOrganic,
+      prefSpecialExperience,
+      prefCheeseBoard,
+      vibe,
+      matchedWineryIds: matchedWineries.map((entry) => entry.id),
+      previewDate: previewDate || undefined,
+    };
+    saveExplorePreferences(payload);
+  }, [
+    name,
+    email,
+    groupSize,
+    needTransport,
+    tripLength,
+    includeLunch,
+    prefOrganic,
+    prefSpecialExperience,
+    prefCheeseBoard,
+    vibe,
+    matchedWineries,
+    previewDate,
+  ]);
 
   async function handlePlanTrip() {
     setError(null);
@@ -157,6 +205,9 @@ export default function ExplorePage() {
           return false;
         }
         if (prefSpecialExperience && !profile.hasSpecialExperience) {
+          return false;
+        }
+        if (prefCheeseBoard && !profile.hasCheeseBoard) {
           return false;
         }
         if (vibe && profile.vibeTag !== vibe) {
@@ -339,6 +390,7 @@ export default function ExplorePage() {
               <div className="choiceRow">
                 <label className="choicePill"><input type="checkbox" checked={prefOrganic} onChange={(event) => setPrefOrganic(event.target.checked)} /> Organic wine</label>
                 <label className="choicePill"><input type="checkbox" checked={prefSpecialExperience} onChange={(event) => setPrefSpecialExperience(event.target.checked)} /> Special winery experience</label>
+                <label className="choicePill"><input type="checkbox" checked={prefCheeseBoard} onChange={(event) => setPrefCheeseBoard(event.target.checked)} /> Cheese board</label>
               </div>
             </div>
 
@@ -407,7 +459,7 @@ export default function ExplorePage() {
 
           <div className="callout">
             <p className="miniLabel">Searchable placeholders</p>
-            <p className="subtle">hasLunchExperience, organicFriendly, specialExperienceFlag, vibeTag, transportSuitable, supportsHalfDay, supportsFullDay, and supportsMultiDay are currently derived placeholders ready to map to master DB columns.</p>
+            <p className="subtle">hasLunchExperience, organicFriendly, specialExperienceFlag, cheeseBoardFriendly, vibeTag, transportSuitable, supportsHalfDay, supportsFullDay, and supportsMultiDay are currently derived placeholders ready to map to master DB columns.</p>
           </div>
 
           {booking ? (

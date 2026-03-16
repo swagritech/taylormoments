@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/section-card";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { pickupOptions, wineries as legacyWineries } from "@/lib/demo-data";
+import { getSuggestedWindowFromTripLength, loadExplorePreferences } from "@/lib/explore-preferences";
 import { useAuth } from "@/lib/auth-state";
 import { slugToWineryUuid } from "@/lib/winery-id";
 import {
@@ -66,6 +67,35 @@ export function LiveBookingFlow({
 
   const expertPick = recommendations.find((option) => option.expert_pick) ?? recommendations[0];
   const alternateOptions = expertPick ? recommendations.filter((option) => option.itinerary_id !== expertPick.itinerary_id) : [];
+
+  useEffect(() => {
+    const saved = loadExplorePreferences();
+    if (!saved) {
+      return;
+    }
+
+    if (!leadName.trim() && saved.name) {
+      setLeadName(saved.name);
+    }
+    if (!leadEmail.trim() && saved.email) {
+      setLeadEmail(saved.email);
+    }
+    if (partySize === 4 && saved.groupSize > 0) {
+      setPartySize(saved.groupSize);
+    }
+    if (pickupLocation === (pickupOptions[0]?.label ?? "Margaret River Visitor Centre")) {
+      setPickupLocation(
+        saved.needTransport === "no"
+          ? "Self-drive (no transport required)"
+          : (pickupOptions[0]?.label ?? "Margaret River Visitor Centre"),
+      );
+    }
+    if (preferredStartTime === "10:00" && preferredEndTime === "17:00") {
+      const window = getSuggestedWindowFromTripLength(saved.tripLength);
+      setPreferredStartTime(window.start);
+      setPreferredEndTime(window.end);
+    }
+  }, [leadName, leadEmail, partySize, pickupLocation, preferredStartTime, preferredEndTime]);
 
   useEffect(() => {
     if (!user || user.role !== "customer") {

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { useAuth } from "@/lib/auth-state";
+import { loadExplorePreferences } from "@/lib/explore-preferences";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,6 +20,25 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const saved = loadExplorePreferences();
+    if (!saved) {
+      return;
+    }
+
+    if (!email.trim() && saved.email) {
+      setEmail(saved.email);
+    }
+
+    if (!firstName.trim() && !lastName.trim() && saved.name) {
+      const parts = saved.name.trim().split(/\s+/).filter(Boolean);
+      if (parts.length > 0) {
+        setFirstName(parts[0] ?? "");
+        setLastName(parts.slice(1).join(" "));
+      }
+    }
+  }, [email, firstName, lastName]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
