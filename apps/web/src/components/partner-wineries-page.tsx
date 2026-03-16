@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
-import { getDataMode } from "@/lib/config";
 import { useAuth } from "@/lib/auth-state";
 import {
   approveWineryToken,
@@ -87,7 +86,6 @@ export function PartnerWineriesPage() {
   const [offersCheeseBoard, setOffersCheeseBoard] = useState(false);
   const [experienceRows, setExperienceRows] = useState<ExperienceDraft[]>([]);
   const [profileSavedAt, setProfileSavedAt] = useState<string | null>(null);
-  const dataMode = getDataMode();
 
   const loadRequests = useCallback(async (wineryId: string) => {
     if (!wineryId || !token) {
@@ -421,12 +419,6 @@ export function PartnerWineriesPage() {
                 </option>
               ))}
             </select>
-          </div>
-          <div className="field">
-            <label>Mode</label>
-            <div className="inputLike" style={{ display: "flex", alignItems: "center" }}>
-              {dataMode === "remote" ? "Remote API" : "Demo mode"}
-            </div>
           </div>
         </div>
 
