@@ -101,6 +101,7 @@ export const wineryProfileUpdateSchema = z.object({
   address: z.string().max(500).optional(),
   opening_hours: z.string().max(1000).optional(),
   tasting_price: z.number().nonnegative().max(10000).optional(),
+  tasting_duration_minutes: z.number().int().positive().max(480).optional(),
   description: z.string().max(3000).optional(),
   famous_for: z.string().max(500).optional(),
   offers_cheese_board: z.boolean(),

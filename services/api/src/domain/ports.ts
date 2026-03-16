@@ -21,6 +21,7 @@ export interface WorkflowRepository {
     address?: string;
     openingHours?: string;
     tastingPrice?: number;
+    tastingDurationMinutes?: number;
     description?: string;
     famousFor?: string;
     offersCheeseBoard: boolean;

@@ -26,6 +26,7 @@ const wineries: Winery[] = [
     openingHours: "Daily 10:00-17:00",
     active: true,
     tastingPrice: 35,
+    tastingDurationMinutes: 45,
     description: "Founding Margaret River estate with premium tastings and vineyard views.",
     famousFor: "Cabernet Sauvignon and Chardonnay",
     offersCheeseBoard: true,
@@ -43,6 +44,7 @@ const wineries: Winery[] = [
     openingHours: "Daily 10:00-17:00",
     active: true,
     tastingPrice: 40,
+    tastingDurationMinutes: 45,
     description: "Biodynamic winery known for immersive food and wine experiences.",
     famousFor: "Biodynamic wines and dining",
     offersCheeseBoard: true,
@@ -60,6 +62,7 @@ const wineries: Winery[] = [
     openingHours: "Daily 10:00-16:30",
     active: true,
     tastingPrice: 30,
+    tastingDurationMinutes: 45,
     description: "Boutique estate delivering classic Margaret River varietals.",
     famousFor: "Parterre Cabernet Sauvignon",
     offersCheeseBoard: false,
@@ -77,6 +80,7 @@ const wineries: Winery[] = [
     openingHours: "Daily 10:00-17:00",
     active: true,
     tastingPrice: 25,
+    tastingDurationMinutes: 45,
     description: "Family-run estate with relaxed tastings in a heritage setting.",
     famousFor: "Classic reds and warm hospitality",
     offersCheeseBoard: true,
@@ -157,6 +161,7 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     address?: string;
     openingHours?: string;
     tastingPrice?: number;
+    tastingDurationMinutes?: number;
     description?: string;
     famousFor?: string;
     offersCheeseBoard: boolean;
@@ -174,6 +179,7 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
       address: request.address,
       openingHours: request.openingHours,
       tastingPrice: request.tastingPrice,
+      tastingDurationMinutes: request.tastingDurationMinutes ?? current.tastingDurationMinutes ?? 45,
       description: request.description,
       famousFor: request.famousFor,
       offersCheeseBoard: request.offersCheeseBoard,

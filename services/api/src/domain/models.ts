@@ -40,6 +40,7 @@ export type Winery = {
   openingHours?: string;
   active: boolean;
   tastingPrice?: number;
+  tastingDurationMinutes?: number;
   description?: string;
   famousFor?: string;
   offersCheeseBoard: boolean;

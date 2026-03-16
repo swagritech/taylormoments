@@ -66,6 +66,9 @@ function mapWinery(row: Record<string, unknown>): Winery {
     tastingPrice: row.tasting_price !== null && row.tasting_price !== undefined
       ? Number(row.tasting_price)
       : undefined,
+    tastingDurationMinutes: row.tasting_duration_minutes !== null && row.tasting_duration_minutes !== undefined
+      ? Number(row.tasting_duration_minutes)
+      : undefined,
     description: row.description ? String(row.description) : undefined,
     famousFor: row.famous_for ? String(row.famous_for) : undefined,
     offersCheeseBoard: Boolean(row.offers_cheese_board),
@@ -195,7 +198,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const result = await pool.query(`
       select distinct on (lower(name))
              winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, opening_hours, active,
-             tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
+             tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers
       from winery
       order by lower(name) asc, updated_at desc, created_at desc
     `);
@@ -209,7 +212,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
       `
         select winery_id, name, region, confirmation_mode, capacity, latitude, longitude, active,
                address, opening_hours,
-               tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
+               tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers
         from winery
         where winery_id = $1
       `,
@@ -229,6 +232,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     address?: string;
     openingHours?: string;
     tastingPrice?: number;
+    tastingDurationMinutes?: number;
     description?: string;
     famousFor?: string;
     offersCheeseBoard: boolean;
@@ -242,6 +246,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
             address = $3,
             opening_hours = $4,
             tasting_price = $5,
+            tasting_duration_minutes = coalesce($10, tasting_duration_minutes),
             description = $6,
             famous_for = $7,
             offers_cheese_board = $8,
@@ -249,7 +254,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
             updated_at = now()
         where winery_id = $1
         returning winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, opening_hours, active,
-                  tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
+                  tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers
       `,
       [
         request.wineryId,
@@ -261,6 +266,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
         request.famousFor ?? null,
         request.offersCheeseBoard,
         JSON.stringify(request.uniqueExperienceOffers ?? []),
+        request.tastingDurationMinutes ?? null,
       ],
     );
 

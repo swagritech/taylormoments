@@ -81,6 +81,7 @@ export function PartnerWineriesPage() {
   const [address, setAddress] = useState("");
   const [openingHours, setOpeningHours] = useState("");
   const [tastingPrice, setTastingPrice] = useState("");
+  const [tastingDurationMinutes, setTastingDurationMinutes] = useState("45");
   const [wineryDescription, setWineryDescription] = useState("");
   const [famousFor, setFamousFor] = useState("");
   const [offersCheeseBoard, setOffersCheeseBoard] = useState(false);
@@ -114,6 +115,11 @@ export function PartnerWineriesPage() {
       setOpeningHours(profileResponse.opening_hours ?? "");
       setTastingPrice(
         profileResponse.tasting_price !== undefined ? String(profileResponse.tasting_price) : "",
+      );
+      setTastingDurationMinutes(
+        profileResponse.tasting_duration_minutes !== undefined
+          ? String(profileResponse.tasting_duration_minutes)
+          : "45",
       );
       setWineryDescription(profileResponse.description ?? "");
       setFamousFor(profileResponse.famous_for ?? "");
@@ -310,8 +316,13 @@ export function PartnerWineriesPage() {
       }))
       .filter((row) => row.name && Number.isFinite(row.price) && row.price >= 0);
     const normalizedCapacity = Number(capacity);
+    const normalizedTastingDurationMinutes = Number(tastingDurationMinutes);
     if (!Number.isFinite(normalizedCapacity) || normalizedCapacity <= 0) {
       setError("Capacity must be greater than 0.");
+      return;
+    }
+    if (!Number.isFinite(normalizedTastingDurationMinutes) || normalizedTastingDurationMinutes <= 0) {
+      setError("Tasting length must be greater than 0 minutes.");
       return;
     }
 
@@ -323,6 +334,7 @@ export function PartnerWineriesPage() {
         address: address.trim() || undefined,
         opening_hours: openingHours.trim() || undefined,
         tasting_price: tastingPrice.trim() ? Number(tastingPrice) : undefined,
+        tasting_duration_minutes: normalizedTastingDurationMinutes,
         description: wineryDescription.trim() || undefined,
         famous_for: famousFor.trim() || undefined,
         offers_cheese_board: offersCheeseBoard,
@@ -332,6 +344,9 @@ export function PartnerWineriesPage() {
       setAddress(updated.address ?? "");
       setOpeningHours(updated.opening_hours ?? "");
       setTastingPrice(updated.tasting_price !== undefined ? String(updated.tasting_price) : "");
+      setTastingDurationMinutes(
+        updated.tasting_duration_minutes !== undefined ? String(updated.tasting_duration_minutes) : "45",
+      );
       setWineryDescription(updated.description ?? "");
       setFamousFor(updated.famous_for ?? "");
       setOffersCheeseBoard(updated.offers_cheese_board);
@@ -622,6 +637,23 @@ export function PartnerWineriesPage() {
               />
             </div>
           </div>
+          <div className="field compactField">
+            <label htmlFor="tastingDurationMinutes">Tasting length (mins)</label>
+            <input
+              id="tastingDurationMinutes"
+              type="number"
+              min={1}
+              max={480}
+              step={1}
+              className="inputLike inputField"
+              value={tastingDurationMinutes}
+              onChange={(event) => setTastingDurationMinutes(event.target.value)}
+              placeholder="45"
+            />
+          </div>
+        </div>
+
+        <div className="fieldRow">
           <div className="field">
             <label htmlFor="famousFor">What is your winery famous for?</label>
             <input

@@ -242,6 +242,7 @@ export type WineryListResponse = {
     address?: string;
     opening_hours?: string;
     tasting_price?: number;
+    tasting_duration_minutes?: number;
     description?: string;
     famous_for?: string;
     offers_cheese_board?: boolean;
@@ -262,6 +263,7 @@ export type WineryProfileResponse = {
   address?: string;
   opening_hours?: string;
   tasting_price?: number;
+  tasting_duration_minutes?: number;
   description?: string;
   famous_for?: string;
   offers_cheese_board: boolean;
@@ -431,6 +433,7 @@ export async function updateWineryProfileAuthed(
     address?: string;
     opening_hours?: string;
     tasting_price?: number;
+    tasting_duration_minutes?: number;
     description?: string;
     famous_for?: string;
     offers_cheese_board: boolean;
