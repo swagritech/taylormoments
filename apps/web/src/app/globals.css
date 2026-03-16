@@ -28,10 +28,17 @@ body {
 body {
   font-family: var(--font-sans), sans-serif;
   color: var(--ink);
+  /* Rollback backup:
   background:
     radial-gradient(circle at top right, rgba(184, 148, 87, 0.12), transparent 28%),
     radial-gradient(circle at top left, rgba(47, 122, 116, 0.08), transparent 34%),
     linear-gradient(180deg, #f9f6ef 0%, #f4efe4 100%);
+  */
+  background-image: url("/backgrounds/IMG_6544.PNG");
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
