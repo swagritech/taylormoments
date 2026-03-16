@@ -59,28 +59,30 @@ function toSearchProfile(
   const remoteOfferNames = (remoteProfile?.unique_experience_offers ?? [])
     .map((entry) => entry?.name ?? "")
     .join(" ");
-  const combinedExperiences = `${winery.experiences} ${remoteOfferNames}`.toLowerCase();
-  const lowerOrganic = winery.organicStatus.toLowerCase();
+  const profileDescription = remoteProfile?.description ?? "";
+  const profileFamousFor = remoteProfile?.famous_for ?? "";
+  const combinedText = `${winery.experiences} ${remoteOfferNames} ${profileDescription} ${profileFamousFor}`.toLowerCase();
+  const lowerOrganic = `${winery.organicStatus} ${profileDescription} ${profileFamousFor}`.toLowerCase();
   const catalogHasCheeseBoard =
-    combinedExperiences.includes("cheese") ||
-    combinedExperiences.includes("platter") ||
-    combinedExperiences.includes("nougat");
+    combinedText.includes("cheese") ||
+    combinedText.includes("platter") ||
+    combinedText.includes("nougat");
 
   return {
     hasLunchExperience:
-      combinedExperiences.includes("lunch") ||
-      combinedExperiences.includes("degustation") ||
-      combinedExperiences.includes("pairing") ||
-      combinedExperiences.includes("platter"),
+      combinedText.includes("lunch") ||
+      combinedText.includes("degustation") ||
+      combinedText.includes("pairing") ||
+      combinedText.includes("platter"),
     organicFriendly:
       lowerOrganic.includes("organic") ||
       lowerOrganic.includes("biodynamic") ||
       lowerOrganic.includes("natural"),
     hasSpecialExperience:
-      combinedExperiences.includes("tour") ||
-      combinedExperiences.includes("private") ||
-      combinedExperiences.includes("behind the scenes") ||
-      combinedExperiences.includes("masterclass"),
+      combinedText.includes("tour") ||
+      combinedText.includes("private") ||
+      combinedText.includes("behind the scenes") ||
+      combinedText.includes("masterclass"),
     hasCheeseBoard:
       remoteProfile?.offers_cheese_board ?? catalogHasCheeseBoard,
     vibeTag: winery.selectedByCount >= 500 ? "popular" : "lesser-known",
