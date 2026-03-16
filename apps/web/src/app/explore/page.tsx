@@ -61,12 +61,7 @@ function toSearchProfile(
     .join(" ");
   const profileDescription = remoteProfile?.description ?? "";
   const profileFamousFor = remoteProfile?.famous_for ?? "";
-  const combinedText = `${winery.experiences} ${remoteOfferNames} ${profileDescription} ${profileFamousFor}`.toLowerCase();
-  const lowerOrganic = `${winery.organicStatus} ${profileDescription} ${profileFamousFor}`.toLowerCase();
-  const catalogHasCheeseBoard =
-    combinedText.includes("cheese") ||
-    combinedText.includes("platter") ||
-    combinedText.includes("nougat");
+  const combinedText = `${remoteOfferNames} ${profileDescription} ${profileFamousFor}`.toLowerCase();
 
   return {
     hasLunchExperience:
@@ -75,16 +70,16 @@ function toSearchProfile(
       combinedText.includes("pairing") ||
       combinedText.includes("platter"),
     organicFriendly:
-      lowerOrganic.includes("organic") ||
-      lowerOrganic.includes("biodynamic") ||
-      lowerOrganic.includes("natural"),
+      combinedText.includes("organic") ||
+      combinedText.includes("biodynamic") ||
+      combinedText.includes("natural"),
     hasSpecialExperience:
       combinedText.includes("tour") ||
       combinedText.includes("private") ||
       combinedText.includes("behind the scenes") ||
       combinedText.includes("masterclass"),
     hasCheeseBoard:
-      remoteProfile?.offers_cheese_board ?? catalogHasCheeseBoard,
+      remoteProfile?.offers_cheese_board ?? false,
     vibeTag: winery.selectedByCount >= 500 ? "popular" : "lesser-known",
     transportSuitable: true,
     supportsHalfDay: true,
@@ -436,6 +431,10 @@ export default function ExplorePage() {
     );
   }
 
+  function resolveWineryById(wineryId: string) {
+    return wineryCatalog.find((entry) => slugToWineryUuid(entry.id) === wineryId) ?? null;
+  }
+
   function resolveRemoteProfileByName(stopName: string) {
     const normalized = stopName.trim().toLowerCase();
     const match = Object.values(profilesById).find(
@@ -580,8 +579,8 @@ export default function ExplorePage() {
                   <div className="schedulePreviewCard">
                     {recommendation.stops.map((stop, index) => {
                       const nextStop = recommendation.stops[index + 1];
-                      const stopWinery = resolveWinery(stop.winery_name);
-                      const remoteProfile = resolveRemoteProfileByName(stop.winery_name);
+                      const stopWinery = resolveWineryById(stop.winery_id) ?? resolveWinery(stop.winery_name);
+                      const remoteProfile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
                       const mediaFrames = mediaUrlsByWineryId[stop.winery_id] ?? [];
                       const placeholderFrames = placeholderGalleryFrames(stopWinery);
                       const rollingFrames = mediaFrames.length > 0
@@ -596,7 +595,7 @@ export default function ExplorePage() {
                                 <button
                                   type="button"
                                   className="timelineWineryLink"
-                                  onClick={() => setSelectedPreviewWinery(resolveWinery(stop.winery_name))}
+                                  onClick={() => setSelectedPreviewWinery(resolveWineryById(stop.winery_id) ?? resolveWinery(stop.winery_name))}
                                 >
                                   {stop.winery_name}
                                 </button>
@@ -656,7 +655,7 @@ export default function ExplorePage() {
 
               <div className="callout">
                 <p className="miniLabel">Searchable placeholders</p>
-                <p className="subtle">hasLunchExperience, organicFriendly, specialExperienceFlag, cheeseBoardFriendly, vibeTag, transportSuitable, supportsHalfDay, supportsFullDay, and supportsMultiDay are currently derived placeholders ready to map to master DB columns.</p>
+                <p className="subtle">Current matching uses partner profile fields where available. Additional explicit preference columns can be added later for more precise matching.</p>
               </div>
 
               {booking ? (
@@ -673,10 +672,10 @@ export default function ExplorePage() {
       {selectedPreviewWinery ? (
         (() => {
           const remoteProfile = profilesById[slugToWineryUuid(selectedPreviewWinery.id)];
-          const summaryText = remoteProfile?.description || selectedPreviewWinery.summary;
-          const knownForText = remoteProfile?.famous_for || selectedPreviewWinery.knownFor;
-          const experiencesText = experienceSummary(remoteProfile, selectedPreviewWinery.experiences);
-          const displayAddress = remoteProfile?.address || selectedPreviewWinery.address;
+          const summaryText = remoteProfile?.description ?? "";
+          const knownForText = remoteProfile?.famous_for ?? "";
+          const experiencesText = experienceSummary(remoteProfile, "");
+          const displayAddress = remoteProfile?.address ?? "";
           return (
         <div className="modalBackdrop" role="dialog" aria-modal="true" aria-label={`${selectedPreviewWinery.name} details`}>
           <div className="modalCard">
@@ -690,7 +689,7 @@ export default function ExplorePage() {
                 </div>
                 <div className="catalogMeta">
                   <h3>{selectedPreviewWinery.name}</h3>
-                  <p className="subtle">{displayAddress}</p>
+                  {displayAddress ? <p className="subtle">{displayAddress}</p> : null}
                   <p className="ratingLine">
                     <strong>{selectedPreviewWinery.rating.toFixed(1)} stars</strong> · {selectedPreviewWinery.selectedByCount} guests shortlisted
                   </p>
@@ -709,14 +708,18 @@ export default function ExplorePage() {
                 </div>
               </div>
               <div className="catalogSummary">
-                <p>{summaryText}</p>
+                {summaryText ? <p>{summaryText}</p> : null}
                 <div className="catalogBullets">
-                  <p>
-                    <strong>Experiences:</strong> {experiencesText}
-                  </p>
-                  <p>
-                    <strong>Known for:</strong> {knownForText}
-                  </p>
+                  {experiencesText ? (
+                    <p>
+                      <strong>Experiences:</strong> {experiencesText}
+                    </p>
+                  ) : null}
+                  {knownForText ? (
+                    <p>
+                      <strong>Known for:</strong> {knownForText}
+                    </p>
+                  ) : null}
                   <p>
                     <strong>Established:</strong> {selectedPreviewWinery.established}
                   </p>

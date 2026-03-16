@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/section-card";
@@ -309,7 +309,7 @@ export function LiveBookingFlow({
                 {selectedCatalogWineries.map((winery) => {
                   const selected = selectedWineries.includes(winery.id);
                   const remoteProfile = profilesById[uuidForWinerySlug(winery.id)];
-                  const displayAddress = remoteProfile?.address || winery.address;
+                  const displayAddress = remoteProfile?.address ?? "";
                   return (
                     <button
                       key={winery.id}
@@ -320,7 +320,7 @@ export function LiveBookingFlow({
                       <div className="listTop">
                         <div>
                           <strong>{winery.name}</strong>
-                          <p className="subtle">{winery.region} · {displayAddress}</p>
+                          <p className="subtle">{winery.region}{displayAddress ? ` | ${displayAddress}` : ""}</p>
                         </div>
                         <span className={`status ${selected ? "accepted" : "review"}`}>{selected ? "In cart" : "Add"}</span>
                       </div>
@@ -344,7 +344,7 @@ export function LiveBookingFlow({
                       ) : null}
                       {remoteProfile?.unique_experience_offers?.length ? (
                         <p className="subtle">
-                          Experiences: {experienceSummary(remoteProfile, winery.experiences)}
+                          Experiences: {experienceSummary(remoteProfile, "")}
                         </p>
                       ) : null}
                     </button>
@@ -457,3 +457,6 @@ export function LiveBookingFlow({
     </>
   );
 }
+
+
+
