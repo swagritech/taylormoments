@@ -70,6 +70,16 @@ export const loginRequestSchema = z.object({
   password: z.string().min(1),
 });
 
+export const forgotPasswordRequestSchema = z.object({
+  email: z.string().email(),
+  new_password: z.string().min(8),
+});
+
+export const changePasswordRequestSchema = z.object({
+  current_password: z.string().min(1),
+  new_password: z.string().min(8),
+});
+
 export const actionTokenRouteSchema = z.object({
   tokenId: z.string().uuid(),
 });

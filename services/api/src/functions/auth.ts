@@ -1,7 +1,12 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { workflowRepository } from "../lib/repository-factory.js";
 import { badRequest, conflict, created, ok, unauthorized } from "../lib/http.js";
-import { loginRequestSchema, registerUserRequestSchema } from "../domain/schemas.js";
+import {
+  changePasswordRequestSchema,
+  forgotPasswordRequestSchema,
+  loginRequestSchema,
+  registerUserRequestSchema,
+} from "../domain/schemas.js";
 import { hashPassword, verifyPassword } from "../lib/passwords.js";
 import { issueAuthToken } from "../lib/auth-token.js";
 import { requireSession } from "../lib/auth-guard.js";
@@ -138,6 +143,62 @@ export async function meHandler(
   }
 }
 
+export async function forgotPasswordHandler(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  try {
+    const payload = forgotPasswordRequestSchema.parse(await request.json());
+    await workflowRepository.updateUserPasswordByEmail(
+      payload.email,
+      hashPassword(payload.new_password),
+    );
+
+    return ok({
+      status: "ok",
+      message: "If this account exists, the password has been updated.",
+    });
+  } catch (error) {
+    context.error(error);
+    return badRequest(error instanceof Error ? error.message : "Unable to reset password.");
+  }
+}
+
+export async function changePasswordHandler(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  try {
+    const session = requireSession(request);
+    if (!session) {
+      return unauthorized("You must be signed in.");
+    }
+
+    const payload = changePasswordRequestSchema.parse(await request.json());
+    const user = await workflowRepository.getUserById(session.userId);
+    if (!user) {
+      return unauthorized("Session is no longer valid.");
+    }
+
+    if (!verifyPassword(payload.current_password, user.passwordHash)) {
+      return unauthorized("Current password is incorrect.");
+    }
+
+    await workflowRepository.updateUserPasswordByUserId(
+      session.userId,
+      hashPassword(payload.new_password),
+    );
+
+    return ok({
+      status: "ok",
+      message: "Password updated successfully.",
+    });
+  } catch (error) {
+    context.error(error);
+    return badRequest(error instanceof Error ? error.message : "Unable to change password.");
+  }
+}
+
 app.http("auth-register", {
   methods: ["POST"],
   authLevel: "anonymous",
@@ -157,4 +218,18 @@ app.http("auth-me", {
   authLevel: "anonymous",
   route: "v1/auth/me",
   handler: meHandler,
+});
+
+app.http("auth-forgot-password", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  route: "v1/auth/forgot-password",
+  handler: forgotPasswordHandler,
+});
+
+app.http("auth-change-password", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  route: "v1/auth/change-password",
+  handler: changePasswordHandler,
 });

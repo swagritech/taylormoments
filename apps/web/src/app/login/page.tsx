@@ -1,19 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { useAuth } from "@/lib/auth-state";
+import { routeForUser } from "@/lib/auth-routing";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authLoading || !user) {
+      return;
+    }
+    router.replace(routeForUser(user));
+  }, [authLoading, router, user]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -22,11 +30,7 @@ export default function LoginPage() {
 
     try {
       const signedIn = await login({ email, password });
-      if (signedIn.role === "customer") {
-        router.push("/customer/dashboard");
-      } else {
-        router.push("/partner/login");
-      }
+      router.push(routeForUser(signedIn));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to log in.");
     } finally {

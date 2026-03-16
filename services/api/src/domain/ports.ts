@@ -37,6 +37,8 @@ export interface WorkflowRepository {
   createUserAccount(request: RegisterUserRequest & { password_hash: string }): Promise<UserAccount>;
   getUserByEmail(email: string): Promise<UserAccount | null>;
   getUserById(userId: string): Promise<UserAccount | null>;
+  updateUserPasswordByUserId(userId: string, passwordHash: string): Promise<boolean>;
+  updateUserPasswordByEmail(email: string, passwordHash: string): Promise<boolean>;
   saveActionToken(token: ActionToken): Promise<void>;
   getActionToken(tokenId: string): Promise<ActionToken | null>;
   markActionTokenUsed(tokenId: string): Promise<ActionToken | null>;

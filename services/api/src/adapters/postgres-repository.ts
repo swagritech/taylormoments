@@ -601,6 +601,32 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     return mapUserAccount(result.rows[0]);
   }
 
+  async updateUserPasswordByUserId(userId: string, passwordHash: string): Promise<boolean> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        update user_account
+        set password_hash = $2, updated_at = now()
+        where user_id = $1
+      `,
+      [userId, passwordHash],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async updateUserPasswordByEmail(email: string, passwordHash: string): Promise<boolean> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        update user_account
+        set password_hash = $2, updated_at = now()
+        where lower(email) = lower($1)
+      `,
+      [email, passwordHash],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async saveActionToken(token: ActionToken): Promise<void> {
     const pool = getPool();
     await pool.query(

@@ -324,6 +324,33 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     return users.get(userId) ?? null;
   }
 
+  async updateUserPasswordByUserId(userId: string, passwordHash: string): Promise<boolean> {
+    const existing = users.get(userId);
+    if (!existing) {
+      return false;
+    }
+    users.set(userId, {
+      ...existing,
+      passwordHash,
+      updatedAt: nowIso(),
+    });
+    return true;
+  }
+
+  async updateUserPasswordByEmail(email: string, passwordHash: string): Promise<boolean> {
+    const normalized = email.toLowerCase();
+    const existing = Array.from(users.values()).find((user) => user.email === normalized);
+    if (!existing) {
+      return false;
+    }
+    users.set(existing.userId, {
+      ...existing,
+      passwordHash,
+      updatedAt: nowIso(),
+    });
+    return true;
+  }
+
   async saveActionToken(token: ActionToken): Promise<void> {
     tokens.set(token.tokenId, token);
   }

@@ -241,6 +241,11 @@ export type AuthResponse = {
   user: AuthUser;
 };
 
+export type AuthMessageResponse = {
+  status: "ok";
+  message: string;
+};
+
 function getRequiredApiBaseUrl() {
   const apiBaseUrl = getApiBaseUrl();
   if (!apiBaseUrl) {
@@ -488,6 +493,34 @@ export async function getMe(token: string) {
   });
 
   return parseJson<{ user: AuthUser }>(response);
+}
+
+export async function forgotPassword(payload: { email: string; new_password: string }) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/auth/forgot-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseJson<AuthMessageResponse>(response);
+}
+
+export async function changePassword(
+  token: string,
+  payload: { current_password: string; new_password: string },
+) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/auth/change-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseJson<AuthMessageResponse>(response);
 }
 
 export function formatDisplayTime(isoString: string) {
