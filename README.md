@@ -40,6 +40,31 @@ npm install
 npm run build
 ```
 
+## Move To Stable Local Path (Recommended)
+
+To avoid OneDrive file-locking during build/deploy, move the working repo to `C:\dev\tailormoments`.
+
+Run from the current repo root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\migrate-to-local-path.ps1
+```
+
+Then switch terminals to:
+
+```powershell
+cd C:\dev\tailormoments
+npm install --prefix apps/web
+npm install --prefix services/api
+```
+
+API deployment from the new local path:
+
+```powershell
+cd services/api
+npm run deploy:azure
+```
+
 ## Environment variables
 
 See `apps/web/.env.example` for frontend variables.

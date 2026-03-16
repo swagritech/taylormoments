@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "clean": "node ./scripts/clean.mjs",
     "db:bootstrap": "node ./scripts/apply-sql.mjs",
+    "deploy:azure": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-azure.ps1",
     "lint": "tsc -p tsconfig.json --noEmit",
     "package:azure": "npm run clean && npm run build && node ./scripts/package-azure.mjs",
     "start": "func start",

@@ -2,4 +2,7 @@ node_modules/
 dist/
 release/
 api-release.zip
+api-release-*.zip
+api-root-deploy-*.zip
+release_new*/
 local.settings.json
