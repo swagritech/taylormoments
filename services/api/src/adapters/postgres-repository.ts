@@ -54,6 +54,8 @@ function mapWinery(row: Record<string, unknown>): Winery {
     region: String(row.region),
     confirmationMode: row.confirmation_mode as Winery["confirmationMode"],
     capacity: Number(row.capacity),
+    address: row.address ? String(row.address) : undefined,
+    openingHours: row.opening_hours ? String(row.opening_hours) : undefined,
     active: Boolean(row.active),
     tastingPrice: row.tasting_price !== null && row.tasting_price !== undefined
       ? Number(row.tasting_price)
@@ -186,7 +188,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const pool = getPool();
     const result = await pool.query(`
       select distinct on (lower(name))
-             winery_id, name, region, confirmation_mode, capacity, active,
+             winery_id, name, region, confirmation_mode, capacity, address, opening_hours, active,
              tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
       from winery
       order by lower(name) asc, updated_at desc, created_at desc
@@ -200,6 +202,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const result = await pool.query(
       `
         select winery_id, name, region, confirmation_mode, capacity, active,
+               address, opening_hours,
                tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
         from winery
         where winery_id = $1
@@ -216,6 +219,9 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
 
   async updateWineryProfile(request: {
     wineryId: string;
+    capacity: number;
+    address?: string;
+    openingHours?: string;
     tastingPrice?: number;
     description?: string;
     famousFor?: string;
@@ -226,18 +232,24 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const result = await pool.query(
       `
         update winery
-        set tasting_price = $2,
-            description = $3,
-            famous_for = $4,
-            offers_cheese_board = $5,
-            unique_experience_offers = $6::jsonb,
+        set capacity = $2,
+            address = $3,
+            opening_hours = $4,
+            tasting_price = $5,
+            description = $6,
+            famous_for = $7,
+            offers_cheese_board = $8,
+            unique_experience_offers = $9::jsonb,
             updated_at = now()
         where winery_id = $1
-        returning winery_id, name, region, confirmation_mode, capacity, active,
+        returning winery_id, name, region, confirmation_mode, capacity, address, opening_hours, active,
                   tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
       `,
       [
         request.wineryId,
+        request.capacity,
+        request.address ?? null,
+        request.openingHours ?? null,
         request.tastingPrice ?? null,
         request.description ?? null,
         request.famousFor ?? null,

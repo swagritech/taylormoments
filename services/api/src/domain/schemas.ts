@@ -97,6 +97,9 @@ export const wineryMediaRouteSchema = wineryRouteSchema.extend({
 });
 
 export const wineryProfileUpdateSchema = z.object({
+  capacity: z.number().int().positive().max(10000),
+  address: z.string().max(500).optional(),
+  opening_hours: z.string().max(1000).optional(),
   tasting_price: z.number().nonnegative().max(10000).optional(),
   description: z.string().max(3000).optional(),
   famous_for: z.string().max(500).optional(),

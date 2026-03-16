@@ -24,6 +24,7 @@ async function run() {
     "008_winery_media_assets.sql",
     "009_winery_profile_fields.sql",
     "010_password_reset_tokens.sql",
+    "011_winery_address_opening_hours.sql",
   ];
   const client = new Client({
     connectionString,

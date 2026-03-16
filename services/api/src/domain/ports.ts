@@ -17,6 +17,9 @@ export interface WorkflowRepository {
   getWineryById(wineryId: string): Promise<Winery | null>;
   updateWineryProfile(request: {
     wineryId: string;
+    capacity: number;
+    address?: string;
+    openingHours?: string;
     tastingPrice?: number;
     description?: string;
     famousFor?: string;

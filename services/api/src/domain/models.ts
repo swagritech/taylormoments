@@ -34,6 +34,8 @@ export type Winery = {
   region: string;
   confirmationMode: "auto_confirm" | "manual_review";
   capacity: number;
+  address?: string;
+  openingHours?: string;
   active: boolean;
   tastingPrice?: number;
   description?: string;

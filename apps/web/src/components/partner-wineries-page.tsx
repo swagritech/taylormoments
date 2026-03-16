@@ -77,6 +77,9 @@ export function PartnerWineriesPage() {
   const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
   const [storageConfigured, setStorageConfigured] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [capacity, setCapacity] = useState("");
+  const [address, setAddress] = useState("");
+  const [openingHours, setOpeningHours] = useState("");
   const [tastingPrice, setTastingPrice] = useState("");
   const [wineryDescription, setWineryDescription] = useState("");
   const [famousFor, setFamousFor] = useState("");
@@ -106,6 +109,9 @@ export function PartnerWineriesPage() {
       setWineryName(requestsResponse.winery?.name ?? "Winery");
       setMediaAssets(mediaResponse.assets);
       setStorageConfigured(mediaResponse.storage_configured);
+      setCapacity(String(profileResponse.capacity ?? ""));
+      setAddress(profileResponse.address ?? "");
+      setOpeningHours(profileResponse.opening_hours ?? "");
       setTastingPrice(
         profileResponse.tasting_price !== undefined ? String(profileResponse.tasting_price) : "",
       );
@@ -303,17 +309,28 @@ export function PartnerWineriesPage() {
         price: Number(row.price),
       }))
       .filter((row) => row.name && Number.isFinite(row.price) && row.price >= 0);
+    const normalizedCapacity = Number(capacity);
+    if (!Number.isFinite(normalizedCapacity) || normalizedCapacity <= 0) {
+      setError("Capacity must be greater than 0.");
+      return;
+    }
 
     try {
       setProfileSaving(true);
       setError(null);
       const updated = await updateWineryProfileAuthed(selectedWineryId, token, {
+        capacity: normalizedCapacity,
+        address: address.trim() || undefined,
+        opening_hours: openingHours.trim() || undefined,
         tasting_price: tastingPrice.trim() ? Number(tastingPrice) : undefined,
         description: wineryDescription.trim() || undefined,
         famous_for: famousFor.trim() || undefined,
         offers_cheese_board: offersCheeseBoard,
         unique_experience_offers: normalizedRows,
       });
+      setCapacity(String(updated.capacity ?? ""));
+      setAddress(updated.address ?? "");
+      setOpeningHours(updated.opening_hours ?? "");
       setTastingPrice(updated.tasting_price !== undefined ? String(updated.tasting_price) : "");
       setWineryDescription(updated.description ?? "");
       setFamousFor(updated.famous_for ?? "");
@@ -577,6 +594,19 @@ export function PartnerWineriesPage() {
       >
         <div className="fieldRow">
           <div className="field">
+            <label htmlFor="wineryCapacity">Guest capacity</label>
+            <input
+              id="wineryCapacity"
+              type="number"
+              min={1}
+              step={1}
+              className="inputLike inputField"
+              value={capacity}
+              onChange={(event) => setCapacity(event.target.value)}
+              placeholder="20"
+            />
+          </div>
+          <div className="field">
             <label htmlFor="tastingPrice">Tasting price (AUD)</label>
             <input
               id="tastingPrice"
@@ -599,6 +629,31 @@ export function PartnerWineriesPage() {
               placeholder="Cabernet Sauvignon and Chardonnay"
             />
           </div>
+        </div>
+
+        <div className="fieldRow">
+          <div className="field">
+            <label htmlFor="wineryAddress">Address</label>
+            <input
+              id="wineryAddress"
+              className="inputLike inputField"
+              value={address}
+              onChange={(event) => setAddress(event.target.value)}
+              placeholder="123 Caves Rd, Wilyabrup WA 6280"
+            />
+          </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="openingHours">Opening hours</label>
+          <textarea
+            id="openingHours"
+            className="inputLike inputField"
+            rows={3}
+            value={openingHours}
+            onChange={(event) => setOpeningHours(event.target.value)}
+            placeholder={"Mon-Fri 10:00-17:00\nSat-Sun 09:00-18:00"}
+          />
         </div>
 
         <div className="field">

@@ -202,6 +202,9 @@ export type WineryListResponse = {
     name: string;
     region: string;
     confirmation_mode: "auto_confirm" | "manual_review";
+    capacity: number;
+    address?: string;
+    opening_hours?: string;
     tasting_price?: number;
     description?: string;
     famous_for?: string;
@@ -217,6 +220,9 @@ export type WineryProfileResponse = {
   winery_id: string;
   name: string;
   region: string;
+  capacity: number;
+  address?: string;
+  opening_hours?: string;
   tasting_price?: number;
   description?: string;
   famous_for?: string;
@@ -383,6 +389,9 @@ export async function updateWineryProfileAuthed(
   wineryId: string,
   token: string,
   payload: {
+    capacity: number;
+    address?: string;
+    opening_hours?: string;
     tasting_price?: number;
     description?: string;
     famous_for?: string;

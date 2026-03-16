@@ -20,6 +20,8 @@ const wineries: Winery[] = [
     region: "Wilyabrup",
     confirmationMode: "auto_confirm",
     capacity: 10,
+    address: "4357 Caves Rd, Wilyabrup WA 6280",
+    openingHours: "Daily 10:00-17:00",
     active: true,
     tastingPrice: 35,
     description: "Founding Margaret River estate with premium tastings and vineyard views.",
@@ -33,6 +35,8 @@ const wineries: Winery[] = [
     region: "Wilyabrup",
     confirmationMode: "manual_review",
     capacity: 12,
+    address: "4323 Caves Rd, Wilyabrup WA 6280",
+    openingHours: "Daily 10:00-17:00",
     active: true,
     tastingPrice: 40,
     description: "Biodynamic winery known for immersive food and wine experiences.",
@@ -46,6 +50,8 @@ const wineries: Winery[] = [
     region: "Wilyabrup",
     confirmationMode: "auto_confirm",
     capacity: 8,
+    address: "281 Treeton Rd, Wilyabrup WA 6280",
+    openingHours: "Daily 10:00-16:30",
     active: true,
     tastingPrice: 30,
     description: "Boutique estate delivering classic Margaret River varietals.",
@@ -59,6 +65,8 @@ const wineries: Winery[] = [
     region: "Wilyabrup",
     confirmationMode: "manual_review",
     capacity: 14,
+    address: "3948 Caves Rd, Wilyabrup WA 6280",
+    openingHours: "Daily 10:00-17:00",
     active: true,
     tastingPrice: 25,
     description: "Family-run estate with relaxed tastings in a heritage setting.",
@@ -137,6 +145,9 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
 
   async updateWineryProfile(request: {
     wineryId: string;
+    capacity: number;
+    address?: string;
+    openingHours?: string;
     tastingPrice?: number;
     description?: string;
     famousFor?: string;
@@ -151,6 +162,9 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     const current = wineries[index];
     wineries[index] = {
       ...current,
+      capacity: request.capacity,
+      address: request.address,
+      openingHours: request.openingHours,
       tastingPrice: request.tastingPrice,
       description: request.description,
       famousFor: request.famousFor,
