@@ -520,7 +520,7 @@ button {
 
 .itineraryConnector {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   margin: 6px 0 10px;
 }
