@@ -117,18 +117,12 @@ button {
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid var(--line-soft);
-  background: #ffffff;
   position: relative;
 }
 
 .brandLogoImage,
 .brandHeroImage {
   object-fit: contain;
-}
-
-.brandLogoImage {
-  background: #ffffff;
-  mix-blend-mode: screen;
 }
 
 .topnav,
