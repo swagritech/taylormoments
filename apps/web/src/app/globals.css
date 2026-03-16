@@ -685,6 +685,10 @@ button {
   padding: 8px 10px;
 }
 
+.tastingDurationField {
+  max-width: 220px;
+}
+
 .currencyPrefix {
   display: inline-flex;
   align-items: center;

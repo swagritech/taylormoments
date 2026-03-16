@@ -637,7 +637,7 @@ export function PartnerWineriesPage() {
               />
             </div>
           </div>
-          <div className="field compactField">
+          <div className="field compactField tastingDurationField">
             <label htmlFor="tastingDurationMinutes">Tasting length (mins)</label>
             <input
               id="tastingDurationMinutes"
