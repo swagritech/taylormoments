@@ -3,6 +3,7 @@ import type {
   ActionToken,
   Booking,
   CreateBookingRequest,
+  PasswordResetToken,
   UserAccount,
   WineryBookingRequest,
   WineryContact,
@@ -165,6 +166,18 @@ function mapUserAccount(row: Record<string, unknown>): UserAccount {
     transportCompany: row.transport_company ? String(row.transport_company) : undefined,
     createdAt: new Date(String(row.created_at)).toISOString(),
     updatedAt: new Date(String(row.updated_at)).toISOString(),
+  };
+}
+
+function mapPasswordResetToken(row: Record<string, unknown>): PasswordResetToken {
+  return {
+    tokenId: String(row.token_id),
+    userId: String(row.user_id),
+    tokenHash: String(row.token_hash),
+    expiresAt: new Date(String(row.expires_at)).toISOString(),
+    status: row.status as PasswordResetToken["status"],
+    createdAt: new Date(String(row.created_at)).toISOString(),
+    usedAt: row.used_at ? new Date(String(row.used_at)).toISOString() : undefined,
   };
 }
 
@@ -625,6 +638,85 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
       [email, passwordHash],
     );
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async savePasswordResetToken(token: PasswordResetToken): Promise<void> {
+    const pool = getPool();
+    await pool.query(
+      `
+        insert into password_reset_token (
+          token_id,
+          user_id,
+          token_hash,
+          expires_at,
+          status,
+          created_at,
+          used_at
+        )
+        values ($1, $2, $3, $4, $5, $6, $7)
+      `,
+      [
+        token.tokenId,
+        token.userId,
+        token.tokenHash,
+        token.expiresAt,
+        token.status,
+        token.createdAt,
+        token.usedAt ?? null,
+      ],
+    );
+  }
+
+  async getPasswordResetToken(tokenId: string): Promise<PasswordResetToken | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        select token_id, user_id, token_hash, expires_at, status, created_at, used_at
+        from password_reset_token
+        where token_id = $1
+      `,
+      [tokenId],
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapPasswordResetToken(result.rows[0]);
+  }
+
+  async markPasswordResetTokenUsed(tokenId: string): Promise<PasswordResetToken | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        update password_reset_token
+        set status = 'used', used_at = now()
+        where token_id = $1
+        returning token_id, user_id, token_hash, expires_at, status, created_at, used_at
+      `,
+      [tokenId],
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapPasswordResetToken(result.rows[0]);
+  }
+
+  async expireActivePasswordResetTokensForUser(userId: string): Promise<number> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        update password_reset_token
+        set status = 'expired'
+        where user_id = $1
+          and status = 'active'
+      `,
+      [userId],
+    );
+
+    return result.rowCount ?? 0;
   }
 
   async saveActionToken(token: ActionToken): Promise<void> {

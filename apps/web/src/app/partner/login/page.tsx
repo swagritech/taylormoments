@@ -15,8 +15,6 @@ export default function PartnerLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotNewPassword, setForgotNewPassword] = useState("");
-  const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
   const [changeCurrentPassword, setChangeCurrentPassword] = useState("");
   const [changeNewPassword, setChangeNewPassword] = useState("");
   const [changeConfirmPassword, setChangeConfirmPassword] = useState("");
@@ -53,20 +51,13 @@ export default function PartnerLoginPage() {
     event.preventDefault();
     setError(null);
     setMessage(null);
-    if (forgotNewPassword !== forgotConfirmPassword) {
-      setError("Forgot password confirmation does not match.");
-      return;
-    }
 
     try {
       setForgotLoading(true);
       const response = await forgotPassword({
         email: forgotEmail,
-        new_password: forgotNewPassword,
       });
       setMessage(response.message);
-      setForgotNewPassword("");
-      setForgotConfirmPassword("");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to reset password.");
     } finally {
@@ -157,35 +148,14 @@ export default function PartnerLoginPage() {
                 onChange={(event) => setForgotEmail(event.target.value)}
               />
             </div>
-            <div className="fieldRow">
-              <div className="field">
-                <label htmlFor="forgotNewPassword">New password</label>
-                <input
-                  id="forgotNewPassword"
-                  type="password"
-                  required
-                  minLength={8}
-                  className="inputLike inputField"
-                  value={forgotNewPassword}
-                  onChange={(event) => setForgotNewPassword(event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="forgotConfirmPassword">Confirm new password</label>
-                <input
-                  id="forgotConfirmPassword"
-                  type="password"
-                  required
-                  minLength={8}
-                  className="inputLike inputField"
-                  value={forgotConfirmPassword}
-                  onChange={(event) => setForgotConfirmPassword(event.target.value)}
-                />
-              </div>
-            </div>
+            <p className="subtle">We will email a secure reset link if this account exists.</p>
             <button type="submit" className="buttonGhost fullWidthButton" disabled={forgotLoading}>
-              {forgotLoading ? "Updating..." : "Reset password"}
+              {forgotLoading ? "Sending..." : "Send reset link"}
             </button>
+            <div className="ctaRow">
+              <span className="subtle">Have a reset link already?</span>
+              <Link href="/partner/reset-password" className="buttonGhost">Open reset page</Link>
+            </div>
           </form>
           <form className="formPreview" onSubmit={handleChangePassword} style={{ marginTop: 12 }}>
             <p className="miniLabel">Change password (signed-in)</p>

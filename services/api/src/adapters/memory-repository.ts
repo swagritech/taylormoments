@@ -3,6 +3,7 @@ import type {
   ActionToken,
   Booking,
   CreateBookingRequest,
+  PasswordResetToken,
   UserAccount,
   WineryBookingRequest,
   WineryContact,
@@ -123,6 +124,7 @@ const tokens = new Map<string, ActionToken>();
 const wineryRequests = new Map<string, WineryBookingRequest>();
 const wineryMediaAssets = new Map<string, WineryMediaAsset>();
 const users = new Map<string, UserAccount>();
+const passwordResetTokens = new Map<string, PasswordResetToken>();
 
 export class MemoryWorkflowRepository implements WorkflowRepository {
   async getWineries(): Promise<Winery[]> {
@@ -349,6 +351,44 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
       updatedAt: nowIso(),
     });
     return true;
+  }
+
+  async savePasswordResetToken(token: PasswordResetToken): Promise<void> {
+    passwordResetTokens.set(token.tokenId, token);
+  }
+
+  async getPasswordResetToken(tokenId: string): Promise<PasswordResetToken | null> {
+    return passwordResetTokens.get(tokenId) ?? null;
+  }
+
+  async markPasswordResetTokenUsed(tokenId: string): Promise<PasswordResetToken | null> {
+    const existing = passwordResetTokens.get(tokenId);
+    if (!existing) {
+      return null;
+    }
+
+    const updated: PasswordResetToken = {
+      ...existing,
+      status: "used",
+      usedAt: nowIso(),
+    };
+    passwordResetTokens.set(tokenId, updated);
+    return updated;
+  }
+
+  async expireActivePasswordResetTokensForUser(userId: string): Promise<number> {
+    let count = 0;
+    for (const [tokenId, token] of passwordResetTokens.entries()) {
+      if (token.userId !== userId || token.status !== "active") {
+        continue;
+      }
+      passwordResetTokens.set(tokenId, {
+        ...token,
+        status: "expired",
+      });
+      count += 1;
+    }
+    return count;
   }
 
   async saveActionToken(token: ActionToken): Promise<void> {

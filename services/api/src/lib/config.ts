@@ -12,6 +12,10 @@ export function getAuthTokenSecret() {
   return getEnv("TM_AUTH_TOKEN_SECRET", getActionTokenSecret());
 }
 
+export function getPasswordResetTokenSecret() {
+  return getEnv("TM_PASSWORD_RESET_TOKEN_SECRET", getAuthTokenSecret());
+}
+
 export function getDataMode() {
   return getEnv("TM_DATA_MODE", "memory");
 }
@@ -24,6 +28,19 @@ export function getMagicLinkBaseUrl(tokenType: ActionTokenType) {
   const siteBase = getEnv("TM_SITE_BASE_URL", "https://booking.swagritech.com.au");
   const path = tokenType === "winery_approve" ? "approve" : tokenType === "transporter_accept" ? "accept" : "calendar";
   return `${siteBase}/${path}`;
+}
+
+export function getPasswordResetBaseUrl() {
+  const siteBase = getEnv("TM_SITE_BASE_URL", "https://booking.swagritech.com.au");
+  return getEnv("TM_PASSWORD_RESET_BASE_URL", `${siteBase}/partner/reset-password`);
+}
+
+export function getPasswordResetExpiryHours() {
+  const parsed = Number(getEnv("TM_PASSWORD_RESET_EXPIRY_HOURS", "1"));
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 1;
+  }
+  return Math.min(Math.floor(parsed), 24);
 }
 
 export function getTurnstileSecretKey() {

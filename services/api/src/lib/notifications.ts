@@ -47,3 +47,26 @@ export async function notifyWineryApprovalRequested(params: {
     message,
   } satisfies NotificationPreview;
 }
+
+export async function notifyPasswordResetRequested(params: {
+  recipientEmail?: string;
+  resetUrl: string;
+}) {
+  const message = `Tailor Moments password reset requested. Use this secure link: ${params.resetUrl}`;
+  const emailConfigured = Boolean(getAcsEmailConnectionString() && getAcsEmailSenderAddress() && params.recipientEmail);
+
+  if (emailConfigured) {
+    return {
+      channel: "email",
+      configured: true,
+      recipient: params.recipientEmail,
+      message,
+    } satisfies NotificationPreview;
+  }
+
+  return {
+    channel: "preview",
+    configured: false,
+    message,
+  } satisfies NotificationPreview;
+}

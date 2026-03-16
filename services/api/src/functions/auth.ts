@@ -5,11 +5,19 @@ import {
   changePasswordRequestSchema,
   forgotPasswordRequestSchema,
   loginRequestSchema,
+  resetPasswordRequestSchema,
   registerUserRequestSchema,
 } from "../domain/schemas.js";
 import { hashPassword, verifyPassword } from "../lib/passwords.js";
 import { issueAuthToken } from "../lib/auth-token.js";
 import { requireSession } from "../lib/auth-guard.js";
+import { addHoursIso, hashToken, makeId, makeSecretToken, nowIso } from "../lib/crypto.js";
+import {
+  getPasswordResetBaseUrl,
+  getPasswordResetExpiryHours,
+  getPasswordResetTokenSecret,
+} from "../lib/config.js";
+import { notifyPasswordResetRequested } from "../lib/notifications.js";
 
 function toUserView(user: {
   userId: string;
@@ -149,14 +157,85 @@ export async function forgotPasswordHandler(
 ): Promise<HttpResponseInit> {
   try {
     const payload = forgotPasswordRequestSchema.parse(await request.json());
-    await workflowRepository.updateUserPasswordByEmail(
-      payload.email,
-      hashPassword(payload.new_password),
-    );
+    const user = await workflowRepository.getUserByEmail(payload.email);
+    if (user) {
+      await workflowRepository.expireActivePasswordResetTokensForUser(user.userId);
+
+      const tokenId = makeId();
+      const tokenSecret = makeSecretToken(24);
+      const tokenHash = hashToken(tokenSecret, getPasswordResetTokenSecret());
+      const resetToken = `${tokenId}.${tokenSecret}`;
+      const resetUrl = `${getPasswordResetBaseUrl()}?token=${encodeURIComponent(resetToken)}`;
+
+      await workflowRepository.savePasswordResetToken({
+        tokenId,
+        userId: user.userId,
+        tokenHash,
+        expiresAt: addHoursIso(getPasswordResetExpiryHours()),
+        status: "active",
+        createdAt: nowIso(),
+      });
+
+      const notification = await notifyPasswordResetRequested({
+        recipientEmail: user.email,
+        resetUrl,
+      });
+
+      if (!notification.configured) {
+        context.warn(
+          `Password reset email provider is not configured. user=${user.userId} reset_url=${resetUrl}`,
+        );
+      }
+    }
 
     return ok({
       status: "ok",
-      message: "If this account exists, the password has been updated.",
+      message: "If this account exists, a secure password reset email has been sent.",
+    });
+  } catch (error) {
+    context.error(error);
+    return badRequest(error instanceof Error ? error.message : "Unable to start password reset.");
+  }
+}
+
+export async function resetPasswordHandler(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  try {
+    const payload = resetPasswordRequestSchema.parse(await request.json());
+    const parts = payload.token.split(".");
+    if (parts.length !== 2) {
+      return badRequest("Invalid or expired reset link.");
+    }
+
+    const [tokenId, tokenSecret] = parts;
+    const savedToken = await workflowRepository.getPasswordResetToken(tokenId);
+    if (!savedToken || savedToken.status !== "active") {
+      return badRequest("Invalid or expired reset link.");
+    }
+
+    if (new Date(savedToken.expiresAt).getTime() <= Date.now()) {
+      await workflowRepository.expireActivePasswordResetTokensForUser(savedToken.userId);
+      return badRequest("Invalid or expired reset link.");
+    }
+
+    const expectedHash = hashToken(tokenSecret, getPasswordResetTokenSecret());
+    if (savedToken.tokenHash !== expectedHash) {
+      return badRequest("Invalid or expired reset link.");
+    }
+
+    await workflowRepository.updateUserPasswordByUserId(
+      savedToken.userId,
+      hashPassword(payload.new_password),
+    );
+
+    await workflowRepository.markPasswordResetTokenUsed(savedToken.tokenId);
+    await workflowRepository.expireActivePasswordResetTokensForUser(savedToken.userId);
+
+    return ok({
+      status: "ok",
+      message: "Password updated successfully.",
     });
   } catch (error) {
     context.error(error);
@@ -232,4 +311,11 @@ app.http("auth-change-password", {
   authLevel: "anonymous",
   route: "v1/auth/change-password",
   handler: changePasswordHandler,
+});
+
+app.http("auth-reset-password", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  route: "v1/auth/reset-password",
+  handler: resetPasswordHandler,
 });

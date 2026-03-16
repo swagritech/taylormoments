@@ -145,6 +145,16 @@ export type UserAccount = {
   updatedAt: string;
 };
 
+export type PasswordResetToken = {
+  tokenId: string;
+  userId: string;
+  tokenHash: string;
+  expiresAt: string;
+  status: "active" | "used" | "expired";
+  createdAt: string;
+  usedAt?: string;
+};
+
 export type RecommendItineraryRequest = {
   booking_date: string;
   party_size: number;

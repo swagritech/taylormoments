@@ -43,6 +43,7 @@ SQL files are in `sql/`:
 - `007_seed_full_prospect_catalog.sql`
 - `008_winery_media_assets.sql`
 - `009_winery_profile_fields.sql`
+- `010_password_reset_tokens.sql`
 
 Recommended order:
 
@@ -60,6 +61,7 @@ The bootstrap script applies all SQL files in order:
 - `007_seed_full_prospect_catalog.sql`
 - `008_winery_media_assets.sql`
 - `009_winery_profile_fields.sql`
+- `010_password_reset_tokens.sql`
 
 ## Winery image upload storage (Cloudflare R2)
 
@@ -71,6 +73,12 @@ Set these app settings in `swagri-tailormoments-api-01`:
 - `TM_R2_BUCKET_NAME`
 - `TM_R2_PUBLIC_BASE_URL` (for example `https://images.booking.swagritech.com.au`)
 - `TM_R2_SIGNED_URL_EXPIRY_SECONDS` (optional, default `900`)
+
+Password reset token settings:
+
+- `TM_PASSWORD_RESET_TOKEN_SECRET`
+- `TM_PASSWORD_RESET_BASE_URL` (for example `https://booking.swagritech.com.au/partner/reset-password`)
+- `TM_PASSWORD_RESET_EXPIRY_HOURS` (optional, default `1`)
 
 New REST endpoints:
 

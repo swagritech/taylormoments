@@ -2,7 +2,7 @@ import type {
   ActionToken,
   Booking,
   CreateBookingRequest,
-  LoginRequest,
+  PasswordResetToken,
   RegisterUserRequest,
   UserAccount,
   WineryMediaAsset,
@@ -39,6 +39,10 @@ export interface WorkflowRepository {
   getUserById(userId: string): Promise<UserAccount | null>;
   updateUserPasswordByUserId(userId: string, passwordHash: string): Promise<boolean>;
   updateUserPasswordByEmail(email: string, passwordHash: string): Promise<boolean>;
+  savePasswordResetToken(token: PasswordResetToken): Promise<void>;
+  getPasswordResetToken(tokenId: string): Promise<PasswordResetToken | null>;
+  markPasswordResetTokenUsed(tokenId: string): Promise<PasswordResetToken | null>;
+  expireActivePasswordResetTokensForUser(userId: string): Promise<number>;
   saveActionToken(token: ActionToken): Promise<void>;
   getActionToken(tokenId: string): Promise<ActionToken | null>;
   markActionTokenUsed(tokenId: string): Promise<ActionToken | null>;

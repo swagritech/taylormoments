@@ -1,4 +1,4 @@
-﻿import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 export function nowIso() {
   return new Date().toISOString();
@@ -12,6 +12,10 @@ export function addHoursIso(hours: number) {
 
 export function makeId() {
   return randomUUID();
+}
+
+export function makeSecretToken(size = 32) {
+  return randomBytes(size).toString("hex");
 }
 
 export function hashToken(token: string, secret: string) {

@@ -23,6 +23,7 @@ async function run() {
     "007_seed_full_prospect_catalog.sql",
     "008_winery_media_assets.sql",
     "009_winery_profile_fields.sql",
+    "010_password_reset_tokens.sql",
   ];
   const client = new Client({
     connectionString,
