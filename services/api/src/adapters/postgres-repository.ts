@@ -521,6 +521,28 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     return mapWineryMediaAsset(result.rows[0]);
   }
 
+  async archiveWineryMediaAsset(mediaId: string, wineryId: string): Promise<WineryMediaAsset | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        update winery_media_asset
+        set status = 'archived',
+            updated_at = now()
+        where media_id = $1
+          and winery_id = $2
+        returning media_id, winery_id, object_key, public_url, file_name, content_type, file_size_bytes, caption,
+                  status, uploaded_by_user_id, created_at, updated_at
+      `,
+      [mediaId, wineryId],
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapWineryMediaAsset(result.rows[0]);
+  }
+
   async createUserAccount(request: {
     email: string;
     password: string;

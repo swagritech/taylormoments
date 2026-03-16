@@ -13,6 +13,7 @@ import type { AuthSession } from "../lib/auth-token.js";
 import {
   assertWineryImageExists,
   createWineryImageUploadTicket,
+  deleteWineryImage,
   isMediaStorageConfigured,
 } from "../lib/media-storage.js";
 
@@ -356,6 +357,56 @@ export async function completeWineryMediaUploadHandler(
   }
 }
 
+export async function deleteWineryMediaHandler(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  try {
+    const session = requireSession(request);
+    if (!session) {
+      return unauthorized("You must be signed in.");
+    }
+    if (!hasRole(session, ["winery", "ops"])) {
+      return forbidden("You are not permitted to delete winery media.");
+    }
+
+    const { wineryId, mediaId } = wineryMediaRouteSchema.parse(request.params);
+    if (!canAccessWinery(session, wineryId)) {
+      return forbidden("You can only delete media for your own winery.");
+    }
+
+    const assets = await workflowRepository.listWineryMediaAssets(wineryId);
+    const asset = assets.find((entry) => entry.mediaId === mediaId);
+    if (!asset) {
+      return notFound("Media asset not found.");
+    }
+
+    const archived = await workflowRepository.archiveWineryMediaAsset(mediaId, wineryId);
+    if (!archived) {
+      return notFound("Media asset not found.");
+    }
+
+    if (isMediaStorageConfigured()) {
+      try {
+        await deleteWineryImage(asset.objectKey);
+      } catch (storageError) {
+        context.warn(
+          `Failed to delete winery media object from storage. wineryId=${wineryId} mediaId=${mediaId} error=${storageError instanceof Error ? storageError.message : String(storageError)}`,
+        );
+      }
+    }
+
+    return ok({
+      media_id: archived.mediaId,
+      winery_id: archived.wineryId,
+      status: archived.status,
+    });
+  } catch (error) {
+    context.error(error);
+    return badRequest(error instanceof Error ? error.message : "Unable to delete media.");
+  }
+}
+
 app.http("list-wineries", {
   methods: ["GET"],
   authLevel: "anonymous",
@@ -403,4 +454,11 @@ app.http("complete-winery-media-upload", {
   authLevel: "anonymous",
   route: "v1/wineries/{wineryId}/media/{mediaId}/complete",
   handler: completeWineryMediaUploadHandler,
+});
+
+app.http("delete-winery-media", {
+  methods: ["DELETE"],
+  authLevel: "anonymous",
+  route: "v1/wineries/{wineryId}/media/{mediaId}",
+  handler: deleteWineryMediaHandler,
 });

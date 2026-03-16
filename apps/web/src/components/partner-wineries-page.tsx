@@ -11,6 +11,7 @@ import {
   approveWineryToken,
   completeWineryMediaUpload,
   createWineryMediaUploadUrl,
+  deleteWineryMediaAuthed,
   getWineryMediaAuthed,
   getWineryProfileAuthed,
   getWineryPortalRequestsAuthed,
@@ -73,6 +74,7 @@ export function PartnerWineriesPage() {
   const [captionDraft, setCaptionDraft] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
   const [storageConfigured, setStorageConfigured] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
   const [tastingPrice, setTastingPrice] = useState("");
@@ -256,6 +258,23 @@ export function PartnerWineriesPage() {
       setError(uploadError instanceof Error ? uploadError.message : "Unable to upload image.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleDeleteImage(mediaId: string) {
+    if (!selectedWineryId || !token) {
+      return;
+    }
+
+    try {
+      setDeletingMediaId(mediaId);
+      setError(null);
+      await deleteWineryMediaAuthed(selectedWineryId, mediaId, token);
+      setMediaAssets((current) => current.filter((asset) => asset.media_id !== mediaId));
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Unable to delete image.");
+    } finally {
+      setDeletingMediaId(null);
     }
   }
 
@@ -531,6 +550,16 @@ export function PartnerWineriesPage() {
           ) : (
             mediaAssets.map((asset) => (
               <article key={asset.media_id} className="mediaCard">
+                <button
+                  type="button"
+                  className="mediaDeleteButton"
+                  onClick={() => handleDeleteImage(asset.media_id)}
+                  disabled={deletingMediaId === asset.media_id}
+                  aria-label={`Delete ${asset.file_name}`}
+                  title="Delete image"
+                >
+                  {deletingMediaId === asset.media_id ? "..." : "X"}
+                </button>
                 <img src={asset.public_url} alt={asset.caption || asset.file_name} loading="lazy" />
                 <div className="mediaMeta">
                   <p><strong>{asset.file_name}</strong></p>

@@ -34,6 +34,7 @@ export interface WorkflowRepository {
   createWineryMediaAsset(request: Omit<WineryMediaAsset, "createdAt" | "updatedAt">): Promise<WineryMediaAsset>;
   listWineryMediaAssets(wineryId: string): Promise<WineryMediaAsset[]>;
   markWineryMediaAssetUploaded(mediaId: string, wineryId: string, fileSizeBytes?: number): Promise<WineryMediaAsset | null>;
+  archiveWineryMediaAsset(mediaId: string, wineryId: string): Promise<WineryMediaAsset | null>;
   createUserAccount(request: RegisterUserRequest & { password_hash: string }): Promise<UserAccount>;
   getUserByEmail(email: string): Promise<UserAccount | null>;
   getUserById(userId: string): Promise<UserAccount | null>;

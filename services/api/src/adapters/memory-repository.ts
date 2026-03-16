@@ -280,6 +280,21 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     return updated;
   }
 
+  async archiveWineryMediaAsset(mediaId: string, wineryId: string): Promise<WineryMediaAsset | null> {
+    const current = wineryMediaAssets.get(mediaId);
+    if (!current || current.wineryId !== wineryId) {
+      return null;
+    }
+
+    const updated: WineryMediaAsset = {
+      ...current,
+      status: "archived",
+      updatedAt: nowIso(),
+    };
+    wineryMediaAssets.set(mediaId, updated);
+    return updated;
+  }
+
   async createUserAccount(request: {
     email: string;
     password: string;

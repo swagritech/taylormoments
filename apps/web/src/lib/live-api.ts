@@ -190,6 +190,12 @@ export type WineryMediaUploadTicket = {
   expires_at: string;
 };
 
+export type WineryMediaDeleteResponse = {
+  media_id: string;
+  winery_id: string;
+  status: "archived";
+};
+
 export type WineryListResponse = {
   wineries: Array<{
     winery_id: string;
@@ -445,6 +451,21 @@ export async function completeWineryMediaUpload(
   });
 
   return parseJson<WineryMediaAsset>(response);
+}
+
+export async function deleteWineryMediaAuthed(
+  wineryId: string,
+  mediaId: string,
+  token: string,
+) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries/${wineryId}/media/${mediaId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return parseJson<WineryMediaDeleteResponse>(response);
 }
 
 export async function registerAccount(payload: {
