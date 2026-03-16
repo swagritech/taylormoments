@@ -78,9 +78,6 @@ export function CustomerWineryCatalog({
       title="Choose preferred wineries"
       description="Filter the Margaret River catalog, review each winery profile, and add options to your schedule cart."
     >
-      <div className="callout">
-        Live booking currently supports Vasse Felix, Cullen Wines, Fraser Gallop Estate, and Woodlands Wines. Other wineries remain in the prospect list.
-      </div>
       <div className="catalogFilters">
         <input
           className="inputLike inputField"
@@ -162,9 +159,8 @@ export function CustomerWineryCatalog({
                       type="button"
                       className="buttonPrimary"
                       onClick={() => onToggleWinery(winery.id)}
-                      disabled={!winery.liveBookable}
                     >
-                      {selected ? "Added to schedule" : winery.liveBookable ? "Add to schedule" : "Not live yet"}
+                      {selected ? "Added to schedule" : "Add to schedule"}
                     </button>
                   </div>
                 </div>

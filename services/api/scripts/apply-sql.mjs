@@ -20,6 +20,7 @@ async function run() {
     "004_booking_time_preferences.sql",
     "005_user_auth.sql",
     "006_customer_profile_fields.sql",
+    "007_seed_full_prospect_catalog.sql",
   ];
   const client = new Client({
     connectionString,
