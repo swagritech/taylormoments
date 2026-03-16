@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect } from "react";
@@ -25,7 +25,7 @@ export function PartnerTransportPage() {
     if (user.role === "winery") {
       router.replace("/partner/wineries");
     } else if (user.role === "customer") {
-      router.replace("/customer");
+      router.replace("/plan");
     }
   }, [loading, router, user]);
 
@@ -143,3 +143,4 @@ export function PartnerTransportPage() {
     </AppShell>
   );
 }
+

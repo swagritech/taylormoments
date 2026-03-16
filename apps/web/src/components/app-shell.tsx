@@ -20,7 +20,7 @@ const publicNavItemsDefault = [
   { href: "/", label: "Overview" },
   { href: "/explore", label: "Explore" },
   { href: "/customer/dashboard", label: "Dashboard" },
-  { href: "/customer", label: "Plan a day" },
+  { href: "/plan", label: "Plan a day" },
   { href: "/partner", label: "Partner login" },
 ];
 
@@ -61,7 +61,7 @@ export function AppShell({
           { href: "/", label: "Overview" },
           { href: "/explore", label: "Explore" },
           { href: "/customer/dashboard", label: "Dashboard" },
-          { href: "/customer", label: "Plan a day" },
+          { href: "/plan", label: "Plan a day" },
         ]
       : publicNavItemsDefault;
 

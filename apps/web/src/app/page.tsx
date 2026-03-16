@@ -22,7 +22,7 @@ export default function Home() {
                   <h3>Plan a booking</h3>
                   <p className="subtle">Enter guest details and receive recommended winery itineraries.</p>
                 </div>
-                <Link href="/customer" className="buttonPrimary">Open</Link>
+                <Link href="/plan" className="buttonPrimary">Open</Link>
               </div>
             </div>
             <div className="listRow">

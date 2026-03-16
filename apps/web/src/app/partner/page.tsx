@@ -16,7 +16,7 @@ export default function PartnerHomePage() {
       return;
     }
     if (user.role === "customer") {
-      router.replace("/customer");
+      router.replace("/plan");
     } else if (user.role === "winery") {
       router.replace("/partner/wineries");
     } else if (user.role === "transport") {

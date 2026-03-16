@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -156,7 +156,7 @@ export default function CustomerDashboardPage() {
             description="Start from the winery catalog, add preferred venues to cart, then generate your tailored day."
           >
             <div className="ctaRow">
-              <Link href="/customer" className="buttonPrimary">Create new schedule</Link>
+              <Link href="/plan" className="buttonPrimary">Create new schedule</Link>
             </div>
           </SectionCard>
 
@@ -180,7 +180,7 @@ export default function CustomerDashboardPage() {
                     <p className="subtle">
                       {booking.partySize} guests
                       {booking.preferredStartTime && booking.preferredEndTime
-                        ? ` · ${booking.preferredStartTime}-${booking.preferredEndTime}`
+                        ? ` Â· ${booking.preferredStartTime}-${booking.preferredEndTime}`
                         : ""}
                     </p>
                     <p className="subtle">Booking ID: {booking.bookingId}</p>
@@ -217,3 +217,4 @@ export default function CustomerDashboardPage() {
     </AppShell>
   );
 }
+
