@@ -14,7 +14,13 @@ import {
   type TravelTimeMatrix,
 } from "./travel-time-provider.js";
 
-type PlannedStop = { winery: Winery; slot: WineryAvailability; driveMinutes: number };
+type PlannedStop = {
+  winery: Winery;
+  slot: WineryAvailability;
+  driveMinutes: number;
+  arrivalMinutes: number;
+  departureMinutes: number;
+};
 type WinerySlotGroup = { winery: Winery; slots: WineryAvailability[] };
 type FeasibleRoute = {
   stops: PlannedStop[];
@@ -58,6 +64,7 @@ const MIN_STOPS_PER_DAY = 2;
 const LUNCH_WINDOW_START = 11 * 60 + 30;
 const LUNCH_WINDOW_END = 14 * 60;
 const LUNCH_BREAK_MINUTES = 45;
+const DEFAULT_TASTING_DURATION_MINUTES = 45;
 
 const pickupPoints: Array<{ key: string; point: Point }> = [
   { key: "margaret river visitor centre", point: { lat: -33.952, lon: 115.075 } },
@@ -91,6 +98,22 @@ function toClockValue(minutes: number) {
 
 function toLocalIso(serviceDate: string, hhmm: string) {
   return `${serviceDate}T${hhmm}:00`;
+}
+
+function resolveTastingDurationMinutes(winery: Winery, slot?: WineryAvailability) {
+  const wineryDuration = winery.tastingDurationMinutes;
+  if (typeof wineryDuration === "number" && Number.isFinite(wineryDuration) && wineryDuration > 0) {
+    return Math.round(wineryDuration);
+  }
+
+  if (slot) {
+    const slotDuration = toTimeValue(slot.endTime) - toTimeValue(slot.startTime);
+    if (Number.isFinite(slotDuration) && slotDuration > 0) {
+      return slotDuration;
+    }
+  }
+
+  return DEFAULT_TASTING_DURATION_MINUTES;
 }
 
 function resolvePickupPoint(pickupLocation: string) {
@@ -256,11 +279,13 @@ function buildFeasibleRoute(params: {
 
   for (const item of selection) {
     const slotStart = toTimeValue(item.slot.startTime);
-    const slotEnd = toTimeValue(item.slot.endTime);
+    const slotWindowEnd = toTimeValue(item.slot.endTime);
+    const tastingDurationMinutes = resolveTastingDurationMinutes(item.winery, item.slot);
+    const slotDeparture = slotStart + tastingDurationMinutes;
     const drive = travelTimes.getMinutes(currentNodeId, item.winery.wineryId);
     const earliestArrival = currentTime + drive;
 
-    if (earliestArrival > slotStart || slotEnd > dayEnd) {
+    if (earliestArrival > slotStart || slotDeparture > slotWindowEnd || slotDeparture > dayEnd) {
       return null;
     }
     if (slotStart > earliestArrival) {
@@ -273,9 +298,11 @@ function buildFeasibleRoute(params: {
       winery: item.winery,
       slot: item.slot,
       driveMinutes: drive,
+      arrivalMinutes: slotStart,
+      departureMinutes: slotDeparture,
     });
 
-    currentTime = slotEnd;
+    currentTime = slotDeparture;
     currentNodeId = item.winery.wineryId;
   }
 
@@ -291,8 +318,8 @@ function buildFeasibleRoute(params: {
     return overlapEnd - overlapStart >= LUNCH_BREAK_MINUTES;
   });
   const hasLunchAtStop = stops.some((stop) => {
-    const stopStart = toTimeValue(stop.slot.startTime);
-    const stopEnd = toTimeValue(stop.slot.endTime);
+    const stopStart = stop.arrivalMinutes;
+    const stopEnd = stop.departureMinutes;
     const overlapStart = Math.max(stopStart, LUNCH_WINDOW_START);
     const overlapEnd = Math.min(stopEnd, LUNCH_WINDOW_END);
     return overlapEnd - overlapStart >= LUNCH_BREAK_MINUTES;
@@ -438,9 +465,7 @@ function buildRelaxedFallbackItinerary(params: {
     }
 
     const representativeSlot = nextGroup.slots[0];
-    const slotDurationMinutes = representativeSlot
-      ? Math.max(45, Math.min(75, toTimeValue(representativeSlot.endTime) - toTimeValue(representativeSlot.startTime)))
-      : 60;
+    const slotDurationMinutes = resolveTastingDurationMinutes(nextGroup.winery, representativeSlot);
 
     const arrivalMinutes = currentTime + nextDrive;
     const departureMinutes = arrivalMinutes + slotDurationMinutes;
@@ -645,8 +670,8 @@ export function buildCandidateItineraries(params: {
       stops: route.stops.map((stop) => ({
         wineryId: stop.winery.wineryId,
         wineryName: stop.winery.name,
-        arrivalTime: toLocalIso(stop.slot.serviceDate, stop.slot.startTime),
-        departureTime: toLocalIso(stop.slot.serviceDate, stop.slot.endTime),
+        arrivalTime: toLocalIso(stop.slot.serviceDate, toClockValue(stop.arrivalMinutes)),
+        departureTime: toLocalIso(stop.slot.serviceDate, toClockValue(stop.departureMinutes)),
         driveMinutes: stop.driveMinutes,
       })),
     })),
