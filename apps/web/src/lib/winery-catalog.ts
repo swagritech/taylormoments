@@ -63,18 +63,35 @@ const knownCoordinates: Record<string, { latitude: number; longitude: number }> 
   woodlands: { latitude: -33.698, longitude: 115.035 },
 };
 
-function fallbackCoordinatesForSlug(slug: string) {
+const regionAnchors: Record<string, { latitude: number; longitude: number }> = {
+  Wilyabrup: { latitude: -33.72, longitude: 115.07 },
+  Wallcliffe: { latitude: -33.93, longitude: 115.06 },
+  Yallingup: { latitude: -33.66, longitude: 115.04 },
+  Cowaramup: { latitude: -33.85, longitude: 115.10 },
+  Metricup: { latitude: -33.80, longitude: 115.14 },
+  "Rosa Brook": { latitude: -34.02, longitude: 115.08 },
+  "Rosa Glen": { latitude: -34.07, longitude: 115.10 },
+  Karridale: { latitude: -34.21, longitude: 115.04 },
+  Bramley: { latitude: -33.99, longitude: 115.10 },
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function fallbackCoordinatesForSlug(slug: string, region: string) {
+  const anchor = regionAnchors[region] ?? { latitude: -33.95, longitude: 115.10 };
   const score = scoreFromSlug(slug);
-  const latOffset = (((score % 240) - 120) / 1000);
-  const lonOffset = ((((score * 3) % 240) - 120) / 1000);
+  const latOffset = ((score % 21) - 10) / 1000;
+  const lonOffset = (((score * 7) % 21) - 10) / 1000;
   return {
-    latitude: -33.95 + latOffset,
-    longitude: 115.07 + lonOffset,
+    latitude: clamp(anchor.latitude + latOffset, -34.30, -33.55),
+    longitude: clamp(anchor.longitude + lonOffset, 115.00, 115.38),
   };
 }
 
 export const wineryCatalog: WineryCatalogItem[] = (wineryProspects as ProspectRow[]).map((row) => ({
-  ...(knownCoordinates[row.slug] ?? fallbackCoordinatesForSlug(row.slug)),
+  ...(knownCoordinates[row.slug] ?? fallbackCoordinatesForSlug(row.slug, row.sub_region)),
   id: row.slug,
   name: row.name,
   region: row.sub_region,
