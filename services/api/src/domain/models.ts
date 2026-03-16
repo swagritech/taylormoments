@@ -194,6 +194,12 @@ export type RecommendItineraryResponse = {
     feasible_routes_found: number;
     generated_options_count: number;
     used_fallback: boolean;
+    travel_time_provider?: "haversine" | "osrm";
+    travel_time_point_count?: number;
+    travel_time_matrix_legs?: number;
+    travel_time_haversine_legs?: number;
+    travel_time_default_legs?: number;
+    travel_time_cache_hit?: boolean;
     requested_time_window: {
       start: string;
       end: string;

@@ -6,14 +6,13 @@ import type {
   WineryAvailability,
 } from "../domain/models.js";
 import { makeId } from "../lib/crypto.js";
+import { buildTravelTimeMatrix, type Point, type TravelTimeMatrix } from "./travel-time-provider.js";
 
-type Point = { lat: number; lon: number };
 type PlannedStop = { winery: Winery; slot: WineryAvailability; driveMinutes: number };
 type WinerySlotGroup = { winery: Winery; slots: WineryAvailability[] };
 
 const DEFAULT_DAY_START = "09:30";
 const DEFAULT_DAY_END = "17:30";
-const DEFAULT_DRIVE_MINUTES = 20;
 const MAX_STOPS_PER_DAY = 4;
 const MIN_STOPS_PER_DAY = 2;
 const LUNCH_WINDOW_START = 11 * 60 + 30;
@@ -49,39 +48,6 @@ function toLocalIso(serviceDate: string, hhmm: string) {
   return `${serviceDate}T${hhmm}:00`;
 }
 
-function haversineKm(from: Point, to: Point) {
-  const toRadians = (value: number) => (value * Math.PI) / 180;
-  const earthRadiusKm = 6371;
-  const deltaLat = toRadians(to.lat - from.lat);
-  const deltaLon = toRadians(to.lon - from.lon);
-  const lat1 = toRadians(from.lat);
-  const lat2 = toRadians(to.lat);
-  const a =
-    Math.sin(deltaLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return earthRadiusKm * c;
-}
-
-function estimateDriveMinutes(from?: Point, to?: Point) {
-  if (!from || !to) {
-    return DEFAULT_DRIVE_MINUTES;
-  }
-
-  const distanceKm = haversineKm(from, to);
-  if (distanceKm < 0.5) {
-    return 5;
-  }
-
-  const roadFactor = 1.25;
-  const averageRoadSpeedKmH = 56;
-  const bufferMinutes = 5;
-  return Math.max(
-    8,
-    Math.round(((distanceKm * roadFactor) / averageRoadSpeedKmH) * 60 + bufferMinutes),
-  );
-}
-
 function resolvePickupPoint(pickupLocation: string) {
   const lowered = pickupLocation.toLowerCase();
   const match = pickupPoints.find((entry) => lowered.includes(entry.key));
@@ -99,6 +65,18 @@ function pointForWinery(winery: Winery): Point | undefined {
   }
 
   return { lat: winery.latitude, lon: winery.longitude };
+}
+
+function buildTravelPointsById(request: RecommendItineraryRequest, wineries: Winery[]) {
+  const pointsById: Record<string, Point | undefined> = {
+    pickup: resolvePickupPoint(request.pickup_location),
+  };
+
+  for (const winery of wineries) {
+    pointsById[winery.wineryId] = pointForWinery(winery);
+  }
+
+  return pointsById;
 }
 
 function buildSlotCombinations(
@@ -143,18 +121,18 @@ function buildSlotCombinations(
 function buildFeasibleRoute(params: {
   request: RecommendItineraryRequest;
   selection: Array<{ winery: Winery; slot: WineryAvailability }>;
+  travelTimes: TravelTimeMatrix;
 }): { stops: PlannedStop[]; totalDriveMinutes: number } | null {
-  const { request, selection } = params;
+  const { request, selection, travelTimes } = params;
   const dayStart = toTimeValue(request.preferred_start_time ?? DEFAULT_DAY_START);
   const dayEnd = toTimeValue(request.preferred_end_time ?? DEFAULT_DAY_END);
-  const pickupPoint = resolvePickupPoint(request.pickup_location);
 
   const sorted = [...selection].sort(
     (a, b) => toTimeValue(a.slot.startTime) - toTimeValue(b.slot.startTime),
   );
 
   let currentTime = dayStart;
-  let currentPoint = pickupPoint;
+  let currentNodeId = "pickup";
   let totalDriveMinutes = 0;
   const stops: PlannedStop[] = [];
   const idleWindows: Array<{ start: number; end: number }> = [];
@@ -162,8 +140,7 @@ function buildFeasibleRoute(params: {
   for (const item of sorted) {
     const slotStart = toTimeValue(item.slot.startTime);
     const slotEnd = toTimeValue(item.slot.endTime);
-    const nextPoint = pointForWinery(item.winery);
-    const drive = estimateDriveMinutes(currentPoint, nextPoint);
+    const drive = travelTimes.getMinutes(currentNodeId, item.winery.wineryId);
     const earliestArrival = currentTime + drive;
 
     if (earliestArrival > slotStart || slotEnd > dayEnd) {
@@ -181,10 +158,10 @@ function buildFeasibleRoute(params: {
     });
 
     currentTime = slotEnd;
-    currentPoint = nextPoint;
+    currentNodeId = item.winery.wineryId;
   }
 
-  const returnDrive = estimateDriveMinutes(currentPoint, pickupPoint);
+  const returnDrive = travelTimes.getMinutes(currentNodeId, "pickup");
   if (currentTime + returnDrive > dayEnd) {
     return null;
   }
@@ -240,11 +217,11 @@ function buildRelaxedFallbackItinerary(params: {
   request: RecommendItineraryRequest;
   slotGroups: WinerySlotGroup[];
   targetStops?: number;
+  travelTimes: TravelTimeMatrix;
 }): ItineraryOption | null {
-  const { request, slotGroups, targetStops } = params;
+  const { request, slotGroups, targetStops, travelTimes } = params;
   const dayStart = toTimeValue(request.preferred_start_time ?? DEFAULT_DAY_START);
   const dayEnd = toTimeValue(request.preferred_end_time ?? DEFAULT_DAY_END);
-  const pickupPoint = resolvePickupPoint(request.pickup_location);
 
   const selectedGroups = [...slotGroups]
     .sort((a, b) => b.slots.length - a.slots.length)
@@ -256,7 +233,7 @@ function buildRelaxedFallbackItinerary(params: {
 
   const unvisited = [...selectedGroups];
   let currentTime = dayStart;
-  let currentPoint = pickupPoint;
+  let currentNodeId = "pickup";
   let totalDriveMinutes = 0;
   const stops: Array<{
     wineryId: string;
@@ -275,7 +252,7 @@ function buildRelaxedFallbackItinerary(params: {
       if (!group) {
         continue;
       }
-      const drive = estimateDriveMinutes(currentPoint, pointForWinery(group.winery));
+      const drive = travelTimes.getMinutes(currentNodeId, group.winery.wineryId);
       if (drive < nextDrive) {
         nextDrive = drive;
         nextIndex = index;
@@ -308,7 +285,7 @@ function buildRelaxedFallbackItinerary(params: {
     });
 
     currentTime = departureMinutes;
-    currentPoint = pointForWinery(nextGroup.winery);
+    currentNodeId = nextGroup.winery.wineryId;
   }
 
   if (stops.length === 0) {
@@ -370,8 +347,9 @@ export function buildCandidateItineraries(params: {
   request: RecommendItineraryRequest;
   wineries: Winery[];
   availability: WineryAvailability[];
+  travelTimes: TravelTimeMatrix;
 }): ItineraryOption[] {
-  const { request, wineries, availability } = params;
+  const { request, wineries, availability, travelTimes } = params;
   const preferredIds = request.preferred_wineries ?? [];
   const activeWineryIds = new Set(wineries.map((winery) => winery.wineryId));
   const recognizedPreferredIds = preferredIds.filter((id) => activeWineryIds.has(id));
@@ -413,7 +391,7 @@ export function buildCandidateItineraries(params: {
   const groupSubsets = buildGroupSubsets(slotGroups);
   const combinations = groupSubsets.flatMap((subset) => buildSlotCombinations(subset, 120));
   const scoredRoutes = combinations
-    .map((selection) => buildFeasibleRoute({ request, selection }))
+    .map((selection) => buildFeasibleRoute({ request, selection, travelTimes }))
     .filter((route): route is { stops: PlannedStop[]; totalDriveMinutes: number } => Boolean(route))
     .map((route) => ({
       route,
@@ -441,6 +419,7 @@ export function buildCandidateItineraries(params: {
       request,
       slotGroups,
       targetStops: targetStopCount,
+      travelTimes,
     });
     return fallback ? [fallback] : [];
   }
@@ -539,14 +518,24 @@ export async function recommendItineraries(params: {
       slot_count: 0,
     }));
 
+  const travelTimes = await buildTravelTimeMatrix({
+    pointsById: buildTravelPointsById(request, filteredWineries),
+    departureHint: `${request.booking_date}T${request.preferred_start_time ?? DEFAULT_DAY_START}`,
+  });
+
   const groupSubsets = slotGroups.length > 0 ? buildGroupSubsets(slotGroups) : [];
   const combinations = groupSubsets.flatMap((subset) => buildSlotCombinations(subset, 120));
   const feasibleCount = combinations
-    .map((selection) => buildFeasibleRoute({ request, selection }))
+    .map((selection) => buildFeasibleRoute({ request, selection, travelTimes }))
     .filter((route): route is { stops: PlannedStop[]; totalDriveMinutes: number } => Boolean(route))
     .length;
 
-  const candidates = buildCandidateItineraries(params);
+  const candidates = buildCandidateItineraries({
+    request,
+    wineries,
+    availability,
+    travelTimes,
+  });
   const ranked = await rankItinerariesWithAi(candidates);
   const usedFallback =
     ranked.length > 0 &&
@@ -577,6 +566,12 @@ export async function recommendItineraries(params: {
       feasible_routes_found: feasibleCount,
       generated_options_count: ranked.length,
       used_fallback: usedFallback,
+      travel_time_provider: travelTimes.summary.provider,
+      travel_time_point_count: travelTimes.summary.point_count,
+      travel_time_matrix_legs: travelTimes.summary.matrix_leg_count,
+      travel_time_haversine_legs: travelTimes.summary.haversine_leg_count,
+      travel_time_default_legs: travelTimes.summary.default_leg_count,
+      travel_time_cache_hit: travelTimes.summary.cache_hit,
       requested_time_window: {
         start: request.preferred_start_time ?? DEFAULT_DAY_START,
         end: request.preferred_end_time ?? DEFAULT_DAY_END,

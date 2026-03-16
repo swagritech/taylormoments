@@ -95,6 +95,28 @@ export function getR2SignedUrlExpirySeconds() {
   return Math.min(Math.floor(parsed), 3600);
 }
 
+export type TravelTimeProvider = "haversine" | "osrm";
+
+export function getTravelTimeProvider(): TravelTimeProvider {
+  const provider = getEnv("TM_TRAVEL_TIME_PROVIDER", "haversine").trim().toLowerCase();
+  if (provider === "osrm") {
+    return "osrm";
+  }
+  return "haversine";
+}
+
+export function getTravelTimeOsrmBaseUrl() {
+  return getEnv("TM_TRAVEL_TIME_OSRM_BASE_URL", "https://router.project-osrm.org").trim();
+}
+
+export function getTravelTimeCacheTtlSeconds() {
+  const parsed = Number(getEnv("TM_TRAVEL_TIME_CACHE_TTL_SECONDS", "21600"));
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 21600;
+  }
+  return Math.min(Math.floor(parsed), 86400);
+}
+
 export function normalizeRequest(input: RecommendItineraryRequest): RecommendItineraryRequest {
   return {
     ...input,
