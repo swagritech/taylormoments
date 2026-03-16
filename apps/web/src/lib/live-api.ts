@@ -35,10 +35,22 @@ export type RecommendResponse = {
     best_route_idle_minutes?: number;
     travel_time_provider?: "haversine" | "osrm";
     travel_time_point_count?: number;
+    travel_time_total_legs?: number;
     travel_time_matrix_legs?: number;
     travel_time_haversine_legs?: number;
     travel_time_default_legs?: number;
+    travel_time_fallback_legs?: number;
+    travel_time_fallback_percentage?: number;
+    travel_time_average_confidence?: number;
     travel_time_cache_hit?: boolean;
+    selected_route_segment_count?: number;
+    selected_route_fallback_segments?: number;
+    selected_route_fallback_percentage?: number;
+    selected_route_average_confidence?: number;
+    selected_route_total_drive_minutes?: number;
+    selected_route_estimated_minutes?: number;
+    selected_route_matrix_minutes?: number;
+    selected_route_estimated_vs_actual_delta_minutes?: number;
     requested_time_window: {
       start: string;
       end: string;

@@ -26,9 +26,13 @@ export type TravelTimeMatrix = {
   summary: {
     provider: TravelTimeProvider;
     point_count: number;
+    total_leg_count: number;
     matrix_leg_count: number;
     haversine_leg_count: number;
     default_leg_count: number;
+    fallback_leg_count: number;
+    fallback_leg_percentage: number;
+    average_leg_confidence: number;
     cache_hit: boolean;
   };
 };
@@ -36,9 +40,19 @@ export type TravelTimeMatrix = {
 const DEFAULT_DRIVE_MINUTES = 20;
 const USER_AGENT = "TailorMoments/1.0 (dev@swagritech.com.au)";
 const osrmMatrixCache = new Map<string, MatrixCacheEntry>();
+const LEG_CONFIDENCE_BY_SOURCE: Record<TravelLegSource, number> = {
+  matrix: 0.97,
+  haversine: 0.68,
+  default: 0.32,
+};
 
 function pairKey(fromId: string, toId: string) {
   return `${fromId}__${toId}`;
+}
+
+function roundTo(value: number, digits = 2) {
+  const scale = 10 ** digits;
+  return Math.round(value * scale) / scale;
 }
 
 function haversineKm(from: Point, to: Point) {
@@ -73,6 +87,66 @@ function estimateHaversineMinutes(from?: Point, to?: Point) {
     Math.round(((distanceKm * roadFactor) / averageRoadSpeedKmH) * 60 + bufferMinutes),
   );
   return { minutes, source: "haversine" as const };
+}
+
+export function estimateBaselineTravelMinutes(from?: Point, to?: Point) {
+  return estimateHaversineMinutes(from, to);
+}
+
+export function travelConfidenceForSource(source: TravelLegSource) {
+  return LEG_CONFIDENCE_BY_SOURCE[source] ?? LEG_CONFIDENCE_BY_SOURCE.default;
+}
+
+function buildMatrixSummary(params: {
+  provider: TravelTimeProvider;
+  ids: string[];
+  sourceByPair: Record<string, TravelLegSource>;
+  cacheHit: boolean;
+}) {
+  const { provider, ids, sourceByPair, cacheHit } = params;
+  let matrixLegCount = 0;
+  let haversineLegCount = 0;
+  let defaultLegCount = 0;
+  let confidenceTotal = 0;
+
+  for (const fromId of ids) {
+    for (const toId of ids) {
+      if (fromId === toId) {
+        continue;
+      }
+      const source = sourceByPair[pairKey(fromId, toId)] ?? "default";
+      if (source === "matrix") {
+        matrixLegCount += 1;
+      } else if (source === "haversine") {
+        haversineLegCount += 1;
+      } else {
+        defaultLegCount += 1;
+      }
+      confidenceTotal += travelConfidenceForSource(source);
+    }
+  }
+
+  const totalLegCount = matrixLegCount + haversineLegCount + defaultLegCount;
+  const fallbackLegCount = haversineLegCount + defaultLegCount;
+  const fallbackLegPercentage = totalLegCount > 0
+    ? roundTo((fallbackLegCount / totalLegCount) * 100, 2)
+    : 0;
+  const averageLegConfidence = totalLegCount > 0
+    ? roundTo(confidenceTotal / totalLegCount, 3)
+    : 0;
+
+  return {
+    provider,
+    point_count: ids.length,
+    total_leg_count: totalLegCount,
+    matrix_leg_count: matrixLegCount,
+    haversine_leg_count: haversineLegCount,
+    default_leg_count: defaultLegCount,
+    fallback_leg_count: fallbackLegCount,
+    fallback_leg_percentage: fallbackLegPercentage,
+    average_leg_confidence: averageLegConfidence,
+    cache_hit: cacheHit,
+  };
 }
 
 function buildCacheKey(
@@ -216,17 +290,12 @@ export async function buildTravelTimeMatrix(input: MatrixBuildInput): Promise<Tr
       }
     }
 
-    const matrixLegCount = Object.values(sourceByPair).filter((source) => source === "matrix").length;
-    const haversineLegCount = Object.values(sourceByPair).filter((source) => source === "haversine").length;
-    const defaultLegCount = Object.values(sourceByPair).filter((source) => source === "default").length;
-    const summary = {
+    const summary = buildMatrixSummary({
       provider,
-      point_count: ids.length,
-      matrix_leg_count: matrixLegCount,
-      haversine_leg_count: haversineLegCount,
-      default_leg_count: defaultLegCount,
-      cache_hit: cacheHit,
-    };
+      ids,
+      sourceByPair,
+      cacheHit,
+    });
 
     osrmMatrixCache.set(cacheKey, {
       expiresAt: now + getTravelTimeCacheTtlSeconds() * 1000,
@@ -235,9 +304,13 @@ export async function buildTravelTimeMatrix(input: MatrixBuildInput): Promise<Tr
       summary: {
         provider: summary.provider,
         point_count: summary.point_count,
+        total_leg_count: summary.total_leg_count,
         matrix_leg_count: summary.matrix_leg_count,
         haversine_leg_count: summary.haversine_leg_count,
         default_leg_count: summary.default_leg_count,
+        fallback_leg_count: summary.fallback_leg_count,
+        fallback_leg_percentage: summary.fallback_leg_percentage,
+        average_leg_confidence: summary.average_leg_confidence,
       },
     });
 
@@ -266,13 +339,11 @@ export async function buildTravelTimeMatrix(input: MatrixBuildInput): Promise<Tr
   return {
     getMinutes: (fromId, toId) => matrixByPair[pairKey(fromId, toId)] ?? DEFAULT_DRIVE_MINUTES,
     sourceForLeg: (fromId, toId) => sourceByPair[pairKey(fromId, toId)] ?? "default",
-    summary: {
+    summary: buildMatrixSummary({
       provider,
-      point_count: ids.length,
-      matrix_leg_count: 0,
-      haversine_leg_count: Object.values(sourceByPair).filter((source) => source === "haversine").length,
-      default_leg_count: Object.values(sourceByPair).filter((source) => source === "default").length,
-      cache_hit: false,
-    },
+      ids,
+      sourceByPair,
+      cacheHit: false,
+    }),
   };
 }

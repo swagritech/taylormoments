@@ -6,7 +6,13 @@ import type {
   WineryAvailability,
 } from "../domain/models.js";
 import { makeId } from "../lib/crypto.js";
-import { buildTravelTimeMatrix, type Point, type TravelTimeMatrix } from "./travel-time-provider.js";
+import {
+  buildTravelTimeMatrix,
+  estimateBaselineTravelMinutes,
+  travelConfidenceForSource,
+  type Point,
+  type TravelTimeMatrix,
+} from "./travel-time-provider.js";
 
 type PlannedStop = { winery: Winery; slot: WineryAvailability; driveMinutes: number };
 type WinerySlotGroup = { winery: Winery; slots: WineryAvailability[] };
@@ -34,6 +40,16 @@ type CandidateBuildResult = {
   diagnostics: CandidateBuildDiagnostics;
   usedFallback: boolean;
 };
+type SelectedRouteTravelQuality = {
+  segmentCount: number;
+  fallbackSegmentCount: number;
+  fallbackSegmentPercentage: number;
+  averageConfidence: number;
+  totalDriveMinutes: number;
+  estimatedBaselineMinutes: number;
+  matrixMinutes: number;
+  estimatedVsActualDeltaMinutes: number;
+};
 
 const DEFAULT_DAY_START = "09:30";
 const DEFAULT_DAY_END = "17:30";
@@ -49,6 +65,11 @@ const pickupPoints: Array<{ key: string; point: Point }> = [
   { key: "prevelly beach", point: { lat: -33.983, lon: 114.995 } },
   { key: "busselton jetty", point: { lat: -33.644, lon: 115.346 } },
 ];
+
+function roundTo(value: number, digits = 2) {
+  const scale = 10 ** digits;
+  return Math.round(value * scale) / scale;
+}
 
 function scoreCandidate(winery: Winery, availability: WineryAvailability, partySize: number) {
   const capacityFactor = Math.max(0, winery.capacity - partySize);
@@ -101,6 +122,81 @@ function buildTravelPointsById(request: RecommendItineraryRequest, wineries: Win
   }
 
   return pointsById;
+}
+
+function createEmptySelectedRouteQuality(): SelectedRouteTravelQuality {
+  return {
+    segmentCount: 0,
+    fallbackSegmentCount: 0,
+    fallbackSegmentPercentage: 0,
+    averageConfidence: 0,
+    totalDriveMinutes: 0,
+    estimatedBaselineMinutes: 0,
+    matrixMinutes: 0,
+    estimatedVsActualDeltaMinutes: 0,
+  };
+}
+
+function evaluateSelectedRouteTravelQuality(params: {
+  itinerary: ItineraryOption | undefined;
+  travelTimes: TravelTimeMatrix;
+  pointsById: Record<string, Point | undefined>;
+}): SelectedRouteTravelQuality {
+  const { itinerary, travelTimes, pointsById } = params;
+  if (!itinerary || itinerary.stops.length === 0) {
+    return createEmptySelectedRouteQuality();
+  }
+
+  let segmentCount = 0;
+  let fallbackSegmentCount = 0;
+  let confidenceTotal = 0;
+  let totalDriveMinutes = 0;
+  let estimatedBaselineMinutes = 0;
+  let matrixMinutes = 0;
+  let previousNodeId = "pickup";
+
+  const processSegment = (fromId: string, toId: string) => {
+    const source = travelTimes.sourceForLeg(fromId, toId);
+    const driveMinutes = travelTimes.getMinutes(fromId, toId);
+    const baselineEstimate = estimateBaselineTravelMinutes(pointsById[fromId], pointsById[toId]);
+    const baselineMinutes = baselineEstimate.minutes;
+
+    segmentCount += 1;
+    totalDriveMinutes += driveMinutes;
+    estimatedBaselineMinutes += baselineMinutes;
+    confidenceTotal += travelConfidenceForSource(source);
+
+    if (source === "matrix") {
+      matrixMinutes += driveMinutes;
+    } else {
+      fallbackSegmentCount += 1;
+    }
+  };
+
+  for (const stop of itinerary.stops) {
+    processSegment(previousNodeId, stop.wineryId);
+    previousNodeId = stop.wineryId;
+  }
+  processSegment(previousNodeId, "pickup");
+
+  const fallbackSegmentPercentage = segmentCount > 0
+    ? roundTo((fallbackSegmentCount / segmentCount) * 100, 2)
+    : 0;
+  const averageConfidence = segmentCount > 0
+    ? roundTo(confidenceTotal / segmentCount, 3)
+    : 0;
+  const estimatedVsActualDeltaMinutes = totalDriveMinutes - estimatedBaselineMinutes;
+
+  return {
+    segmentCount,
+    fallbackSegmentCount,
+    fallbackSegmentPercentage,
+    averageConfidence,
+    totalDriveMinutes,
+    estimatedBaselineMinutes,
+    matrixMinutes,
+    estimatedVsActualDeltaMinutes,
+  };
 }
 
 function buildSlotCombinations(
@@ -634,8 +730,9 @@ export async function recommendItineraries(params: {
       slot_count: 0,
     }));
 
+  const travelPointsById = buildTravelPointsById(request, filteredWineries);
   const travelTimes = await buildTravelTimeMatrix({
-    pointsById: buildTravelPointsById(request, filteredWineries),
+    pointsById: travelPointsById,
     departureHint: `${request.booking_date}T${request.preferred_start_time ?? DEFAULT_DAY_START}`,
   });
 
@@ -646,6 +743,11 @@ export async function recommendItineraries(params: {
     travelTimes,
   });
   const ranked = await rankItinerariesWithAi(candidateBuild.itineraries);
+  const selectedRouteQuality = evaluateSelectedRouteTravelQuality({
+    itinerary: ranked[0],
+    travelTimes,
+    pointsById: travelPointsById,
+  });
 
   return {
     generated_at: new Date().toISOString(),
@@ -678,10 +780,22 @@ export async function recommendItineraries(params: {
       best_route_idle_minutes: candidateBuild.diagnostics.bestRouteIdleMinutes,
       travel_time_provider: travelTimes.summary.provider,
       travel_time_point_count: travelTimes.summary.point_count,
+      travel_time_total_legs: travelTimes.summary.total_leg_count,
       travel_time_matrix_legs: travelTimes.summary.matrix_leg_count,
       travel_time_haversine_legs: travelTimes.summary.haversine_leg_count,
       travel_time_default_legs: travelTimes.summary.default_leg_count,
+      travel_time_fallback_legs: travelTimes.summary.fallback_leg_count,
+      travel_time_fallback_percentage: travelTimes.summary.fallback_leg_percentage,
+      travel_time_average_confidence: travelTimes.summary.average_leg_confidence,
       travel_time_cache_hit: travelTimes.summary.cache_hit,
+      selected_route_segment_count: selectedRouteQuality.segmentCount,
+      selected_route_fallback_segments: selectedRouteQuality.fallbackSegmentCount,
+      selected_route_fallback_percentage: selectedRouteQuality.fallbackSegmentPercentage,
+      selected_route_average_confidence: selectedRouteQuality.averageConfidence,
+      selected_route_total_drive_minutes: selectedRouteQuality.totalDriveMinutes,
+      selected_route_estimated_minutes: selectedRouteQuality.estimatedBaselineMinutes,
+      selected_route_matrix_minutes: selectedRouteQuality.matrixMinutes,
+      selected_route_estimated_vs_actual_delta_minutes: selectedRouteQuality.estimatedVsActualDeltaMinutes,
       requested_time_window: {
         start: request.preferred_start_time ?? DEFAULT_DAY_START,
         end: request.preferred_end_time ?? DEFAULT_DAY_END,
