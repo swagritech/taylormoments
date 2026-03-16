@@ -309,6 +309,7 @@ export function LiveBookingFlow({
                 {selectedCatalogWineries.map((winery) => {
                   const selected = selectedWineries.includes(winery.id);
                   const remoteProfile = profilesById[uuidForWinerySlug(winery.id)];
+                  const displayAddress = remoteProfile?.address || winery.address;
                   return (
                     <button
                       key={winery.id}
@@ -319,7 +320,7 @@ export function LiveBookingFlow({
                       <div className="listTop">
                         <div>
                           <strong>{winery.name}</strong>
-                          <p className="subtle">{winery.region} · {winery.address}</p>
+                          <p className="subtle">{winery.region} · {displayAddress}</p>
                         </div>
                         <span className={`status ${selected ? "accepted" : "review"}`}>{selected ? "In cart" : "Add"}</span>
                       </div>

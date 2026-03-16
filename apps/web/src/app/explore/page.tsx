@@ -56,28 +56,31 @@ function toSearchProfile(
   winery: WineryCatalogItem,
   remoteProfile?: WineryListResponse["wineries"][number],
 ): SearchProfile {
-  const lowerExperiences = winery.experiences.toLowerCase();
+  const remoteOfferNames = (remoteProfile?.unique_experience_offers ?? [])
+    .map((entry) => entry?.name ?? "")
+    .join(" ");
+  const combinedExperiences = `${winery.experiences} ${remoteOfferNames}`.toLowerCase();
   const lowerOrganic = winery.organicStatus.toLowerCase();
   const catalogHasCheeseBoard =
-    lowerExperiences.includes("cheese") ||
-    lowerExperiences.includes("platter") ||
-    lowerExperiences.includes("nougat");
+    combinedExperiences.includes("cheese") ||
+    combinedExperiences.includes("platter") ||
+    combinedExperiences.includes("nougat");
 
   return {
     hasLunchExperience:
-      lowerExperiences.includes("lunch") ||
-      lowerExperiences.includes("degustation") ||
-      lowerExperiences.includes("pairing") ||
-      lowerExperiences.includes("platter"),
+      combinedExperiences.includes("lunch") ||
+      combinedExperiences.includes("degustation") ||
+      combinedExperiences.includes("pairing") ||
+      combinedExperiences.includes("platter"),
     organicFriendly:
       lowerOrganic.includes("organic") ||
       lowerOrganic.includes("biodynamic") ||
       lowerOrganic.includes("natural"),
     hasSpecialExperience:
-      lowerExperiences.includes("tour") ||
-      lowerExperiences.includes("private") ||
-      lowerExperiences.includes("behind the scenes") ||
-      lowerExperiences.includes("masterclass"),
+      combinedExperiences.includes("tour") ||
+      combinedExperiences.includes("private") ||
+      combinedExperiences.includes("behind the scenes") ||
+      combinedExperiences.includes("masterclass"),
     hasCheeseBoard:
       remoteProfile?.offers_cheese_board ?? catalogHasCheeseBoard,
     vibeTag: winery.selectedByCount >= 500 ? "popular" : "lesser-known",
@@ -671,6 +674,7 @@ export default function ExplorePage() {
           const summaryText = remoteProfile?.description || selectedPreviewWinery.summary;
           const knownForText = remoteProfile?.famous_for || selectedPreviewWinery.knownFor;
           const experiencesText = experienceSummary(remoteProfile, selectedPreviewWinery.experiences);
+          const displayAddress = remoteProfile?.address || selectedPreviewWinery.address;
           return (
         <div className="modalBackdrop" role="dialog" aria-modal="true" aria-label={`${selectedPreviewWinery.name} details`}>
           <div className="modalCard">
@@ -684,7 +688,7 @@ export default function ExplorePage() {
                 </div>
                 <div className="catalogMeta">
                   <h3>{selectedPreviewWinery.name}</h3>
-                  <p className="subtle">{selectedPreviewWinery.address}</p>
+                  <p className="subtle">{displayAddress}</p>
                   <p className="ratingLine">
                     <strong>{selectedPreviewWinery.rating.toFixed(1)} stars</strong> · {selectedPreviewWinery.selectedByCount} guests shortlisted
                   </p>

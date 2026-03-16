@@ -34,8 +34,10 @@ export function CustomerWineryCatalog({
     const loweredSearch = search.trim().toLowerCase();
     const rows = wineryCatalog.filter((winery) => {
       const remoteProfile = profilesById[slugToWineryUuid(winery.id)];
+      const displayAddress = remoteProfile?.address || winery.address;
       const searchableKnownFor = remoteProfile?.famous_for || winery.knownFor;
       const searchableExperiences = experienceSummary(remoteProfile, winery.experiences);
+      const searchableSummary = remoteProfile?.description || winery.summary;
 
       if (region !== "All regions" && winery.region !== region) {
         return false;
@@ -57,7 +59,7 @@ export function CustomerWineryCatalog({
         return true;
       }
 
-      const haystack = `${winery.name} ${winery.address} ${searchableKnownFor} ${searchableExperiences}`.toLowerCase();
+      const haystack = `${winery.name} ${displayAddress} ${searchableKnownFor} ${searchableExperiences} ${searchableSummary}`.toLowerCase();
       return haystack.includes(loweredSearch);
     });
 
@@ -75,9 +77,19 @@ export function CustomerWineryCatalog({
   const selectedWineryItems = useMemo(
     () =>
       selectedWineries
-        .map((wineryId) => wineryCatalog.find((entry) => entry.id === wineryId))
+        .map((wineryId) => {
+          const winery = wineryCatalog.find((entry) => entry.id === wineryId);
+          if (!winery) {
+            return null;
+          }
+          const remoteProfile = profilesById[slugToWineryUuid(winery.id)];
+          return {
+            ...winery,
+            address: remoteProfile?.address || winery.address,
+          };
+        })
         .filter((entry): entry is (typeof wineryCatalog)[number] => Boolean(entry)),
-    [selectedWineries],
+    [profilesById, selectedWineries],
   );
 
   return (
@@ -143,6 +155,7 @@ export function CustomerWineryCatalog({
             const experiencesText = experienceSummary(remoteProfile, winery.experiences);
             const knownForText = remoteProfile?.famous_for || winery.knownFor;
             const summaryText = remoteProfile?.description || winery.summary;
+            const displayAddress = remoteProfile?.address || winery.address;
 
             return (
               <article
@@ -156,7 +169,7 @@ export function CustomerWineryCatalog({
                   </div>
                   <div className="catalogMeta">
                     <h3>{winery.name}</h3>
-                    <p className="subtle">{winery.address}</p>
+                    <p className="subtle">{displayAddress}</p>
                     <p className="ratingLine">
                       {winery.rating} stars · {winery.selectedByCount} guests shortlisted
                     </p>
