@@ -172,10 +172,11 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
   async getWineries(): Promise<Winery[]> {
     const pool = getPool();
     const result = await pool.query(`
-      select winery_id, name, region, confirmation_mode, capacity, active,
+      select distinct on (lower(name))
+             winery_id, name, region, confirmation_mode, capacity, active,
              tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
       from winery
-      order by name asc
+      order by lower(name) asc, updated_at desc, created_at desc
     `);
 
     return result.rows.map((row) => mapWinery(row));

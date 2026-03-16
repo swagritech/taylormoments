@@ -148,15 +148,20 @@ export function PartnerWineriesPage() {
         setError(null);
 
         if (currentUser.role === "winery" && currentUser.winery_id) {
-          const response = await listWineries();
+          const [response, profile] = await Promise.all([
+            listWineries(),
+            getWineryProfileAuthed(currentUser.winery_id, token),
+          ]);
           if (!active) {
             return;
           }
           const found = response.wineries.find((item) => item.winery_id === currentUser.winery_id);
-          if (found) {
-            setWineries([{ winery_id: found.winery_id, name: found.name, region: found.region }]);
-            setSelectedWineryId(found.winery_id);
-          }
+          setWineries([{
+            winery_id: currentUser.winery_id,
+            name: found?.name ?? profile.name,
+            region: found?.region ?? profile.region,
+          }]);
+          setSelectedWineryId(currentUser.winery_id);
           return;
         }
 
