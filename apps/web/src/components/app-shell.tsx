@@ -93,8 +93,10 @@ export function AppShell({
             <div className="ctaRow authRow">
               {user ? (
                 <>
-                  <span className="status accepted">{user.role}</span>
-                  <span className="subtle">{user.display_name}</span>
+                  {user.role !== "customer" ? (
+                    <span className="status accepted">{user.role}</span>
+                  ) : null}
+                  <span className="authName">{user.display_name}</span>
                   <button type="button" className="buttonGhost" onClick={logout}>
                     Log out
                   </button>
