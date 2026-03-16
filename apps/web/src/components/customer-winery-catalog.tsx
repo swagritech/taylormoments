@@ -1,9 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { SectionCard } from "@/components/section-card";
 import { SelectedWineriesMap } from "@/components/selected-wineries-map";
+import { experienceSummary, useRemoteWineryProfiles } from "@/lib/remote-winery-profiles";
 import { wineryCatalog, wineryRegions } from "@/lib/winery-catalog";
+import { slugToWineryUuid } from "@/lib/winery-id";
 
 type CustomerWineryCatalogProps = {
   selectedWineries: string[];
@@ -26,10 +28,15 @@ export function CustomerWineryCatalog({
   const [cellarDoorOnly, setCellarDoorOnly] = useState(false);
   const [liveBookableOnly, setLiveBookableOnly] = useState(true);
   const [sortMode, setSortMode] = useState<SortMode>("top-rated");
+  const { profilesById } = useRemoteWineryProfiles();
 
   const filtered = useMemo(() => {
     const loweredSearch = search.trim().toLowerCase();
     const rows = wineryCatalog.filter((winery) => {
+      const remoteProfile = profilesById[slugToWineryUuid(winery.id)];
+      const searchableKnownFor = remoteProfile?.famous_for || winery.knownFor;
+      const searchableExperiences = experienceSummary(remoteProfile, winery.experiences);
+
       if (region !== "All regions" && winery.region !== region) {
         return false;
       }
@@ -50,7 +57,7 @@ export function CustomerWineryCatalog({
         return true;
       }
 
-      const haystack = `${winery.name} ${winery.address} ${winery.knownFor} ${winery.experiences}`.toLowerCase();
+      const haystack = `${winery.name} ${winery.address} ${searchableKnownFor} ${searchableExperiences}`.toLowerCase();
       return haystack.includes(loweredSearch);
     });
 
@@ -63,7 +70,7 @@ export function CustomerWineryCatalog({
     }
 
     return rows.sort((a, b) => b.rating - a.rating);
-  }, [cellarDoorOnly, liveBookableOnly, organicOnly, region, search, sortMode]);
+  }, [cellarDoorOnly, liveBookableOnly, organicOnly, profilesById, region, search, sortMode]);
 
   const selectedWineryItems = useMemo(
     () =>
@@ -132,6 +139,10 @@ export function CustomerWineryCatalog({
               .slice(0, 2)
               .map((entry) => entry[0])
               .join("");
+            const remoteProfile = profilesById[slugToWineryUuid(winery.id)];
+            const experiencesText = experienceSummary(remoteProfile, winery.experiences);
+            const knownForText = remoteProfile?.famous_for || winery.knownFor;
+            const summaryText = remoteProfile?.description || winery.summary;
 
             return (
               <article
@@ -150,10 +161,14 @@ export function CustomerWineryCatalog({
                       {winery.rating} stars · {winery.selectedByCount} guests shortlisted
                     </p>
                     <p className="subtle">Organic: {winery.organicStatus}</p>
+                    {remoteProfile?.tasting_price !== undefined ? (
+                      <p className="subtle">Tasting: ${remoteProfile.tasting_price}</p>
+                    ) : null}
                     <div className="metaRow">
                       <span className={`status ${winery.liveBookable ? "accepted" : "review"}`}>
                         {winery.liveBookable ? "Live booking available" : "Prospect list"}
                       </span>
+                      {remoteProfile?.offers_cheese_board ? <span className="status accepted">Cheese board</span> : null}
                     </div>
                     <button
                       type="button"
@@ -165,13 +180,13 @@ export function CustomerWineryCatalog({
                   </div>
                 </div>
                 <div className="catalogSummary">
-                  <p>{winery.summary}</p>
+                  <p>{summaryText}</p>
                   <div className="catalogBullets">
                     <p>
-                      <strong>Experiences:</strong> {winery.experiences}
+                      <strong>Experiences:</strong> {experiencesText}
                     </p>
                     <p>
-                      <strong>Known for:</strong> {winery.knownFor}
+                      <strong>Known for:</strong> {knownForText}
                     </p>
                     <p>
                       <strong>Established:</strong> {winery.established}

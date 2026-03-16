@@ -10,11 +10,14 @@ import { slugToWineryUuid } from "@/lib/winery-id";
 import {
   createBooking,
   formatDisplayTime,
+  listWineries,
   recommendItineraries,
   type BookingResponse,
   type Recommendation,
+  type WineryListResponse,
 } from "@/lib/live-api";
 import { wineryCatalog } from "@/lib/winery-catalog";
+import { experienceSummary } from "@/lib/remote-winery-profiles";
 
 const defaultDate = "2026-04-10";
 
@@ -46,6 +49,7 @@ export function LiveBookingFlow({
   const [requesting, setRequesting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | undefined>();
+  const [profilesById, setProfilesById] = useState<Record<string, WineryListResponse["wineries"][number]>>({});
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [booking, setBooking] = useState<BookingResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +71,31 @@ export function LiveBookingFlow({
 
   const expertPick = recommendations.find((option) => option.expert_pick) ?? recommendations[0];
   const alternateOptions = expertPick ? recommendations.filter((option) => option.itinerary_id !== expertPick.itinerary_id) : [];
+
+  useEffect(() => {
+    let active = true;
+    async function loadProfiles() {
+      try {
+        const response = await listWineries();
+        if (!active) {
+          return;
+        }
+        const next: Record<string, WineryListResponse["wineries"][number]> = {};
+        for (const winery of response.wineries) {
+          next[winery.winery_id] = winery;
+        }
+        setProfilesById(next);
+      } catch {
+        if (active) {
+          setProfilesById({});
+        }
+      }
+    }
+    void loadProfiles();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const saved = loadExplorePreferences();
@@ -279,6 +308,7 @@ export function LiveBookingFlow({
               <div className="selectorList">
                 {selectedCatalogWineries.map((winery) => {
                   const selected = selectedWineries.includes(winery.id);
+                  const remoteProfile = profilesById[uuidForWinerySlug(winery.id)];
                   return (
                     <button
                       key={winery.id}
@@ -296,10 +326,26 @@ export function LiveBookingFlow({
                       <div className="metaRow">
                         <span className="meta">{winery.rating} stars</span>
                         <span className="meta">Organic: {winery.organicStatus}</span>
+                        {remoteProfile?.tasting_price !== undefined ? (
+                          <span className="meta">Tasting ${remoteProfile.tasting_price}</span>
+                        ) : null}
+                        {remoteProfile?.offers_cheese_board ? (
+                          <span className="meta">Cheese board</span>
+                        ) : null}
                         <span className={`status ${winery.liveBookable ? "accepted" : "review"}`}>
                           {winery.liveBookable ? "Live booking available" : "Prospect"}
                         </span>
                       </div>
+                      {(remoteProfile?.description || remoteProfile?.famous_for) ? (
+                        <p className="subtle">
+                          {remoteProfile?.description || remoteProfile?.famous_for}
+                        </p>
+                      ) : null}
+                      {remoteProfile?.unique_experience_offers?.length ? (
+                        <p className="subtle">
+                          Experiences: {experienceSummary(remoteProfile, winery.experiences)}
+                        </p>
+                      ) : null}
                     </button>
                   );
                 })}

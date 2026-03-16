@@ -6,12 +6,15 @@ import { SectionCard } from "@/components/section-card";
 import {
   createBooking,
   formatDisplayTime,
+  listWineries,
   recommendItineraries,
   type BookingResponse,
   type Recommendation,
+  type WineryListResponse,
 } from "@/lib/live-api";
 import { wineryCatalog, type WineryCatalogItem } from "@/lib/winery-catalog";
 import { slugToWineryUuid } from "@/lib/winery-id";
+import { experienceSummary } from "@/lib/remote-winery-profiles";
 import {
   loadExplorePreferences,
   saveExplorePreferences,
@@ -168,6 +171,7 @@ export default function ExplorePage() {
   const [hasPlanned, setHasPlanned] = useState(false);
   const [isPreferencesCollapsed, setIsPreferencesCollapsed] = useState(false);
   const [selectedPreviewWinery, setSelectedPreviewWinery] = useState<WineryCatalogItem | null>(null);
+  const [profilesById, setProfilesById] = useState<Record<string, WineryListResponse["wineries"][number]>>({});
 
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
 
@@ -201,6 +205,32 @@ export default function ExplorePage() {
     matchedWineries,
     previewDate,
   ]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadProfiles() {
+      try {
+        const response = await listWineries();
+        if (!active) {
+          return;
+        }
+        const next: Record<string, WineryListResponse["wineries"][number]> = {};
+        for (const winery of response.wineries) {
+          next[winery.winery_id] = winery;
+        }
+        setProfilesById(next);
+      } catch {
+        if (active) {
+          setProfilesById({});
+        }
+      }
+    }
+
+    void loadProfiles();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!hasPlanned || !previewRef.current) {
@@ -347,6 +377,14 @@ export default function ExplorePage() {
     );
   }
 
+  function resolveRemoteProfileByName(stopName: string) {
+    const normalized = stopName.trim().toLowerCase();
+    const match = Object.values(profilesById).find(
+      (entry) => entry.name.trim().toLowerCase() === normalized,
+    );
+    return match;
+  }
+
   return (
     <AppShell
       eyebrow="Explore"
@@ -484,6 +522,7 @@ export default function ExplorePage() {
                     {recommendation.stops.map((stop, index) => {
                       const nextStop = recommendation.stops[index + 1];
                       const stopWinery = resolveWinery(stop.winery_name);
+                      const remoteProfile = resolveRemoteProfileByName(stop.winery_name);
                       const frames = placeholderGalleryFrames(stopWinery);
                       const rollingFrames = [...frames, ...frames];
                       return (
@@ -501,6 +540,12 @@ export default function ExplorePage() {
                                 </button>
                               </h3>
                               <p className="subtle">Depart {formatDisplayTime(stop.departure_time)}.</p>
+                              {remoteProfile?.tasting_price !== undefined ? (
+                                <p className="subtle">Tasting from ${remoteProfile.tasting_price}</p>
+                              ) : null}
+                              {remoteProfile?.offers_cheese_board ? (
+                                <p className="subtle">Cheese board available</p>
+                              ) : null}
                             </div>
                             <div className="scheduleGalleryViewport" aria-label={`${stop.winery_name} gallery preview`}>
                               <div className="scheduleGalleryTrack">
@@ -555,6 +600,12 @@ export default function ExplorePage() {
       </div>
 
       {selectedPreviewWinery ? (
+        (() => {
+          const remoteProfile = profilesById[slugToWineryUuid(selectedPreviewWinery.id)];
+          const summaryText = remoteProfile?.description || selectedPreviewWinery.summary;
+          const knownForText = remoteProfile?.famous_for || selectedPreviewWinery.knownFor;
+          const experiencesText = experienceSummary(remoteProfile, selectedPreviewWinery.experiences);
+          return (
         <div className="modalBackdrop" role="dialog" aria-modal="true" aria-label={`${selectedPreviewWinery.name} details`}>
           <div className="modalCard">
             <button type="button" className="modalClose" onClick={() => setSelectedPreviewWinery(null)} aria-label="Close winery details">
@@ -574,17 +625,25 @@ export default function ExplorePage() {
                   <p className="subtle">
                     Organic: <strong>{selectedPreviewWinery.organicStatus}</strong>
                   </p>
+                  {remoteProfile?.tasting_price !== undefined ? (
+                    <p className="subtle">
+                      Tasting: <strong>${remoteProfile.tasting_price}</strong>
+                    </p>
+                  ) : null}
+                  {remoteProfile?.offers_cheese_board ? (
+                    <p className="subtle">Cheese board available</p>
+                  ) : null}
                   <div className="status available">Live booking available</div>
                 </div>
               </div>
               <div className="catalogSummary">
-                <p>{selectedPreviewWinery.summary}</p>
+                <p>{summaryText}</p>
                 <div className="catalogBullets">
                   <p>
-                    <strong>Experiences:</strong> {selectedPreviewWinery.experiences}
+                    <strong>Experiences:</strong> {experiencesText}
                   </p>
                   <p>
-                    <strong>Known for:</strong> {selectedPreviewWinery.knownFor}
+                    <strong>Known for:</strong> {knownForText}
                   </p>
                   <p>
                     <strong>Established:</strong> {selectedPreviewWinery.established}
@@ -594,6 +653,8 @@ export default function ExplorePage() {
             </div>
           </div>
         </div>
+          );
+        })()
       ) : null}
     </AppShell>
   );
