@@ -182,7 +182,7 @@ export default function ExplorePage() {
   const [prefOrganic, setPrefOrganic] = useState(initialPreferences?.prefOrganic ?? false);
   const [prefSpecialExperience, setPrefSpecialExperience] = useState(initialPreferences?.prefSpecialExperience ?? false);
   const [prefCheeseBoard, setPrefCheeseBoard] = useState(initialPreferences?.prefCheeseBoard ?? false);
-  const [vibe, setVibe] = useState<Vibe>(initialPreferences?.vibe ?? "popular");
+  const [vibe, setVibe] = useState<Vibe>(initialPreferences?.vibe ?? "");
   const [requesting, setRequesting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [matchedWineries, setMatchedWineries] = useState<WineryCatalogItem[]>(
@@ -327,7 +327,7 @@ export default function ExplorePage() {
     setRecommendation(null);
 
     try {
-      const filtered = wineryCatalog.filter((winery) => {
+      const filterByPreferences = (includeVibePreference: boolean) => wineryCatalog.filter((winery) => {
         const profile = toSearchProfile(winery, profilesById[slugToWineryUuid(winery.id)]);
         if (includeLunch === "yes" && !profile.hasLunchExperience) {
           return false;
@@ -341,7 +341,7 @@ export default function ExplorePage() {
         if (prefCheeseBoard && !profile.hasCheeseBoard) {
           return false;
         }
-        if (vibe && profile.vibeTag !== vibe) {
+        if (includeVibePreference && vibe && profile.vibeTag !== vibe) {
           return false;
         }
         if (needTransport === "yes" && !profile.transportSuitable) {
@@ -359,10 +359,18 @@ export default function ExplorePage() {
         return true;
       });
 
-      const shortlist = filtered
+      const shortlist = filterByPreferences(true)
         .sort((a, b) => b.rating - a.rating)
         .slice(0, 14);
-      const routeOptimized = pickNearestRoute(shortlist, timeWindow.stops, profilesById);
+      let routeOptimized = pickNearestRoute(shortlist, timeWindow.stops, profilesById);
+
+      if (routeOptimized.length < 2 && vibe) {
+        const relaxedShortlist = filterByPreferences(false)
+          .sort((a, b) => b.rating - a.rating)
+          .slice(0, 14);
+        routeOptimized = pickNearestRoute(relaxedShortlist, timeWindow.stops, profilesById);
+      }
+
       setMatchedWineries(routeOptimized);
 
       if (routeOptimized.length < 2) {
@@ -571,6 +579,7 @@ export default function ExplorePage() {
             <div className="field">
               <label>Vibe preference</label>
               <div className="choiceRow">
+                <label className="choicePill"><input type="radio" checked={vibe === ""} onChange={() => setVibe("")} /> No preference</label>
                 <label className="choicePill"><input type="radio" checked={vibe === "popular"} onChange={() => setVibe("popular")} /> Popular choice</label>
                 <label className="choicePill"><input type="radio" checked={vibe === "lesser-known"} onChange={() => setVibe("lesser-known")} /> Lesser known</label>
               </div>
