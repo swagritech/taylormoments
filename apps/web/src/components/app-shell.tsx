@@ -18,6 +18,7 @@ type AppShellProps = {
 
 const publicNavItemsDefault = [
   { href: "/", label: "Overview" },
+  { href: "/explore", label: "Explore" },
   { href: "/customer/dashboard", label: "Dashboard" },
   { href: "/customer", label: "Plan a day" },
   { href: "/partner", label: "Partner login" },
@@ -58,6 +59,7 @@ export function AppShell({
     : user?.role === "customer"
       ? [
           { href: "/", label: "Overview" },
+          { href: "/explore", label: "Explore" },
           { href: "/customer/dashboard", label: "Dashboard" },
           { href: "/customer", label: "Plan a day" },
         ]

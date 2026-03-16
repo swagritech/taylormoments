@@ -28,6 +28,15 @@ export default function Home() {
             <div className="listRow">
               <div className="listTop">
                 <div>
+                  <h3>Explore winery options</h3>
+                  <p className="subtle">Answer quick preferences and preview an optimized schedule without logging in.</p>
+                </div>
+                <Link href="/explore" className="buttonGhost">Open</Link>
+              </div>
+            </div>
+            <div className="listRow">
+              <div className="listTop">
+                <div>
                   <h3>Partner portal</h3>
                   <p className="subtle">Winery, transport, and ops teams can sign in from a dedicated partner area.</p>
                 </div>

@@ -135,6 +135,28 @@ button {
   gap: 8px;
 }
 
+.choiceRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.choicePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #3f4f48;
+  font-size: 0.88rem;
+}
+
+.choicePill input {
+  accent-color: var(--teal);
+}
+
 .authRow {
   align-items: center;
 }
