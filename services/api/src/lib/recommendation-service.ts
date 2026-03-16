@@ -10,6 +10,30 @@ import { buildTravelTimeMatrix, type Point, type TravelTimeMatrix } from "./trav
 
 type PlannedStop = { winery: Winery; slot: WineryAvailability; driveMinutes: number };
 type WinerySlotGroup = { winery: Winery; slots: WineryAvailability[] };
+type FeasibleRoute = {
+  stops: PlannedStop[];
+  totalDriveMinutes: number;
+  totalIdleMinutes: number;
+};
+type EvaluatedRoute = {
+  route: FeasibleRoute;
+  score: number;
+  objectiveCost: number;
+  stopCount: number;
+};
+type CandidateBuildDiagnostics = {
+  combinationsTested: number;
+  permutationsTested: number;
+  feasibleRoutesFound: number;
+  bestRouteStopCount: number;
+  bestRouteDriveMinutes: number;
+  bestRouteIdleMinutes: number;
+};
+type CandidateBuildResult = {
+  itineraries: ItineraryOption[];
+  diagnostics: CandidateBuildDiagnostics;
+  usedFallback: boolean;
+};
 
 const DEFAULT_DAY_START = "09:30";
 const DEFAULT_DAY_END = "17:30";
@@ -122,22 +146,19 @@ function buildFeasibleRoute(params: {
   request: RecommendItineraryRequest;
   selection: Array<{ winery: Winery; slot: WineryAvailability }>;
   travelTimes: TravelTimeMatrix;
-}): { stops: PlannedStop[]; totalDriveMinutes: number } | null {
+}): FeasibleRoute | null {
   const { request, selection, travelTimes } = params;
   const dayStart = toTimeValue(request.preferred_start_time ?? DEFAULT_DAY_START);
   const dayEnd = toTimeValue(request.preferred_end_time ?? DEFAULT_DAY_END);
 
-  const sorted = [...selection].sort(
-    (a, b) => toTimeValue(a.slot.startTime) - toTimeValue(b.slot.startTime),
-  );
-
   let currentTime = dayStart;
   let currentNodeId = "pickup";
   let totalDriveMinutes = 0;
+  let totalIdleMinutes = 0;
   const stops: PlannedStop[] = [];
   const idleWindows: Array<{ start: number; end: number }> = [];
 
-  for (const item of sorted) {
+  for (const item of selection) {
     const slotStart = toTimeValue(item.slot.startTime);
     const slotEnd = toTimeValue(item.slot.endTime);
     const drive = travelTimes.getMinutes(currentNodeId, item.winery.wineryId);
@@ -148,6 +169,7 @@ function buildFeasibleRoute(params: {
     }
     if (slotStart > earliestArrival) {
       idleWindows.push({ start: earliestArrival, end: slotStart });
+      totalIdleMinutes += slotStart - earliestArrival;
     }
 
     totalDriveMinutes += drive;
@@ -184,13 +206,13 @@ function buildFeasibleRoute(params: {
     return null;
   }
 
-  return { stops, totalDriveMinutes };
+  return { stops, totalDriveMinutes, totalIdleMinutes };
 }
 
 function scoreRoute(params: {
   request: RecommendItineraryRequest;
-  route: { stops: PlannedStop[]; totalDriveMinutes: number };
-}) {
+  route: FeasibleRoute;
+}): { score: number; objectiveCost: number } {
   const { request, route } = params;
   const candidateScore =
     route.stops.reduce(
@@ -198,19 +220,74 @@ function scoreRoute(params: {
       0,
     ) / route.stops.length;
 
-  const dayStart = toTimeValue(request.preferred_start_time ?? DEFAULT_DAY_START);
-  const dayEnd = toTimeValue(request.preferred_end_time ?? DEFAULT_DAY_END);
-  const lastStop = route.stops[route.stops.length - 1];
-  const usedMinutes = lastStop ? toTimeValue(lastStop.slot.endTime) - dayStart : 0;
-  const availableMinutes = Math.max(1, dayEnd - dayStart);
-  const idleMinutes = Math.max(0, availableMinutes - usedMinutes);
-  const drivePenalty = Math.min(24, Math.round(route.totalDriveMinutes / 7));
-  const idlePenalty = Math.min(10, Math.round(idleMinutes / 45));
-
-  return Math.max(
+  const qualityBonus = Math.max(0, (candidateScore - 70) * 0.18);
+  const drivePenalty = route.totalDriveMinutes / 6;
+  const idlePenalty = route.totalIdleMinutes / 12;
+  const stopBonus = route.stops.length * 4;
+  const score = Math.max(
     55,
-    Math.min(99, Math.round(candidateScore + route.stops.length * 2 - drivePenalty - idlePenalty)),
+    Math.min(99, Math.round(80 + stopBonus + qualityBonus - drivePenalty - idlePenalty)),
   );
+  const objectiveCost = route.totalDriveMinutes + route.totalIdleMinutes * 1.1 - qualityBonus;
+
+  return { score, objectiveCost };
+}
+
+function findBestPermutationForSelection(params: {
+  request: RecommendItineraryRequest;
+  selection: Array<{ winery: Winery; slot: WineryAvailability }>;
+  travelTimes: TravelTimeMatrix;
+}): { bestRoute: EvaluatedRoute | null; permutationsTested: number } {
+  const { request, selection, travelTimes } = params;
+  const remaining = [...selection];
+  const current: Array<{ winery: Winery; slot: WineryAvailability }> = [];
+  let permutationsTested = 0;
+  let bestRoute: EvaluatedRoute | null = null;
+
+  function walk() {
+    if (current.length === selection.length) {
+      permutationsTested += 1;
+      const route = buildFeasibleRoute({
+        request,
+        selection: [...current],
+        travelTimes,
+      });
+      if (!route) {
+        return;
+      }
+      const { score, objectiveCost } = scoreRoute({ request, route });
+      const candidate: EvaluatedRoute = {
+        route,
+        score,
+        objectiveCost,
+        stopCount: route.stops.length,
+      };
+
+      if (
+        !bestRoute ||
+        candidate.objectiveCost < bestRoute.objectiveCost ||
+        (candidate.objectiveCost === bestRoute.objectiveCost && candidate.score > bestRoute.score)
+      ) {
+        bestRoute = candidate;
+      }
+      return;
+    }
+
+    for (let index = 0; index < remaining.length; index += 1) {
+      const item = remaining.splice(index, 1)[0];
+      if (!item) {
+        continue;
+      }
+      current.push(item);
+      walk();
+      current.pop();
+      remaining.splice(index, 0, item);
+    }
+  }
+
+  walk();
+
+  return { bestRoute, permutationsTested };
 }
 
 function buildRelaxedFallbackItinerary(params: {
@@ -343,13 +420,25 @@ function buildGroupSubsets(slotGroups: WinerySlotGroup[]) {
   return subsets;
 }
 
+function createEmptyDiagnostics(): CandidateBuildDiagnostics {
+  return {
+    combinationsTested: 0,
+    permutationsTested: 0,
+    feasibleRoutesFound: 0,
+    bestRouteStopCount: 0,
+    bestRouteDriveMinutes: 0,
+    bestRouteIdleMinutes: 0,
+  };
+}
+
 export function buildCandidateItineraries(params: {
   request: RecommendItineraryRequest;
   wineries: Winery[];
   availability: WineryAvailability[];
   travelTimes: TravelTimeMatrix;
-}): ItineraryOption[] {
+}): CandidateBuildResult {
   const { request, wineries, availability, travelTimes } = params;
+  const diagnostics = createEmptyDiagnostics();
   const preferredIds = request.preferred_wineries ?? [];
   const activeWineryIds = new Set(wineries.map((winery) => winery.wineryId));
   const recognizedPreferredIds = preferredIds.filter((id) => activeWineryIds.has(id));
@@ -385,19 +474,31 @@ export function buildCandidateItineraries(params: {
     .filter((entry) => entry.slots.length > 0);
 
   if (slotGroups.length === 0) {
-    return [];
+    return {
+      itineraries: [],
+      diagnostics,
+      usedFallback: false,
+    };
   }
 
   const groupSubsets = buildGroupSubsets(slotGroups);
   const combinations = groupSubsets.flatMap((subset) => buildSlotCombinations(subset, 120));
-  const scoredRoutes = combinations
-    .map((selection) => buildFeasibleRoute({ request, selection, travelTimes }))
-    .filter((route): route is { stops: PlannedStop[]; totalDriveMinutes: number } => Boolean(route))
-    .map((route) => ({
-      route,
-      score: scoreRoute({ request, route }),
-      stopCount: route.stops.length,
-    }));
+  diagnostics.combinationsTested = combinations.length;
+  const scoredRoutes: EvaluatedRoute[] = [];
+
+  for (const selection of combinations) {
+    const permutationResult = findBestPermutationForSelection({
+      request,
+      selection,
+      travelTimes,
+    });
+    diagnostics.permutationsTested += permutationResult.permutationsTested;
+
+    if (permutationResult.bestRoute) {
+      scoredRoutes.push(permutationResult.bestRoute);
+    }
+  }
+  diagnostics.feasibleRoutesFound = scoredRoutes.length;
 
   const maxFeasibleStopCount = scoredRoutes.reduce(
     (max, entry) => Math.max(max, entry.stopCount),
@@ -411,7 +512,7 @@ export function buildCandidateItineraries(params: {
   // Prioritize fuller itineraries: if we can schedule more selected wineries, do that first.
   const feasibleOptions = scoredRoutes
     .filter((entry) => entry.stopCount === maxFeasibleStopCount)
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => a.objectiveCost - b.objectiveCost || b.score - a.score)
     .slice(0, 3);
 
   if (feasibleOptions.length === 0 || maxFeasibleStopCount < targetStopCount) {
@@ -421,26 +522,41 @@ export function buildCandidateItineraries(params: {
       targetStops: targetStopCount,
       travelTimes,
     });
-    return fallback ? [fallback] : [];
+    return {
+      itineraries: fallback ? [fallback] : [],
+      diagnostics,
+      usedFallback: Boolean(fallback),
+    };
   }
 
-  return feasibleOptions.map(({ route, score }, index) => ({
-    itineraryId: makeId(),
-    expertPick: index === 0,
-    justification:
-      index === 0
-        ? `Best fit for your requested day window with ${route.stops.length} winery stops and realistic transfer timing.`
-        : "Backup option that still fits your requested hours and transfer constraints.",
-    score,
-    label: index === 0 ? "TailorMoments Expert Pick" : `Option ${index + 1}`,
-    stops: route.stops.map((stop) => ({
-      wineryId: stop.winery.wineryId,
-      wineryName: stop.winery.name,
-      arrivalTime: toLocalIso(stop.slot.serviceDate, stop.slot.startTime),
-      departureTime: toLocalIso(stop.slot.serviceDate, stop.slot.endTime),
-      driveMinutes: stop.driveMinutes,
+  const bestRoute = feasibleOptions[0]?.route;
+  if (bestRoute) {
+    diagnostics.bestRouteStopCount = bestRoute.stops.length;
+    diagnostics.bestRouteDriveMinutes = bestRoute.totalDriveMinutes;
+    diagnostics.bestRouteIdleMinutes = bestRoute.totalIdleMinutes;
+  }
+
+  return {
+    itineraries: feasibleOptions.map(({ route, score }, index) => ({
+      itineraryId: makeId(),
+      expertPick: index === 0,
+      justification:
+        index === 0
+          ? `Best fit for your requested day window with ${route.stops.length} winery stops and optimized stop ordering.`
+          : "Backup option that still fits your requested hours and transfer constraints.",
+      score,
+      label: index === 0 ? "TailorMoments Expert Pick" : `Option ${index + 1}`,
+      stops: route.stops.map((stop) => ({
+        wineryId: stop.winery.wineryId,
+        wineryName: stop.winery.name,
+        arrivalTime: toLocalIso(stop.slot.serviceDate, stop.slot.startTime),
+        departureTime: toLocalIso(stop.slot.serviceDate, stop.slot.endTime),
+        driveMinutes: stop.driveMinutes,
+      })),
     })),
-  }));
+    diagnostics,
+    usedFallback: false,
+  };
 }
 
 export async function rankItinerariesWithAi(candidates: ItineraryOption[]): Promise<ItineraryOption[]> {
@@ -523,23 +639,13 @@ export async function recommendItineraries(params: {
     departureHint: `${request.booking_date}T${request.preferred_start_time ?? DEFAULT_DAY_START}`,
   });
 
-  const groupSubsets = slotGroups.length > 0 ? buildGroupSubsets(slotGroups) : [];
-  const combinations = groupSubsets.flatMap((subset) => buildSlotCombinations(subset, 120));
-  const feasibleCount = combinations
-    .map((selection) => buildFeasibleRoute({ request, selection, travelTimes }))
-    .filter((route): route is { stops: PlannedStop[]; totalDriveMinutes: number } => Boolean(route))
-    .length;
-
-  const candidates = buildCandidateItineraries({
+  const candidateBuild = buildCandidateItineraries({
     request,
     wineries,
     availability,
     travelTimes,
   });
-  const ranked = await rankItinerariesWithAi(candidates);
-  const usedFallback =
-    ranked.length > 0 &&
-    ranked[0]?.justification.toLowerCase().includes("fallback");
+  const ranked = await rankItinerariesWithAi(candidateBuild.itineraries);
 
   return {
     generated_at: new Date().toISOString(),
@@ -562,10 +668,14 @@ export async function recommendItineraries(params: {
       recognized_preferred_count: recognizedPreferredIds.length,
       considered_wineries_count: filteredWineries.length,
       wineries_with_slots_count: slotGroups.length,
-      combinations_tested: combinations.length,
-      feasible_routes_found: feasibleCount,
+      combinations_tested: candidateBuild.diagnostics.combinationsTested,
+      permutations_tested: candidateBuild.diagnostics.permutationsTested,
+      feasible_routes_found: candidateBuild.diagnostics.feasibleRoutesFound,
       generated_options_count: ranked.length,
-      used_fallback: usedFallback,
+      used_fallback: candidateBuild.usedFallback,
+      best_route_stop_count: candidateBuild.diagnostics.bestRouteStopCount,
+      best_route_drive_minutes: candidateBuild.diagnostics.bestRouteDriveMinutes,
+      best_route_idle_minutes: candidateBuild.diagnostics.bestRouteIdleMinutes,
       travel_time_provider: travelTimes.summary.provider,
       travel_time_point_count: travelTimes.summary.point_count,
       travel_time_matrix_legs: travelTimes.summary.matrix_leg_count,

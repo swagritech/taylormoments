@@ -191,9 +191,13 @@ export type RecommendItineraryResponse = {
     considered_wineries_count: number;
     wineries_with_slots_count: number;
     combinations_tested: number;
+    permutations_tested?: number;
     feasible_routes_found: number;
     generated_options_count: number;
     used_fallback: boolean;
+    best_route_stop_count?: number;
+    best_route_drive_minutes?: number;
+    best_route_idle_minutes?: number;
     travel_time_provider?: "haversine" | "osrm";
     travel_time_point_count?: number;
     travel_time_matrix_legs?: number;
