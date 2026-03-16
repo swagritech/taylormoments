@@ -69,7 +69,7 @@ export function AppShell({
         <Link href="/" className="brand">
           <div className="brandBadge">
             <Image
-              src="/brand/tailormoments-logo.jpeg"
+              src="/brand/TM_logo_white-beta.png"
               alt="Tailor Moments"
               fill
               sizes="120px"
