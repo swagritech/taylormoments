@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import {
@@ -133,6 +133,7 @@ function pickNearestRoute(wineries: WineryCatalogItem[], maxStops: number) {
 
 export default function ExplorePage() {
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
+  const previewRef = useRef<HTMLDivElement | null>(null);
   const [name, setName] = useState(initialPreferences?.name ?? "");
   const [email, setEmail] = useState(initialPreferences?.email ?? "");
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
@@ -156,6 +157,8 @@ export default function ExplorePage() {
   const [booking, setBooking] = useState<BookingResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasPlanned, setHasPlanned] = useState(false);
+  const [isPreferencesCollapsed, setIsPreferencesCollapsed] = useState(false);
+  const [selectedPreviewWinery, setSelectedPreviewWinery] = useState<WineryCatalogItem | null>(null);
 
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
 
@@ -190,8 +193,20 @@ export default function ExplorePage() {
     previewDate,
   ]);
 
+  useEffect(() => {
+    if (!hasPlanned || !previewRef.current) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+
+    return () => clearTimeout(timer);
+  }, [hasPlanned, recommendation]);
+
   async function handlePlanTrip() {
     setHasPlanned(true);
+    setIsPreferencesCollapsed(true);
     setError(null);
     setBooking(null);
     setRequesting(true);
@@ -314,6 +329,15 @@ export default function ExplorePage() {
     }
   }
 
+  function resolveWinery(stopName: string) {
+    const normalized = stopName.trim().toLowerCase();
+    return (
+      matchedWineries.find((entry) => entry.name.trim().toLowerCase() === normalized) ??
+      wineryCatalog.find((entry) => entry.name.trim().toLowerCase() === normalized) ??
+      null
+    );
+  }
+
   return (
     <AppShell
       eyebrow="Explore"
@@ -324,7 +348,28 @@ export default function ExplorePage() {
     >
       <div className="exploreLayout">
         <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`}>
-          <SectionCard title="Trip preferences" description="Public explore form for guests before account creation/login.">
+          <SectionCard
+            title="Trip preferences"
+            description={
+              isPreferencesCollapsed
+                ? "Preferences minimized. Expand to edit and run a new plan."
+                : "Public explore form for guests before account creation/login."
+            }
+          >
+            <div className="explorePreferenceActions">
+              {isPreferencesCollapsed ? (
+                <button type="button" className="buttonGhost" onClick={() => setIsPreferencesCollapsed(false)}>
+                  Expand preferences
+                </button>
+              ) : null}
+            </div>
+            {isPreferencesCollapsed ? (
+              <div className="explorePreferenceSummary">
+                <p>
+                  <strong>{name || "Guest"}</strong> · {groupSize} guests · {tripLength} · transport {needTransport}
+                </p>
+              </div>
+            ) : (
             <div className="formPreview">
             <div className="fieldRow">
               <div className="field">
@@ -409,11 +454,12 @@ export default function ExplorePage() {
                 {requesting ? "Planning..." : "Plan my trip"}
               </button>
             </div>
+            )}
           </SectionCard>
         </div>
 
         {hasPlanned ? (
-          <div className="explorePreviewWrap">
+          <div ref={previewRef} className="explorePreviewWrap">
             <SectionCard title="Schedule preview" description="Closest matching wineries with efficient travel flow.">
               {!recommendation ? (
                 <div className="emptyStateCard">
@@ -433,7 +479,15 @@ export default function ExplorePage() {
                           <div className="timelineItem">
                             <div className="timelineTime">{formatDisplayTime(stop.arrival_time)}</div>
                             <div>
-                              <h3>{stop.winery_name}</h3>
+                              <h3>
+                                <button
+                                  type="button"
+                                  className="timelineWineryLink"
+                                  onClick={() => setSelectedPreviewWinery(resolveWinery(stop.winery_name))}
+                                >
+                                  {stop.winery_name}
+                                </button>
+                              </h3>
                               <p className="subtle">Depart {formatDisplayTime(stop.departure_time)}.</p>
                             </div>
                           </div>
@@ -478,6 +532,48 @@ export default function ExplorePage() {
           </div>
         ) : null}
       </div>
+
+      {selectedPreviewWinery ? (
+        <div className="modalBackdrop" role="dialog" aria-modal="true" aria-label={`${selectedPreviewWinery.name} details`}>
+          <div className="modalCard">
+            <button type="button" className="modalClose" onClick={() => setSelectedPreviewWinery(null)} aria-label="Close winery details">
+              X
+            </button>
+            <div className="catalogRow">
+              <div className="catalogMedia">
+                <div className="catalogImage">
+                  <span>{selectedPreviewWinery.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span>
+                </div>
+                <div className="catalogMeta">
+                  <h3>{selectedPreviewWinery.name}</h3>
+                  <p className="subtle">{selectedPreviewWinery.address}</p>
+                  <p className="ratingLine">
+                    <strong>{selectedPreviewWinery.rating.toFixed(1)} stars</strong> · {selectedPreviewWinery.selectedByCount} guests shortlisted
+                  </p>
+                  <p className="subtle">
+                    Organic: <strong>{selectedPreviewWinery.organicStatus}</strong>
+                  </p>
+                  <div className="status available">Live booking available</div>
+                </div>
+              </div>
+              <div className="catalogSummary">
+                <p>{selectedPreviewWinery.summary}</p>
+                <div className="catalogBullets">
+                  <p>
+                    <strong>Experiences:</strong> {selectedPreviewWinery.experiences}
+                  </p>
+                  <p>
+                    <strong>Known for:</strong> {selectedPreviewWinery.knownFor}
+                  </p>
+                  <p>
+                    <strong>Established:</strong> {selectedPreviewWinery.established}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AppShell>
   );
 }
