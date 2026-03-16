@@ -1,4 +1,5 @@
 import wineryProspects from "@/lib/data/winery-prospects.json";
+import { isLiveBookableSlug } from "@/lib/winery-id";
 
 type ProspectRow = {
   slug: string;
@@ -90,7 +91,7 @@ export const wineryCatalog: WineryCatalogItem[] = (wineryProspects as ProspectRo
   selectedByCount: selectedCountForSlug(row.slug),
   summary: `${row.known_for}. Experience: ${row.special_experiences}.`,
   mapQuery: `${row.name}, ${row.full_address}, Margaret River, Western Australia`,
-  liveBookable: true,
+  liveBookable: isLiveBookableSlug(row.slug),
 }));
 
 export const wineryRegions = Array.from(new Set(wineryCatalog.map((winery) => winery.region))).sort((a, b) =>

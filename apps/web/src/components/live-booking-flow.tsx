@@ -54,6 +54,7 @@ export function LiveBookingFlow({
   const selectedCatalogWineries = selectedWineries
     .map((id) => wineryCatalog.find((entry) => entry.id === id))
     .filter((entry): entry is (typeof wineryCatalog)[number] => Boolean(entry));
+  const selectedLiveCatalogWineries = selectedCatalogWineries.filter((entry) => entry.liveBookable);
 
   function setSelectedWineries(next: string[] | ((current: string[]) => string[])) {
     const current = selectedWineries;
@@ -101,13 +102,22 @@ export function LiveBookingFlow({
     setBooking(null);
 
     try {
+      if (selectedLiveCatalogWineries.length === 0) {
+        setError("Select at least one live-bookable winery before generating recommendations.");
+        return;
+      }
+
+      if (selectedLiveCatalogWineries.length !== selectedCatalogWineries.length) {
+        setError("Some selected wineries are not live-bookable yet and were excluded from scheduling.");
+      }
+
       const response = await recommendItineraries({
         booking_date: bookingDate,
         pickup_location: pickupLocation,
         party_size: partySize,
         preferred_start_time: preferredStartTime || undefined,
         preferred_end_time: preferredEndTime || undefined,
-        preferred_wineries: selectedWineries.map(uuidForWinerySlug),
+        preferred_wineries: selectedLiveCatalogWineries.map((entry) => uuidForWinerySlug(entry.id)),
       });
 
       setRecommendations(response.itineraries);
@@ -140,6 +150,11 @@ export function LiveBookingFlow({
     setError(null);
 
     try {
+      if (selectedLiveCatalogWineries.length === 0) {
+        setError("Select at least one live-bookable winery before booking this trip.");
+        return;
+      }
+
       const created = await createBooking({
         lead_name: leadName,
         lead_email: leadEmail || undefined,
@@ -149,7 +164,7 @@ export function LiveBookingFlow({
         preferred_end_time: preferredEndTime || undefined,
         pickup_location: pickupLocation,
         party_size: partySize,
-        preferred_wineries: selectedWineries.map(uuidForWinerySlug),
+        preferred_wineries: selectedLiveCatalogWineries.map((entry) => uuidForWinerySlug(entry.id)),
         turnstile_token: turnstileToken,
       });
 

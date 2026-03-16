@@ -5,6 +5,10 @@ const canonicalWineryIds: Record<string, string> = {
   woodlands: "44444444-4444-4444-4444-444444444444",
 };
 
+export function isLiveBookableSlug(slug: string) {
+  return Boolean(canonicalWineryIds[slug]);
+}
+
 function hashToHex(seed: string) {
   let h1 = 0x811c9dc5;
   let h2 = 0x01000193;
