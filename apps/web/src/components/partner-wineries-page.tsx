@@ -608,14 +608,14 @@ export function PartnerWineriesPage() {
           </div>
           <div className="field compactField">
             <label htmlFor="tastingPrice">Tasting price (AUD)</label>
-            <div className="currencyInputWrap">
+            <div className="inputLike currencyField">
               <span className="currencyPrefix" aria-hidden="true">$</span>
               <input
                 id="tastingPrice"
                 type="number"
                 min={0}
                 step="0.01"
-                className="inputLike inputField currencyInput"
+                className="inputField currencyInput"
                 value={tastingPrice}
                 onChange={(event) => setTastingPrice(event.target.value)}
                 placeholder="35"
