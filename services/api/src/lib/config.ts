@@ -50,6 +50,34 @@ export function getAcsEmailSenderAddress() {
   return getEnv("TM_ACS_EMAIL_SENDER_ADDRESS", "");
 }
 
+export function getR2AccountId() {
+  return getEnv("TM_R2_ACCOUNT_ID", "");
+}
+
+export function getR2AccessKeyId() {
+  return getEnv("TM_R2_ACCESS_KEY_ID", "");
+}
+
+export function getR2SecretAccessKey() {
+  return getEnv("TM_R2_SECRET_ACCESS_KEY", "");
+}
+
+export function getR2BucketName() {
+  return getEnv("TM_R2_BUCKET_NAME", "");
+}
+
+export function getR2PublicBaseUrl() {
+  return getEnv("TM_R2_PUBLIC_BASE_URL", "");
+}
+
+export function getR2SignedUrlExpirySeconds() {
+  const parsed = Number(getEnv("TM_R2_SIGNED_URL_EXPIRY_SECONDS", "900"));
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 900;
+  }
+  return Math.min(Math.floor(parsed), 3600);
+}
+
 export function normalizeRequest(input: RecommendItineraryRequest): RecommendItineraryRequest {
   return {
     ...input,

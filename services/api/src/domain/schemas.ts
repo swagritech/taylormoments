@@ -78,6 +78,17 @@ export const wineryRouteSchema = z.object({
   wineryId: z.string().uuid(),
 });
 
+export const wineryMediaRouteSchema = wineryRouteSchema.extend({
+  mediaId: z.string().uuid(),
+});
+
+export const createWineryMediaUploadRequestSchema = z.object({
+  file_name: z.string().min(1).max(160),
+  content_type: z.string().regex(/^image\//i, "content_type must be an image mime type."),
+  file_size_bytes: z.number().int().positive().max(20 * 1024 * 1024).optional(),
+  caption: z.string().max(240).optional(),
+});
+
 export const tokenActionRequestSchema = z.object({
   turnstile_token: z.string().min(1).optional(),
 });

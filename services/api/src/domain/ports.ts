@@ -5,6 +5,7 @@ import type {
   LoginRequest,
   RegisterUserRequest,
   UserAccount,
+  WineryMediaAsset,
   WineryBookingRequest,
   WineryContact,
   Winery,
@@ -21,6 +22,9 @@ export interface WorkflowRepository {
   createWineryBookingRequest(request: Omit<WineryBookingRequest, "createdAt" | "updatedAt">): Promise<WineryBookingRequest>;
   listWineryBookingRequests(wineryId: string): Promise<WineryBookingRequest[]>;
   markWineryBookingRequestAccepted(tokenId: string): Promise<WineryBookingRequest | null>;
+  createWineryMediaAsset(request: Omit<WineryMediaAsset, "createdAt" | "updatedAt">): Promise<WineryMediaAsset>;
+  listWineryMediaAssets(wineryId: string): Promise<WineryMediaAsset[]>;
+  markWineryMediaAssetUploaded(mediaId: string, wineryId: string, fileSizeBytes?: number): Promise<WineryMediaAsset | null>;
   createUserAccount(request: RegisterUserRequest & { password_hash: string }): Promise<UserAccount>;
   getUserByEmail(email: string): Promise<UserAccount | null>;
   getUserById(userId: string): Promise<UserAccount | null>;

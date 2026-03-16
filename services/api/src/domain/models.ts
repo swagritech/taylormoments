@@ -100,6 +100,23 @@ export type WineryBookingRequest = {
   updatedAt: string;
 };
 
+export type WineryMediaAssetStatus = "pending" | "uploaded" | "archived";
+
+export type WineryMediaAsset = {
+  mediaId: string;
+  wineryId: string;
+  objectKey: string;
+  publicUrl: string;
+  fileName: string;
+  contentType: string;
+  fileSizeBytes?: number;
+  caption?: string;
+  status: WineryMediaAssetStatus;
+  uploadedByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type UserAccount = {
   userId: string;
   email: string;

@@ -9,8 +9,12 @@ import { getDataMode } from "@/lib/config";
 import { useAuth } from "@/lib/auth-state";
 import {
   approveWineryToken,
+  completeWineryMediaUpload,
+  createWineryMediaUploadUrl,
+  getWineryMediaAuthed,
   getWineryPortalRequestsAuthed,
   listWineries,
+  type WineryMediaAsset,
   type WineryPortalItem,
 } from "@/lib/live-api";
 
@@ -47,8 +51,13 @@ export function PartnerWineriesPage() {
   const [wineries, setWineries] = useState<Array<{ winery_id: string; name: string; region: string }>>([]);
   const [selectedWineryId, setSelectedWineryId] = useState<string>("");
   const [requests, setRequests] = useState<WineryPortalItem[]>([]);
+  const [mediaAssets, setMediaAssets] = useState<WineryMediaAsset[]>([]);
   const [summary, setSummary] = useState({ pending: 0, accepted: 0, declined: 0, expired: 0 });
   const [wineryName, setWineryName] = useState<string>("Winery");
+  const [captionDraft, setCaptionDraft] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [storageConfigured, setStorageConfigured] = useState(true);
   const dataMode = getDataMode();
 
   const loadRequests = useCallback(async (wineryId: string) => {
@@ -62,10 +71,15 @@ export function PartnerWineriesPage() {
     setError(null);
 
     try {
-      const response = await getWineryPortalRequestsAuthed(wineryId, token);
-      setRequests(response.requests);
-      setSummary(response.summary);
-      setWineryName(response.winery?.name ?? "Winery");
+      const [requestsResponse, mediaResponse] = await Promise.all([
+        getWineryPortalRequestsAuthed(wineryId, token),
+        getWineryMediaAuthed(wineryId, token),
+      ]);
+      setRequests(requestsResponse.requests);
+      setSummary(requestsResponse.summary);
+      setWineryName(requestsResponse.winery?.name ?? "Winery");
+      setMediaAssets(mediaResponse.assets);
+      setStorageConfigured(mediaResponse.storage_configured);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load winery request queue.");
     } finally {
@@ -163,6 +177,44 @@ export function PartnerWineriesPage() {
       setError(approveError instanceof Error ? approveError.message : "Unable to approve this booking.");
     } finally {
       setApprovingRequestId(null);
+    }
+  }
+
+  async function handleUploadImage() {
+    if (!selectedWineryId || !token || !selectedFile) {
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setError(null);
+      const ticket = await createWineryMediaUploadUrl(selectedWineryId, token, {
+        file_name: selectedFile.name,
+        content_type: selectedFile.type || "image/jpeg",
+        file_size_bytes: selectedFile.size,
+        caption: captionDraft.trim() || undefined,
+      });
+
+      const uploadResponse = await fetch(ticket.upload_url, {
+        method: ticket.upload_method,
+        headers: ticket.upload_headers,
+        body: selectedFile,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed (${uploadResponse.status}). Check R2 bucket CORS settings.`);
+      }
+
+      await completeWineryMediaUpload(selectedWineryId, ticket.media_id, token);
+      const refreshed = await getWineryMediaAuthed(selectedWineryId, token);
+      setMediaAssets(refreshed.assets);
+      setStorageConfigured(refreshed.storage_configured);
+      setSelectedFile(null);
+      setCaptionDraft("");
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "Unable to upload image.");
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -332,6 +384,69 @@ export function PartnerWineriesPage() {
           </div>
         </SectionCard>
       </div>
+
+      <SectionCard
+        title="Winery image gallery"
+        description="Upload photos now so customer schedule previews can display real winery imagery."
+      >
+        {!storageConfigured ? (
+          <div className="callout errorCallout">
+            R2 storage is not configured in the API yet. Add `TM_R2_*` app settings first.
+          </div>
+        ) : null}
+
+        <div className="fieldRow">
+          <div className="field">
+            <label htmlFor="wineryImageUpload">Select image</label>
+            <input
+              id="wineryImageUpload"
+              type="file"
+              className="inputLike inputField"
+              accept="image/*"
+              onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="wineryImageCaption">Caption (optional)</label>
+            <input
+              id="wineryImageCaption"
+              className="inputLike inputField"
+              value={captionDraft}
+              onChange={(event) => setCaptionDraft(event.target.value)}
+              placeholder="Cellar door tasting room"
+            />
+          </div>
+        </div>
+
+        <div className="ctaRow">
+          <button
+            type="button"
+            className="buttonPrimary"
+            onClick={handleUploadImage}
+            disabled={!selectedFile || uploading || !storageConfigured}
+          >
+            {uploading ? "Uploading..." : "Upload image"}
+          </button>
+        </div>
+
+        <div className="mediaGrid">
+          {mediaAssets.length === 0 ? (
+            <div className="listRow">
+              <p className="subtle">No images uploaded yet for this winery.</p>
+            </div>
+          ) : (
+            mediaAssets.map((asset) => (
+              <article key={asset.media_id} className="mediaCard">
+                <img src={asset.public_url} alt={asset.caption || asset.file_name} loading="lazy" />
+                <div className="mediaMeta">
+                  <p><strong>{asset.file_name}</strong></p>
+                  <p className="subtle">{asset.caption || "No caption"}</p>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+      </SectionCard>
     </AppShell>
   );
 }

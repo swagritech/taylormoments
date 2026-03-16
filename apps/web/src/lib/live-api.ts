@@ -158,6 +158,38 @@ export type WineryPortalResponse = {
   requests: WineryPortalItem[];
 };
 
+export type WineryMediaAsset = {
+  media_id: string;
+  winery_id: string;
+  public_url: string;
+  object_key: string;
+  file_name: string;
+  content_type: string;
+  file_size_bytes?: number;
+  caption?: string;
+  status: "pending" | "uploaded" | "archived";
+  created_at: string;
+  updated_at: string;
+};
+
+export type WineryMediaListResponse = {
+  storage_configured: boolean;
+  assets: WineryMediaAsset[];
+};
+
+export type WineryMediaUploadTicket = {
+  media_id: string;
+  winery_id: string;
+  object_key: string;
+  public_url: string;
+  upload_url: string;
+  upload_method: "PUT";
+  upload_headers: {
+    "Content-Type": string;
+  };
+  expires_at: string;
+};
+
 export type WineryListResponse = {
   wineries: Array<{
     winery_id: string;
@@ -301,6 +333,54 @@ export async function getWineryPortalRequestsAuthed(wineryId: string, token: str
   });
 
   return parseJson<WineryPortalResponse>(response);
+}
+
+export async function getWineryMediaAuthed(wineryId: string, token: string) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries/${wineryId}/media`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return parseJson<WineryMediaListResponse>(response);
+}
+
+export async function createWineryMediaUploadUrl(
+  wineryId: string,
+  token: string,
+  payload: {
+    file_name: string;
+    content_type: string;
+    file_size_bytes?: number;
+    caption?: string;
+  },
+) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries/${wineryId}/media/upload-url`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseJson<WineryMediaUploadTicket>(response);
+}
+
+export async function completeWineryMediaUpload(
+  wineryId: string,
+  mediaId: string,
+  token: string,
+) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries/${wineryId}/media/${mediaId}/complete`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return parseJson<WineryMediaAsset>(response);
 }
 
 export async function registerAccount(payload: {

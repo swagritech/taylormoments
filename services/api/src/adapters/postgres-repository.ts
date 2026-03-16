@@ -8,6 +8,7 @@ import type {
   WineryContact,
   Winery,
   WineryAvailability,
+  WineryMediaAsset,
 } from "../domain/models.js";
 import { getPool } from "../lib/db.js";
 import { makeId } from "../lib/crypto.js";
@@ -101,6 +102,23 @@ function mapWineryBookingRequest(row: Record<string, unknown>): WineryBookingReq
     sentRecipient: row.sent_recipient ? String(row.sent_recipient) : undefined,
     sentAt: new Date(String(row.sent_at)).toISOString(),
     approvedAt: row.approved_at ? new Date(String(row.approved_at)).toISOString() : undefined,
+    createdAt: new Date(String(row.created_at)).toISOString(),
+    updatedAt: new Date(String(row.updated_at)).toISOString(),
+  };
+}
+
+function mapWineryMediaAsset(row: Record<string, unknown>): WineryMediaAsset {
+  return {
+    mediaId: String(row.media_id),
+    wineryId: String(row.winery_id),
+    objectKey: String(row.object_key),
+    publicUrl: String(row.public_url),
+    fileName: String(row.file_name),
+    contentType: String(row.content_type),
+    fileSizeBytes: row.file_size_bytes ? Number(row.file_size_bytes) : undefined,
+    caption: row.caption ? String(row.caption) : undefined,
+    status: row.status as WineryMediaAsset["status"],
+    uploadedByUserId: row.uploaded_by_user_id ? String(row.uploaded_by_user_id) : undefined,
     createdAt: new Date(String(row.created_at)).toISOString(),
     updatedAt: new Date(String(row.updated_at)).toISOString(),
   };
@@ -321,6 +339,89 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     }
 
     return mapWineryBookingRequest(result.rows[0]);
+  }
+
+  async createWineryMediaAsset(
+    request: Omit<WineryMediaAsset, "createdAt" | "updatedAt">,
+  ): Promise<WineryMediaAsset> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        insert into winery_media_asset (
+          media_id,
+          winery_id,
+          object_key,
+          public_url,
+          file_name,
+          content_type,
+          file_size_bytes,
+          caption,
+          status,
+          uploaded_by_user_id
+        )
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        returning media_id, winery_id, object_key, public_url, file_name, content_type, file_size_bytes, caption,
+                  status, uploaded_by_user_id, created_at, updated_at
+      `,
+      [
+        request.mediaId,
+        request.wineryId,
+        request.objectKey,
+        request.publicUrl,
+        request.fileName,
+        request.contentType,
+        request.fileSizeBytes ?? null,
+        request.caption ?? null,
+        request.status,
+        request.uploadedByUserId ?? null,
+      ],
+    );
+
+    return mapWineryMediaAsset(result.rows[0]);
+  }
+
+  async listWineryMediaAssets(wineryId: string): Promise<WineryMediaAsset[]> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        select media_id, winery_id, object_key, public_url, file_name, content_type, file_size_bytes, caption,
+               status, uploaded_by_user_id, created_at, updated_at
+        from winery_media_asset
+        where winery_id = $1
+          and status <> 'archived'
+        order by created_at desc
+      `,
+      [wineryId],
+    );
+
+    return result.rows.map((row) => mapWineryMediaAsset(row));
+  }
+
+  async markWineryMediaAssetUploaded(
+    mediaId: string,
+    wineryId: string,
+    fileSizeBytes?: number,
+  ): Promise<WineryMediaAsset | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        update winery_media_asset
+        set status = 'uploaded',
+            file_size_bytes = coalesce($3, file_size_bytes),
+            updated_at = now()
+        where media_id = $1
+          and winery_id = $2
+        returning media_id, winery_id, object_key, public_url, file_name, content_type, file_size_bytes, caption,
+                  status, uploaded_by_user_id, created_at, updated_at
+      `,
+      [mediaId, wineryId, fileSizeBytes ?? null],
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapWineryMediaAsset(result.rows[0]);
   }
 
   async createUserAccount(request: {

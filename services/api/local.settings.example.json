@@ -8,6 +8,12 @@
     "TM_OPENAI_API_KEY": "",
     "TM_POSTGRES_URL": "postgres://username:password@hostname:5432/tailormoments_dev?sslmode=require",
     "TM_ACTION_TOKEN_SECRET": "replace-me",
-    "TM_SITE_BASE_URL": "https://booking.swagritech.com.au"
+    "TM_SITE_BASE_URL": "https://booking.swagritech.com.au",
+    "TM_R2_ACCOUNT_ID": "",
+    "TM_R2_ACCESS_KEY_ID": "",
+    "TM_R2_SECRET_ACCESS_KEY": "",
+    "TM_R2_BUCKET_NAME": "tailormoments-media",
+    "TM_R2_PUBLIC_BASE_URL": "https://images.booking.swagritech.com.au",
+    "TM_R2_SIGNED_URL_EXPIRY_SECONDS": "900"
   }
 }

@@ -8,6 +8,7 @@ import type {
   WineryContact,
   Winery,
   WineryAvailability,
+  WineryMediaAsset,
 } from "../domain/models.js";
 import { makeId, nowIso } from "../lib/crypto.js";
 
@@ -72,6 +73,7 @@ const availability: WineryAvailability[] = [
 const bookings = new Map<string, Booking>();
 const tokens = new Map<string, ActionToken>();
 const wineryRequests = new Map<string, WineryBookingRequest>();
+const wineryMediaAssets = new Map<string, WineryMediaAsset>();
 const users = new Map<string, UserAccount>();
 
 export class MemoryWorkflowRepository implements WorkflowRepository {
@@ -156,6 +158,45 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     };
 
     wineryRequests.set(updated.requestId, updated);
+    return updated;
+  }
+
+  async createWineryMediaAsset(
+    request: Omit<WineryMediaAsset, "createdAt" | "updatedAt">,
+  ): Promise<WineryMediaAsset> {
+    const now = nowIso();
+    const asset: WineryMediaAsset = {
+      ...request,
+      createdAt: now,
+      updatedAt: now,
+    };
+    wineryMediaAssets.set(asset.mediaId, asset);
+    return asset;
+  }
+
+  async listWineryMediaAssets(wineryId: string): Promise<WineryMediaAsset[]> {
+    return Array.from(wineryMediaAssets.values())
+      .filter((item) => item.wineryId === wineryId && item.status !== "archived")
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }
+
+  async markWineryMediaAssetUploaded(
+    mediaId: string,
+    wineryId: string,
+    fileSizeBytes?: number,
+  ): Promise<WineryMediaAsset | null> {
+    const current = wineryMediaAssets.get(mediaId);
+    if (!current || current.wineryId !== wineryId) {
+      return null;
+    }
+
+    const updated: WineryMediaAsset = {
+      ...current,
+      status: "uploaded",
+      fileSizeBytes: fileSizeBytes ?? current.fileSizeBytes,
+      updatedAt: nowIso(),
+    };
+    wineryMediaAssets.set(mediaId, updated);
     return updated;
   }
 

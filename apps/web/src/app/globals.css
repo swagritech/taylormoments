@@ -864,6 +864,33 @@ button {
   padding-right: 4px;
 }
 
+.mediaGrid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.mediaCard {
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.mediaCard img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+.mediaMeta {
+  padding: 8px 10px 10px;
+  display: grid;
+  gap: 4px;
+}
+
 .modalBackdrop {
   position: fixed;
   inset: 0;

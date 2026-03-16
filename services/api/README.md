@@ -39,6 +39,9 @@ SQL files are in `sql/`:
 - `003_winery_partner_workflow.sql`
 - `004_booking_time_preferences.sql`
 - `005_user_auth.sql`
+- `006_customer_profile_fields.sql`
+- `007_seed_full_prospect_catalog.sql`
+- `008_winery_media_assets.sql`
 
 Recommended order:
 
@@ -46,12 +49,32 @@ Recommended order:
 TM_POSTGRES_URL="postgres://..." npm run db:bootstrap
 ```
 
-The bootstrap script applies both SQL files in order:
+The bootstrap script applies all SQL files in order:
 - `001_init.sql`
 - `002_seed_wineries.sql`
 - `003_winery_partner_workflow.sql`
 - `004_booking_time_preferences.sql`
 - `005_user_auth.sql`
+- `006_customer_profile_fields.sql`
+- `007_seed_full_prospect_catalog.sql`
+- `008_winery_media_assets.sql`
+
+## Winery image upload storage (Cloudflare R2)
+
+Set these app settings in `swagri-tailormoments-api-01`:
+
+- `TM_R2_ACCOUNT_ID`
+- `TM_R2_ACCESS_KEY_ID`
+- `TM_R2_SECRET_ACCESS_KEY`
+- `TM_R2_BUCKET_NAME`
+- `TM_R2_PUBLIC_BASE_URL` (for example `https://images.booking.swagritech.com.au`)
+- `TM_R2_SIGNED_URL_EXPIRY_SECONDS` (optional, default `900`)
+
+New REST endpoints:
+
+- `GET /api/v1/wineries/{wineryId}/media`
+- `POST /api/v1/wineries/{wineryId}/media/upload-url`
+- `POST /api/v1/wineries/{wineryId}/media/{mediaId}/complete`
 
 ## Azure deployment packaging
 
