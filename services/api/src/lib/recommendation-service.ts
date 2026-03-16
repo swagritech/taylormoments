@@ -20,13 +20,6 @@ const LUNCH_WINDOW_START = 11 * 60 + 30;
 const LUNCH_WINDOW_END = 14 * 60;
 const LUNCH_BREAK_MINUTES = 45;
 
-const wineryPoints: Record<string, Point> = {
-  "11111111-1111-1111-1111-111111111111": { lat: -33.682, lon: 115.052 }, // Vasse Felix
-  "22222222-2222-2222-2222-222222222222": { lat: -33.712, lon: 115.041 }, // Cullen Wines
-  "33333333-3333-3333-3333-333333333333": { lat: -33.723, lon: 115.114 }, // Fraser Gallop
-  "44444444-4444-4444-4444-444444444444": { lat: -33.698, lon: 115.035 }, // Woodlands
-};
-
 const pickupPoints: Array<{ key: string; point: Point }> = [
   { key: "margaret river visitor centre", point: { lat: -33.952, lon: 115.075 } },
   { key: "dunsborough town centre", point: { lat: -33.615, lon: 115.106 } },
@@ -95,6 +88,19 @@ function resolvePickupPoint(pickupLocation: string) {
   return match?.point;
 }
 
+function pointForWinery(winery: Winery): Point | undefined {
+  if (
+    winery.latitude === undefined ||
+    winery.longitude === undefined ||
+    !Number.isFinite(winery.latitude) ||
+    !Number.isFinite(winery.longitude)
+  ) {
+    return undefined;
+  }
+
+  return { lat: winery.latitude, lon: winery.longitude };
+}
+
 function buildSlotCombinations(
   slotGroups: WinerySlotGroup[],
   maxCombinations = 180,
@@ -156,7 +162,7 @@ function buildFeasibleRoute(params: {
   for (const item of sorted) {
     const slotStart = toTimeValue(item.slot.startTime);
     const slotEnd = toTimeValue(item.slot.endTime);
-    const nextPoint = wineryPoints[item.winery.wineryId];
+    const nextPoint = pointForWinery(item.winery);
     const drive = estimateDriveMinutes(currentPoint, nextPoint);
     const earliestArrival = currentTime + drive;
 
@@ -269,7 +275,7 @@ function buildRelaxedFallbackItinerary(params: {
       if (!group) {
         continue;
       }
-      const drive = estimateDriveMinutes(currentPoint, wineryPoints[group.winery.wineryId]);
+      const drive = estimateDriveMinutes(currentPoint, pointForWinery(group.winery));
       if (drive < nextDrive) {
         nextDrive = drive;
         nextIndex = index;
@@ -302,7 +308,7 @@ function buildRelaxedFallbackItinerary(params: {
     });
 
     currentTime = departureMinutes;
-    currentPoint = wineryPoints[nextGroup.winery.wineryId];
+    currentPoint = pointForWinery(nextGroup.winery);
   }
 
   if (stops.length === 0) {

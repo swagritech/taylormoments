@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import pg from "pg";
@@ -13,20 +13,13 @@ async function run() {
   }
 
   const sqlDir = path.resolve(process.cwd(), "sql");
-  const scripts = [
-    "001_init.sql",
-    "002_seed_wineries.sql",
-    "003_winery_partner_workflow.sql",
-    "004_booking_time_preferences.sql",
-    "005_user_auth.sql",
-    "006_customer_profile_fields.sql",
-    "007_seed_full_prospect_catalog.sql",
-    "008_winery_media_assets.sql",
-    "009_winery_profile_fields.sql",
-    "010_password_reset_tokens.sql",
-    "011_winery_address_opening_hours.sql",
-    "012_backfill_winery_addresses_from_prospects.sql",
-  ];
+  const scripts = (await readdir(sqlDir))
+    .filter((fileName) => /^\d+_.+\.sql$/i.test(fileName))
+    .sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+
+  if (scripts.length === 0) {
+    throw new Error(`No SQL migration scripts found in ${sqlDir}`);
+  }
   const client = new Client({
     connectionString,
     ssl: connectionString.includes("localhost") ? false : { rejectUnauthorized: false },

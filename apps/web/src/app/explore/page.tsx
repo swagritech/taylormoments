@@ -105,7 +105,27 @@ function haversineKm(
   return earthRadiusKm * c;
 }
 
-function pickNearestRoute(wineries: WineryCatalogItem[], maxStops: number) {
+function resolveCatalogOrRemotePoint(
+  winery: WineryCatalogItem,
+  remoteProfile?: WineryListResponse["wineries"][number],
+) {
+  if (
+    remoteProfile?.latitude !== undefined &&
+    remoteProfile?.longitude !== undefined &&
+    Number.isFinite(remoteProfile.latitude) &&
+    Number.isFinite(remoteProfile.longitude)
+  ) {
+    return { latitude: remoteProfile.latitude, longitude: remoteProfile.longitude };
+  }
+
+  return { latitude: winery.latitude, longitude: winery.longitude };
+}
+
+function pickNearestRoute(
+  wineries: WineryCatalogItem[],
+  maxStops: number,
+  profilesById: Record<string, WineryListResponse["wineries"][number]>,
+) {
   const selected: WineryCatalogItem[] = [];
   const pool = [...wineries];
   let current = { latitude: -33.952, longitude: 115.075 };
@@ -119,10 +139,11 @@ function pickNearestRoute(wineries: WineryCatalogItem[], maxStops: number) {
       if (!winery) {
         continue;
       }
-      const distance = haversineKm(current, {
-        latitude: winery.latitude,
-        longitude: winery.longitude,
-      });
+      const point = resolveCatalogOrRemotePoint(
+        winery,
+        profilesById[slugToWineryUuid(winery.id)],
+      );
+      const distance = haversineKm(current, point);
       if (distance < bestDistance) {
         bestDistance = distance;
         bestIndex = index;
@@ -134,7 +155,7 @@ function pickNearestRoute(wineries: WineryCatalogItem[], maxStops: number) {
       break;
     }
     selected.push(next);
-    current = { latitude: next.latitude, longitude: next.longitude };
+    current = resolveCatalogOrRemotePoint(next, profilesById[slugToWineryUuid(next.id)]);
   }
 
   return selected;
@@ -341,7 +362,7 @@ export default function ExplorePage() {
       const shortlist = filtered
         .sort((a, b) => b.rating - a.rating)
         .slice(0, 14);
-      const routeOptimized = pickNearestRoute(shortlist, timeWindow.stops);
+      const routeOptimized = pickNearestRoute(shortlist, timeWindow.stops, profilesById);
       setMatchedWineries(routeOptimized);
 
       if (routeOptimized.length < 2) {

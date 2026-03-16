@@ -215,6 +215,8 @@ export type WineryListResponse = {
     region: string;
     confirmation_mode: "auto_confirm" | "manual_review";
     capacity: number;
+    latitude?: number;
+    longitude?: number;
     address?: string;
     opening_hours?: string;
     tasting_price?: number;
@@ -233,6 +235,8 @@ export type WineryProfileResponse = {
   name: string;
   region: string;
   capacity: number;
+  latitude?: number;
+  longitude?: number;
   address?: string;
   opening_hours?: string;
   tasting_price?: number;

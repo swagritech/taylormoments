@@ -54,6 +54,12 @@ function mapWinery(row: Record<string, unknown>): Winery {
     region: String(row.region),
     confirmationMode: row.confirmation_mode as Winery["confirmationMode"],
     capacity: Number(row.capacity),
+    latitude: row.latitude !== null && row.latitude !== undefined
+      ? Number(row.latitude)
+      : undefined,
+    longitude: row.longitude !== null && row.longitude !== undefined
+      ? Number(row.longitude)
+      : undefined,
     address: row.address ? String(row.address) : undefined,
     openingHours: row.opening_hours ? String(row.opening_hours) : undefined,
     active: Boolean(row.active),
@@ -188,7 +194,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const pool = getPool();
     const result = await pool.query(`
       select distinct on (lower(name))
-             winery_id, name, region, confirmation_mode, capacity, address, opening_hours, active,
+             winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, opening_hours, active,
              tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
       from winery
       order by lower(name) asc, updated_at desc, created_at desc
@@ -201,7 +207,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const pool = getPool();
     const result = await pool.query(
       `
-        select winery_id, name, region, confirmation_mode, capacity, active,
+        select winery_id, name, region, confirmation_mode, capacity, latitude, longitude, active,
                address, opening_hours,
                tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
         from winery
@@ -242,7 +248,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
             unique_experience_offers = $9::jsonb,
             updated_at = now()
         where winery_id = $1
-        returning winery_id, name, region, confirmation_mode, capacity, address, opening_hours, active,
+        returning winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, opening_hours, active,
                   tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
       `,
       [
