@@ -52,9 +52,16 @@ function toIsoDate(dayOffset = 7) {
   return date.toISOString().slice(0, 10);
 }
 
-function toSearchProfile(winery: WineryCatalogItem): SearchProfile {
+function toSearchProfile(
+  winery: WineryCatalogItem,
+  remoteProfile?: WineryListResponse["wineries"][number],
+): SearchProfile {
   const lowerExperiences = winery.experiences.toLowerCase();
   const lowerOrganic = winery.organicStatus.toLowerCase();
+  const catalogHasCheeseBoard =
+    lowerExperiences.includes("cheese") ||
+    lowerExperiences.includes("platter") ||
+    lowerExperiences.includes("nougat");
 
   return {
     hasLunchExperience:
@@ -72,9 +79,7 @@ function toSearchProfile(winery: WineryCatalogItem): SearchProfile {
       lowerExperiences.includes("behind the scenes") ||
       lowerExperiences.includes("masterclass"),
     hasCheeseBoard:
-      lowerExperiences.includes("cheese") ||
-      lowerExperiences.includes("platter") ||
-      lowerExperiences.includes("nougat"),
+      remoteProfile?.offers_cheese_board ?? catalogHasCheeseBoard,
     vibeTag: winery.selectedByCount >= 500 ? "popular" : "lesser-known",
     transportSuitable: true,
     supportsHalfDay: true,
@@ -302,7 +307,7 @@ export default function ExplorePage() {
 
     try {
       const filtered = wineryCatalog.filter((winery) => {
-        const profile = toSearchProfile(winery);
+        const profile = toSearchProfile(winery, profilesById[slugToWineryUuid(winery.id)]);
         if (includeLunch === "yes" && !profile.hasLunchExperience) {
           return false;
         }
