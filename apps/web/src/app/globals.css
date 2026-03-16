@@ -116,7 +116,6 @@ button {
   height: 42px;
   border-radius: 10px;
   overflow: hidden;
-  border: 1px solid var(--line-soft);
   position: relative;
 }
 
