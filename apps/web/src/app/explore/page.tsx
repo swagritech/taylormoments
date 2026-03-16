@@ -375,16 +375,18 @@ export default function ExplorePage() {
 
       if (prefCheeseBoard) {
         const cheeseCandidates = candidatePool.filter(hasCheeseBoardMatch);
-        if (cheeseCandidates.length === 0) {
-          setError("No cheeseboard wineries currently match this preference set. Try relaxing one filter.");
+        const fallbackCheeseCandidates = wineryCatalog.filter(hasCheeseBoardMatch);
+        const cheesePool = cheeseCandidates.length > 0 ? cheeseCandidates : fallbackCheeseCandidates;
+        if (cheesePool.length === 0) {
+          setError("No cheeseboard wineries are currently available.");
           return;
         }
 
         const routeHasCheese = routeOptimized.some(hasCheeseBoardMatch);
         if (!routeHasCheese) {
           const requiredCheese =
-            cheeseCandidates.find((candidate) => !routeOptimized.some((stop) => stop.id === candidate.id)) ??
-            cheeseCandidates[0];
+            cheesePool.find((candidate) => !routeOptimized.some((stop) => stop.id === candidate.id)) ??
+            cheesePool[0];
 
           if (requiredCheese) {
             const seeded = [...routeOptimized, requiredCheese];
