@@ -155,6 +155,7 @@ export default function ExplorePage() {
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [booking, setBooking] = useState<BookingResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hasPlanned, setHasPlanned] = useState(false);
 
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
 
@@ -190,6 +191,7 @@ export default function ExplorePage() {
   ]);
 
   async function handlePlanTrip() {
+    setHasPlanned(true);
     setError(null);
     setBooking(null);
     setRequesting(true);
@@ -320,9 +322,10 @@ export default function ExplorePage() {
       showWorkflowStatus={false}
       navMode="public"
     >
-      <div className="grid two">
-        <SectionCard title="Trip preferences" description="Public explore form for guests before account creation/login.">
-          <div className="formPreview">
+      <div className="exploreLayout">
+        <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`}>
+          <SectionCard title="Trip preferences" description="Public explore form for guests before account creation/login.">
+            <div className="formPreview">
             <div className="fieldRow">
               <div className="field">
                 <label htmlFor="exploreName">Name</label>
@@ -402,73 +405,78 @@ export default function ExplorePage() {
               </div>
             </div>
 
-            <button type="button" className="buttonPrimary fullWidthButton" onClick={handlePlanTrip} disabled={requesting}>
-              {requesting ? "Planning..." : "Plan my trip"}
-            </button>
-          </div>
-        </SectionCard>
-
-        <SectionCard title="Schedule preview" description="Closest matching wineries with efficient travel flow.">
-          {!recommendation ? (
-            <div className="emptyStateCard">
-              <h3>Preview appears here</h3>
-              <p className="subtle">Submit preferences to preview your optimized winery day.</p>
-            </div>
-          ) : (
-            <div className="recommendationStack">
-              <div className="callout successCallout">
-                Preview date: <strong>{previewDate}</strong>{tripLength === "multi-day" ? " (day 1 preview for multi-day journey)" : ""}
-              </div>
-              <div className="timeline compactTimeline">
-                {recommendation.stops.map((stop, index) => {
-                  const nextStop = recommendation.stops[index + 1];
-                  return (
-                    <div key={`${stop.winery_id}-${index}`}>
-                      <div className="timelineItem">
-                        <div className="timelineTime">{formatDisplayTime(stop.arrival_time)}</div>
-                        <div>
-                          <h3>{stop.winery_name}</h3>
-                          <p className="subtle">Depart {formatDisplayTime(stop.departure_time)}.</p>
-                        </div>
-                      </div>
-                      {nextStop ? (
-                        <div className="itineraryConnector">
-                          <span>{nextStop.drive_minutes} min drive to next stop</span>
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-              <button type="button" className="buttonPrimary fullWidthButton" onClick={handleBook} disabled={submitting}>
-                {submitting ? "Booking..." : "Book"}
+              <button type="button" className="buttonPrimary fullWidthButton" onClick={handlePlanTrip} disabled={requesting}>
+                {requesting ? "Planning..." : "Plan my trip"}
               </button>
             </div>
-          )}
+          </SectionCard>
+        </div>
 
-          {matchedWineries.length > 0 ? (
-            <div className="callout">
-              <p className="miniLabel">Closest matches</p>
-              {matchedWineries.map((winery) => (
-                <p key={winery.id} className="subtle">
-                  <strong>{winery.name}</strong> · {winery.region}
-                </p>
-              ))}
-            </div>
-          ) : null}
+        {hasPlanned ? (
+          <div className="explorePreviewWrap">
+            <SectionCard title="Schedule preview" description="Closest matching wineries with efficient travel flow.">
+              {!recommendation ? (
+                <div className="emptyStateCard">
+                  <h3>Preview appears here</h3>
+                  <p className="subtle">We are checking matches and travel-efficient routing for your preferences.</p>
+                </div>
+              ) : (
+                <div className="recommendationStack">
+                  <div className="callout successCallout">
+                    Preview date: <strong>{previewDate}</strong>{tripLength === "multi-day" ? " (day 1 preview for multi-day journey)" : ""}
+                  </div>
+                  <div className="timeline compactTimeline">
+                    {recommendation.stops.map((stop, index) => {
+                      const nextStop = recommendation.stops[index + 1];
+                      return (
+                        <div key={`${stop.winery_id}-${index}`}>
+                          <div className="timelineItem">
+                            <div className="timelineTime">{formatDisplayTime(stop.arrival_time)}</div>
+                            <div>
+                              <h3>{stop.winery_name}</h3>
+                              <p className="subtle">Depart {formatDisplayTime(stop.departure_time)}.</p>
+                            </div>
+                          </div>
+                          {nextStop ? (
+                            <div className="itineraryConnector">
+                              <span>{nextStop.drive_minutes} min drive to next stop</span>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button type="button" className="buttonPrimary fullWidthButton" onClick={handleBook} disabled={submitting}>
+                    {submitting ? "Booking..." : "Book"}
+                  </button>
+                </div>
+              )}
 
-          <div className="callout">
-            <p className="miniLabel">Searchable placeholders</p>
-            <p className="subtle">hasLunchExperience, organicFriendly, specialExperienceFlag, cheeseBoardFriendly, vibeTag, transportSuitable, supportsHalfDay, supportsFullDay, and supportsMultiDay are currently derived placeholders ready to map to master DB columns.</p>
+              {matchedWineries.length > 0 ? (
+                <div className="callout">
+                  <p className="miniLabel">Closest matches</p>
+                  {matchedWineries.map((winery) => (
+                    <p key={winery.id} className="subtle">
+                      <strong>{winery.name}</strong> · {winery.region}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="callout">
+                <p className="miniLabel">Searchable placeholders</p>
+                <p className="subtle">hasLunchExperience, organicFriendly, specialExperienceFlag, cheeseBoardFriendly, vibeTag, transportSuitable, supportsHalfDay, supportsFullDay, and supportsMultiDay are currently derived placeholders ready to map to master DB columns.</p>
+              </div>
+
+              {booking ? (
+                <div className="callout successCallout">
+                  Booking created. Reference <strong>{booking.bookingId}</strong>.
+                </div>
+              ) : null}
+              {error ? <div className="callout errorCallout">{error}</div> : null}
+            </SectionCard>
           </div>
-
-          {booking ? (
-            <div className="callout successCallout">
-              Booking created. Reference <strong>{booking.bookingId}</strong>.
-            </div>
-          ) : null}
-          {error ? <div className="callout errorCallout">{error}</div> : null}
-        </SectionCard>
+        ) : null}
       </div>
     </AppShell>
   );
