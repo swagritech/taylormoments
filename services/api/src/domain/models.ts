@@ -35,6 +35,16 @@ export type Winery = {
   confirmationMode: "auto_confirm" | "manual_review";
   capacity: number;
   active: boolean;
+  tastingPrice?: number;
+  description?: string;
+  famousFor?: string;
+  offersCheeseBoard: boolean;
+  uniqueExperienceOffers: WineryExperienceOffer[];
+};
+
+export type WineryExperienceOffer = {
+  name: string;
+  price: number;
 };
 
 export type WineryContact = {

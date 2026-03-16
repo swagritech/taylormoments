@@ -42,6 +42,7 @@ SQL files are in `sql/`:
 - `006_customer_profile_fields.sql`
 - `007_seed_full_prospect_catalog.sql`
 - `008_winery_media_assets.sql`
+- `009_winery_profile_fields.sql`
 
 Recommended order:
 
@@ -58,6 +59,7 @@ The bootstrap script applies all SQL files in order:
 - `006_customer_profile_fields.sql`
 - `007_seed_full_prospect_catalog.sql`
 - `008_winery_media_assets.sql`
+- `009_winery_profile_fields.sql`
 
 ## Winery image upload storage (Cloudflare R2)
 
@@ -75,6 +77,8 @@ New REST endpoints:
 - `GET /api/v1/wineries/{wineryId}/media`
 - `POST /api/v1/wineries/{wineryId}/media/upload-url`
 - `POST /api/v1/wineries/{wineryId}/media/{mediaId}/complete`
+- `GET /api/v1/wineries/{wineryId}/profile`
+- `PUT /api/v1/wineries/{wineryId}/profile`
 
 ## Azure deployment packaging
 

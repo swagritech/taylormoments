@@ -13,10 +13,58 @@ import type {
 import { makeId, nowIso } from "../lib/crypto.js";
 
 const wineries: Winery[] = [
-  { wineryId: "11111111-1111-1111-1111-111111111111", name: "Vasse Felix", region: "Wilyabrup", confirmationMode: "auto_confirm", capacity: 10, active: true },
-  { wineryId: "22222222-2222-2222-2222-222222222222", name: "Cullen Wines", region: "Wilyabrup", confirmationMode: "manual_review", capacity: 12, active: true },
-  { wineryId: "33333333-3333-3333-3333-333333333333", name: "Fraser Gallop Estate", region: "Wilyabrup", confirmationMode: "auto_confirm", capacity: 8, active: true },
-  { wineryId: "44444444-4444-4444-4444-444444444444", name: "Woodlands Wines", region: "Wilyabrup", confirmationMode: "manual_review", capacity: 14, active: true },
+  {
+    wineryId: "11111111-1111-1111-1111-111111111111",
+    name: "Vasse Felix",
+    region: "Wilyabrup",
+    confirmationMode: "auto_confirm",
+    capacity: 10,
+    active: true,
+    tastingPrice: 35,
+    description: "Founding Margaret River estate with premium tastings and vineyard views.",
+    famousFor: "Cabernet Sauvignon and Chardonnay",
+    offersCheeseBoard: true,
+    uniqueExperienceOffers: [{ name: "Estate tour", price: 70 }],
+  },
+  {
+    wineryId: "22222222-2222-2222-2222-222222222222",
+    name: "Cullen Wines",
+    region: "Wilyabrup",
+    confirmationMode: "manual_review",
+    capacity: 12,
+    active: true,
+    tastingPrice: 40,
+    description: "Biodynamic winery known for immersive food and wine experiences.",
+    famousFor: "Biodynamic wines and dining",
+    offersCheeseBoard: true,
+    uniqueExperienceOffers: [{ name: "Private biodynamic tasting", price: 95 }],
+  },
+  {
+    wineryId: "33333333-3333-3333-3333-333333333333",
+    name: "Fraser Gallop Estate",
+    region: "Wilyabrup",
+    confirmationMode: "auto_confirm",
+    capacity: 8,
+    active: true,
+    tastingPrice: 30,
+    description: "Boutique estate delivering classic Margaret River varietals.",
+    famousFor: "Parterre Cabernet Sauvignon",
+    offersCheeseBoard: false,
+    uniqueExperienceOffers: [{ name: "Library release tasting", price: 80 }],
+  },
+  {
+    wineryId: "44444444-4444-4444-4444-444444444444",
+    name: "Woodlands Wines",
+    region: "Wilyabrup",
+    confirmationMode: "manual_review",
+    capacity: 14,
+    active: true,
+    tastingPrice: 25,
+    description: "Family-run estate with relaxed tastings in a heritage setting.",
+    famousFor: "Classic reds and warm hospitality",
+    offersCheeseBoard: true,
+    uniqueExperienceOffers: [{ name: "Winemaker meet-and-greet", price: 60 }],
+  },
 ];
 
 const wineryContacts = new Map<string, WineryContact>([
@@ -79,6 +127,36 @@ const users = new Map<string, UserAccount>();
 export class MemoryWorkflowRepository implements WorkflowRepository {
   async getWineries(): Promise<Winery[]> {
     return wineries;
+  }
+
+  async getWineryById(wineryId: string): Promise<Winery | null> {
+    return wineries.find((item) => item.wineryId === wineryId) ?? null;
+  }
+
+  async updateWineryProfile(request: {
+    wineryId: string;
+    tastingPrice?: number;
+    description?: string;
+    famousFor?: string;
+    offersCheeseBoard: boolean;
+    uniqueExperienceOffers: Array<{ name: string; price: number }>;
+  }): Promise<Winery | null> {
+    const index = wineries.findIndex((item) => item.wineryId === request.wineryId);
+    if (index < 0) {
+      return null;
+    }
+
+    const current = wineries[index];
+    wineries[index] = {
+      ...current,
+      tastingPrice: request.tastingPrice,
+      description: request.description,
+      famousFor: request.famousFor,
+      offersCheeseBoard: request.offersCheeseBoard,
+      uniqueExperienceOffers: request.uniqueExperienceOffers,
+    };
+
+    return wineries[index];
   }
 
   async getAvailabilityForDate(serviceDate: string): Promise<WineryAvailability[]> {

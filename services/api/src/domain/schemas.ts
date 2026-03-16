@@ -82,6 +82,19 @@ export const wineryMediaRouteSchema = wineryRouteSchema.extend({
   mediaId: z.string().uuid(),
 });
 
+export const wineryProfileUpdateSchema = z.object({
+  tasting_price: z.number().nonnegative().max(10000).optional(),
+  description: z.string().max(3000).optional(),
+  famous_for: z.string().max(500).optional(),
+  offers_cheese_board: z.boolean(),
+  unique_experience_offers: z.array(
+    z.object({
+      name: z.string().min(1).max(120),
+      price: z.number().nonnegative().max(10000),
+    }),
+  ).max(30),
+});
+
 export const createWineryMediaUploadRequestSchema = z.object({
   file_name: z.string().min(1).max(160),
   content_type: z.string().regex(/^image\//i, "content_type must be an image mime type."),

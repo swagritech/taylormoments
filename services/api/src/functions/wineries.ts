@@ -1,6 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import {
   createWineryMediaUploadRequestSchema,
+  wineryProfileUpdateSchema,
   wineryMediaRouteSchema,
   wineryRouteSchema,
 } from "../domain/schemas.js";
@@ -27,6 +28,11 @@ export async function listWineriesHandler(
         name: winery.name,
         region: winery.region,
         confirmation_mode: winery.confirmationMode,
+        tasting_price: winery.tastingPrice,
+        description: winery.description,
+        famous_for: winery.famousFor,
+        offers_cheese_board: winery.offersCheeseBoard,
+        unique_experience_offers: winery.uniqueExperienceOffers,
       })),
     });
   } catch (error) {
@@ -142,6 +148,96 @@ export async function listWineryMediaHandler(
   } catch (error) {
     context.error(error);
     return badRequest(error instanceof Error ? error.message : "Unable to fetch winery media.");
+  }
+}
+
+export async function getWineryProfileHandler(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  try {
+    const session = requireSession(request);
+    if (!session) {
+      return unauthorized("You must be signed in.");
+    }
+    if (!hasRole(session, ["winery", "ops"])) {
+      return forbidden("You are not permitted to view winery profile data.");
+    }
+
+    const { wineryId } = wineryRouteSchema.parse(request.params);
+    if (!canAccessWinery(session, wineryId)) {
+      return forbidden("You can only view your own winery profile.");
+    }
+
+    const winery = await workflowRepository.getWineryById(wineryId);
+    if (!winery) {
+      return notFound("Winery not found.");
+    }
+
+    return ok({
+      winery_id: winery.wineryId,
+      name: winery.name,
+      region: winery.region,
+      tasting_price: winery.tastingPrice,
+      description: winery.description,
+      famous_for: winery.famousFor,
+      offers_cheese_board: winery.offersCheeseBoard,
+      unique_experience_offers: winery.uniqueExperienceOffers,
+    });
+  } catch (error) {
+    context.error(error);
+    return badRequest(error instanceof Error ? error.message : "Unable to fetch winery profile.");
+  }
+}
+
+export async function updateWineryProfileHandler(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  try {
+    const session = requireSession(request);
+    if (!session) {
+      return unauthorized("You must be signed in.");
+    }
+    if (!hasRole(session, ["winery", "ops"])) {
+      return forbidden("You are not permitted to update winery profile data.");
+    }
+
+    const { wineryId } = wineryRouteSchema.parse(request.params);
+    if (!canAccessWinery(session, wineryId)) {
+      return forbidden("You can only update your own winery profile.");
+    }
+
+    const payload = wineryProfileUpdateSchema.parse(await request.json());
+    const updated = await workflowRepository.updateWineryProfile({
+      wineryId,
+      tastingPrice: payload.tasting_price,
+      description: payload.description?.trim() || undefined,
+      famousFor: payload.famous_for?.trim() || undefined,
+      offersCheeseBoard: payload.offers_cheese_board,
+      uniqueExperienceOffers: payload.unique_experience_offers.map((entry) => ({
+        name: entry.name.trim(),
+        price: Number(entry.price),
+      })),
+    });
+
+    if (!updated) {
+      return notFound("Winery not found.");
+    }
+
+    return ok({
+      winery_id: updated.wineryId,
+      name: updated.name,
+      region: updated.region,
+      tasting_price: updated.tastingPrice,
+      description: updated.description,
+      famous_for: updated.famousFor,
+      offers_cheese_board: updated.offersCheeseBoard,
+      unique_experience_offers: updated.uniqueExperienceOffers,
+    });
+  } catch (error) {
+    context.error(error);
+    return badRequest(error instanceof Error ? error.message : "Unable to update winery profile.");
   }
 }
 
@@ -279,6 +375,20 @@ app.http("list-winery-media", {
   authLevel: "anonymous",
   route: "v1/wineries/{wineryId}/media",
   handler: listWineryMediaHandler,
+});
+
+app.http("get-winery-profile", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: "v1/wineries/{wineryId}/profile",
+  handler: getWineryProfileHandler,
+});
+
+app.http("update-winery-profile", {
+  methods: ["PUT"],
+  authLevel: "anonymous",
+  route: "v1/wineries/{wineryId}/profile",
+  handler: updateWineryProfileHandler,
 });
 
 app.http("create-winery-media-upload-url", {

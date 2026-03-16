@@ -43,6 +43,10 @@ function mapBooking(row: Record<string, unknown>): Booking {
 }
 
 function mapWinery(row: Record<string, unknown>): Winery {
+  const rawOffers = Array.isArray(row.unique_experience_offers)
+    ? row.unique_experience_offers
+    : [];
+
   return {
     wineryId: String(row.winery_id),
     name: String(row.name),
@@ -50,6 +54,26 @@ function mapWinery(row: Record<string, unknown>): Winery {
     confirmationMode: row.confirmation_mode as Winery["confirmationMode"],
     capacity: Number(row.capacity),
     active: Boolean(row.active),
+    tastingPrice: row.tasting_price !== null && row.tasting_price !== undefined
+      ? Number(row.tasting_price)
+      : undefined,
+    description: row.description ? String(row.description) : undefined,
+    famousFor: row.famous_for ? String(row.famous_for) : undefined,
+    offersCheeseBoard: Boolean(row.offers_cheese_board),
+    uniqueExperienceOffers: rawOffers
+      .map((entry) => {
+        if (!entry || typeof entry !== "object") {
+          return null;
+        }
+        const candidate = entry as Record<string, unknown>;
+        const name = candidate.name ? String(candidate.name).trim() : "";
+        const price = Number(candidate.price);
+        if (!name || !Number.isFinite(price)) {
+          return null;
+        }
+        return { name, price };
+      })
+      .filter((entry): entry is { name: string; price: number } => Boolean(entry)),
   };
 }
 
@@ -148,12 +172,71 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
   async getWineries(): Promise<Winery[]> {
     const pool = getPool();
     const result = await pool.query(`
-      select winery_id, name, region, confirmation_mode, capacity, active
+      select winery_id, name, region, confirmation_mode, capacity, active,
+             tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
       from winery
       order by name asc
     `);
 
     return result.rows.map((row) => mapWinery(row));
+  }
+
+  async getWineryById(wineryId: string): Promise<Winery | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        select winery_id, name, region, confirmation_mode, capacity, active,
+               tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
+        from winery
+        where winery_id = $1
+      `,
+      [wineryId],
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapWinery(result.rows[0]);
+  }
+
+  async updateWineryProfile(request: {
+    wineryId: string;
+    tastingPrice?: number;
+    description?: string;
+    famousFor?: string;
+    offersCheeseBoard: boolean;
+    uniqueExperienceOffers: Array<{ name: string; price: number }>;
+  }): Promise<Winery | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        update winery
+        set tasting_price = $2,
+            description = $3,
+            famous_for = $4,
+            offers_cheese_board = $5,
+            unique_experience_offers = $6::jsonb,
+            updated_at = now()
+        where winery_id = $1
+        returning winery_id, name, region, confirmation_mode, capacity, active,
+                  tasting_price, description, famous_for, offers_cheese_board, unique_experience_offers
+      `,
+      [
+        request.wineryId,
+        request.tastingPrice ?? null,
+        request.description ?? null,
+        request.famousFor ?? null,
+        request.offersCheeseBoard,
+        JSON.stringify(request.uniqueExperienceOffers ?? []),
+      ],
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapWinery(result.rows[0]);
   }
 
   async getAvailabilityForDate(serviceDate: string): Promise<WineryAvailability[]> {

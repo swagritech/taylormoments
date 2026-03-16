@@ -196,6 +196,28 @@ export type WineryListResponse = {
     name: string;
     region: string;
     confirmation_mode: "auto_confirm" | "manual_review";
+    tasting_price?: number;
+    description?: string;
+    famous_for?: string;
+    offers_cheese_board?: boolean;
+    unique_experience_offers?: Array<{
+      name: string;
+      price: number;
+    }>;
+  }>;
+};
+
+export type WineryProfileResponse = {
+  winery_id: string;
+  name: string;
+  region: string;
+  tasting_price?: number;
+  description?: string;
+  famous_for?: string;
+  offers_cheese_board: boolean;
+  unique_experience_offers: Array<{
+    name: string;
+    price: number;
   }>;
 };
 
@@ -333,6 +355,43 @@ export async function getWineryPortalRequestsAuthed(wineryId: string, token: str
   });
 
   return parseJson<WineryPortalResponse>(response);
+}
+
+export async function getWineryProfileAuthed(wineryId: string, token: string) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries/${wineryId}/profile`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return parseJson<WineryProfileResponse>(response);
+}
+
+export async function updateWineryProfileAuthed(
+  wineryId: string,
+  token: string,
+  payload: {
+    tasting_price?: number;
+    description?: string;
+    famous_for?: string;
+    offers_cheese_board: boolean;
+    unique_experience_offers: Array<{
+      name: string;
+      price: number;
+    }>;
+  },
+) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries/${wineryId}/profile`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseJson<WineryProfileResponse>(response);
 }
 
 export async function getWineryMediaAuthed(wineryId: string, token: string) {

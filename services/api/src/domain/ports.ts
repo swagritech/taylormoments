@@ -14,6 +14,15 @@ import type {
 
 export interface WorkflowRepository {
   getWineries(): Promise<Winery[]>;
+  getWineryById(wineryId: string): Promise<Winery | null>;
+  updateWineryProfile(request: {
+    wineryId: string;
+    tastingPrice?: number;
+    description?: string;
+    famousFor?: string;
+    offersCheeseBoard: boolean;
+    uniqueExperienceOffers: Array<{ name: string; price: number }>;
+  }): Promise<Winery | null>;
   getAvailabilityForDate(serviceDate: string): Promise<WineryAvailability[]>;
   createBooking(request: CreateBookingRequest): Promise<Booking>;
   getBooking(bookingId: string): Promise<Booking | null>;

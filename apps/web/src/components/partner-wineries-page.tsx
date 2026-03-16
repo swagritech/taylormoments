@@ -12,8 +12,10 @@ import {
   completeWineryMediaUpload,
   createWineryMediaUploadUrl,
   getWineryMediaAuthed,
+  getWineryProfileAuthed,
   getWineryPortalRequestsAuthed,
   listWineries,
+  updateWineryProfileAuthed,
   type WineryMediaAsset,
   type WineryPortalItem,
 } from "@/lib/live-api";
@@ -42,6 +44,20 @@ function tokenFromActionUrl(actionUrl: string) {
   }
 }
 
+type ExperienceDraft = {
+  id: string;
+  name: string;
+  price: string;
+};
+
+function makeExperienceDraft(entry?: { name: string; price: number }): ExperienceDraft {
+  return {
+    id: crypto.randomUUID(),
+    name: entry?.name ?? "",
+    price: entry?.price !== undefined ? String(entry.price) : "",
+  };
+}
+
 export function PartnerWineriesPage() {
   const router = useRouter();
   const { user, token, loading: authLoading } = useAuth();
@@ -58,6 +74,13 @@ export function PartnerWineriesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [storageConfigured, setStorageConfigured] = useState(true);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [tastingPrice, setTastingPrice] = useState("");
+  const [wineryDescription, setWineryDescription] = useState("");
+  const [famousFor, setFamousFor] = useState("");
+  const [offersCheeseBoard, setOffersCheeseBoard] = useState(false);
+  const [experienceRows, setExperienceRows] = useState<ExperienceDraft[]>([]);
+  const [profileSavedAt, setProfileSavedAt] = useState<string | null>(null);
   const dataMode = getDataMode();
 
   const loadRequests = useCallback(async (wineryId: string) => {
@@ -71,15 +94,28 @@ export function PartnerWineriesPage() {
     setError(null);
 
     try {
-      const [requestsResponse, mediaResponse] = await Promise.all([
+      const [requestsResponse, mediaResponse, profileResponse] = await Promise.all([
         getWineryPortalRequestsAuthed(wineryId, token),
         getWineryMediaAuthed(wineryId, token),
+        getWineryProfileAuthed(wineryId, token),
       ]);
       setRequests(requestsResponse.requests);
       setSummary(requestsResponse.summary);
       setWineryName(requestsResponse.winery?.name ?? "Winery");
       setMediaAssets(mediaResponse.assets);
       setStorageConfigured(mediaResponse.storage_configured);
+      setTastingPrice(
+        profileResponse.tasting_price !== undefined ? String(profileResponse.tasting_price) : "",
+      );
+      setWineryDescription(profileResponse.description ?? "");
+      setFamousFor(profileResponse.famous_for ?? "");
+      setOffersCheeseBoard(profileResponse.offers_cheese_board);
+      setExperienceRows(
+        profileResponse.unique_experience_offers.length > 0
+          ? profileResponse.unique_experience_offers.map((entry) => makeExperienceDraft(entry))
+          : [makeExperienceDraft()],
+      );
+      setProfileSavedAt(null);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load winery request queue.");
     } finally {
@@ -215,6 +251,59 @@ export function PartnerWineriesPage() {
       setError(uploadError instanceof Error ? uploadError.message : "Unable to upload image.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  function updateExperienceRow(id: string, field: "name" | "price", value: string) {
+    setExperienceRows((current) =>
+      current.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
+    );
+  }
+
+  function addExperienceRow() {
+    setExperienceRows((current) => [...current, makeExperienceDraft()]);
+  }
+
+  function removeExperienceRow(id: string) {
+    setExperienceRows((current) => (current.length > 1 ? current.filter((row) => row.id !== id) : current));
+  }
+
+  async function handleSaveProfile() {
+    if (!selectedWineryId || !token) {
+      return;
+    }
+
+    const normalizedRows = experienceRows
+      .map((row) => ({
+        name: row.name.trim(),
+        price: Number(row.price),
+      }))
+      .filter((row) => row.name && Number.isFinite(row.price) && row.price >= 0);
+
+    try {
+      setProfileSaving(true);
+      setError(null);
+      const updated = await updateWineryProfileAuthed(selectedWineryId, token, {
+        tasting_price: tastingPrice.trim() ? Number(tastingPrice) : undefined,
+        description: wineryDescription.trim() || undefined,
+        famous_for: famousFor.trim() || undefined,
+        offers_cheese_board: offersCheeseBoard,
+        unique_experience_offers: normalizedRows,
+      });
+      setTastingPrice(updated.tasting_price !== undefined ? String(updated.tasting_price) : "");
+      setWineryDescription(updated.description ?? "");
+      setFamousFor(updated.famous_for ?? "");
+      setOffersCheeseBoard(updated.offers_cheese_board);
+      setExperienceRows(
+        updated.unique_experience_offers.length > 0
+          ? updated.unique_experience_offers.map((entry) => makeExperienceDraft(entry))
+          : [makeExperienceDraft()],
+      );
+      setProfileSavedAt(new Date().toISOString());
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save winery profile.");
+    } finally {
+      setProfileSaving(false);
     }
   }
 
@@ -445,6 +534,100 @@ export function PartnerWineriesPage() {
               </article>
             ))
           )}
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Winery profile settings"
+        description="Set tasting price, winery details, and experience offers shown to guests."
+      >
+        <div className="fieldRow">
+          <div className="field">
+            <label htmlFor="tastingPrice">Tasting price (AUD)</label>
+            <input
+              id="tastingPrice"
+              type="number"
+              min={0}
+              step="0.01"
+              className="inputLike inputField"
+              value={tastingPrice}
+              onChange={(event) => setTastingPrice(event.target.value)}
+              placeholder="35"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="famousFor">What is your winery famous for?</label>
+            <input
+              id="famousFor"
+              className="inputLike inputField"
+              value={famousFor}
+              onChange={(event) => setFamousFor(event.target.value)}
+              placeholder="Cabernet Sauvignon and Chardonnay"
+            />
+          </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="wineryDescription">Winery description</label>
+          <textarea
+            id="wineryDescription"
+            className="inputLike inputField"
+            rows={4}
+            value={wineryDescription}
+            onChange={(event) => setWineryDescription(event.target.value)}
+            placeholder="Describe your winery, atmosphere, and guest experience."
+          />
+        </div>
+
+        <div className="field">
+          <label className="choicePill">
+            <input
+              type="checkbox"
+              checked={offersCheeseBoard}
+              onChange={(event) => setOffersCheeseBoard(event.target.checked)}
+            />
+            Offers cheese board
+          </label>
+        </div>
+
+        <div className="field">
+          <label>Unique experiences and prices</label>
+          <div className="experienceList">
+            {experienceRows.map((row) => (
+              <div key={row.id} className="experienceRow">
+                <input
+                  className="inputLike inputField"
+                  value={row.name}
+                  onChange={(event) => updateExperienceRow(row.id, "name", event.target.value)}
+                  placeholder="Experience name"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  className="inputLike inputField"
+                  value={row.price}
+                  onChange={(event) => updateExperienceRow(row.id, "price", event.target.value)}
+                  placeholder="Price (AUD)"
+                />
+                <button type="button" className="buttonGhost" onClick={() => removeExperienceRow(row.id)}>
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="ctaRow">
+            <button type="button" className="buttonGhost" onClick={addExperienceRow}>
+              Add experience
+            </button>
+          </div>
+        </div>
+
+        <div className="ctaRow">
+          <button type="button" className="buttonPrimary" onClick={handleSaveProfile} disabled={profileSaving}>
+            {profileSaving ? "Saving..." : "Save winery profile"}
+          </button>
+          {profileSavedAt ? <span className="meta">Saved {formatDateTime(profileSavedAt)}</span> : null}
         </div>
       </SectionCard>
     </AppShell>

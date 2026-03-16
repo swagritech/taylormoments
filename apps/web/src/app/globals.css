@@ -891,6 +891,18 @@ button {
   gap: 4px;
 }
 
+.experienceList {
+  display: grid;
+  gap: 8px;
+}
+
+.experienceRow {
+  display: grid;
+  grid-template-columns: 1.6fr 0.8fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
 .modalBackdrop {
   position: fixed;
   inset: 0;
@@ -998,7 +1010,8 @@ button {
   .fieldRow,
   .catalogRow,
   .catalogMedia,
-  .scheduleStopRow {
+  .scheduleStopRow,
+  .experienceRow {
     grid-template-columns: 1fr;
   }
 
