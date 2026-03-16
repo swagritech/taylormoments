@@ -177,6 +177,18 @@ export type WineryMediaListResponse = {
   assets: WineryMediaAsset[];
 };
 
+export type WineryMediaPublicListResponse = {
+  assets: Array<{
+    media_id: string;
+    winery_id: string;
+    public_url: string;
+    file_name: string;
+    caption?: string;
+    created_at: string;
+    updated_at: string;
+  }>;
+};
+
 export type WineryMediaUploadTicket = {
   media_id: string;
   winery_id: string;
@@ -423,6 +435,14 @@ export async function getWineryMediaAuthed(wineryId: string, token: string) {
   });
 
   return parseJson<WineryMediaListResponse>(response);
+}
+
+export async function getWineryMediaPublic(wineryId: string) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries/${wineryId}/media/public`, {
+    method: "GET",
+  });
+
+  return parseJson<WineryMediaPublicListResponse>(response);
 }
 
 export async function createWineryMediaUploadUrl(

@@ -6,6 +6,7 @@ import { SectionCard } from "@/components/section-card";
 import {
   createBooking,
   formatDisplayTime,
+  getWineryMediaPublic,
   listWineries,
   recommendItineraries,
   type BookingResponse,
@@ -172,6 +173,7 @@ export default function ExplorePage() {
   const [isPreferencesCollapsed, setIsPreferencesCollapsed] = useState(false);
   const [selectedPreviewWinery, setSelectedPreviewWinery] = useState<WineryCatalogItem | null>(null);
   const [profilesById, setProfilesById] = useState<Record<string, WineryListResponse["wineries"][number]>>({});
+  const [mediaUrlsByWineryId, setMediaUrlsByWineryId] = useState<Record<string, string[]>>({});
 
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
 
@@ -242,6 +244,53 @@ export default function ExplorePage() {
 
     return () => clearTimeout(timer);
   }, [hasPlanned, recommendation]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadMedia() {
+      if (!recommendation || recommendation.stops.length === 0) {
+        if (active) {
+          setMediaUrlsByWineryId({});
+        }
+        return;
+      }
+
+      const wineryIds = Array.from(new Set(recommendation.stops.map((stop) => stop.winery_id).filter(Boolean)));
+      try {
+        const entries = await Promise.all(
+          wineryIds.map(async (wineryId) => {
+            try {
+              const response = await getWineryMediaPublic(wineryId);
+              return [wineryId, response.assets.map((asset) => asset.public_url)] as [string, string[]];
+            } catch {
+              return [wineryId, []] as [string, string[]];
+            }
+          }),
+        );
+
+        if (!active) {
+          return;
+        }
+
+        const next: Record<string, string[]> = {};
+        for (const [wineryId, urls] of entries) {
+          next[wineryId] = urls;
+        }
+        setMediaUrlsByWineryId(next);
+      } catch {
+        if (active) {
+          setMediaUrlsByWineryId({});
+        }
+      }
+    }
+
+    void loadMedia();
+
+    return () => {
+      active = false;
+    };
+  }, [recommendation]);
 
   async function handlePlanTrip() {
     setHasPlanned(true);
@@ -523,8 +572,11 @@ export default function ExplorePage() {
                       const nextStop = recommendation.stops[index + 1];
                       const stopWinery = resolveWinery(stop.winery_name);
                       const remoteProfile = resolveRemoteProfileByName(stop.winery_name);
-                      const frames = placeholderGalleryFrames(stopWinery);
-                      const rollingFrames = [...frames, ...frames];
+                      const mediaFrames = mediaUrlsByWineryId[stop.winery_id] ?? [];
+                      const placeholderFrames = placeholderGalleryFrames(stopWinery);
+                      const rollingFrames = mediaFrames.length > 0
+                        ? [...mediaFrames, ...mediaFrames]
+                        : [...placeholderFrames, ...placeholderFrames];
                       return (
                         <div key={`${stop.winery_id}-${index}`}>
                           <div className="scheduleStopRow">
@@ -551,7 +603,16 @@ export default function ExplorePage() {
                               <div className="scheduleGalleryTrack">
                                 {rollingFrames.map((frame, frameIndex) => (
                                   <div className="scheduleGalleryTile" key={`${stop.winery_id}-${frameIndex}`}>
-                                    <p>{frame}</p>
+                                    {mediaFrames.length > 0 ? (
+                                      <img
+                                        src={frame}
+                                        alt={`${stop.winery_name} preview ${frameIndex + 1}`}
+                                        className="scheduleGalleryImage"
+                                        loading="lazy"
+                                      />
+                                    ) : (
+                                      <p>{frame}</p>
+                                    )}
                                   </div>
                                 ))}
                               </div>

@@ -155,6 +155,31 @@ export async function listWineryMediaHandler(
   }
 }
 
+export async function listWineryMediaPublicHandler(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  try {
+    const { wineryId } = wineryRouteSchema.parse(request.params);
+    const assets = await workflowRepository.listWineryMediaAssets(wineryId);
+    const uploaded = assets.filter((asset) => asset.status === "uploaded");
+    return ok({
+      assets: uploaded.map((asset) => ({
+        media_id: asset.mediaId,
+        winery_id: asset.wineryId,
+        public_url: asset.publicUrl,
+        file_name: asset.fileName,
+        caption: asset.caption,
+        created_at: asset.createdAt,
+        updated_at: asset.updatedAt,
+      })),
+    });
+  } catch (error) {
+    context.error(error);
+    return badRequest(error instanceof Error ? error.message : "Unable to fetch winery media.");
+  }
+}
+
 export async function getWineryProfileHandler(
   request: HttpRequest,
   context: InvocationContext,
@@ -438,6 +463,13 @@ app.http("list-winery-media", {
   authLevel: "anonymous",
   route: "v1/wineries/{wineryId}/media",
   handler: listWineryMediaHandler,
+});
+
+app.http("list-winery-media-public", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: "v1/wineries/{wineryId}/media/public",
+  handler: listWineryMediaPublicHandler,
 });
 
 app.http("get-winery-profile", {

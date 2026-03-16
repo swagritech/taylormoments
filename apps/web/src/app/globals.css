@@ -489,6 +489,13 @@ button {
   padding: 8px;
 }
 
+.scheduleGalleryImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
 .scheduleGalleryTile p {
   color: #2f4038;
   font-size: 0.78rem;
