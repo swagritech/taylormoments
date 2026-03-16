@@ -131,6 +131,15 @@ function pickNearestRoute(wineries: WineryCatalogItem[], maxStops: number) {
   return selected;
 }
 
+function placeholderGalleryFrames(winery: WineryCatalogItem | null) {
+  const label = winery?.name ?? "Winery";
+  return [
+    `${label} cellar door`,
+    `${label} tasting room`,
+    `${label} estate view`,
+  ];
+}
+
 export default function ExplorePage() {
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
   const previewRef = useRef<HTMLDivElement | null>(null);
@@ -199,7 +208,7 @@ export default function ExplorePage() {
     }
     const timer = setTimeout(() => {
       previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 120);
+    }, 380);
 
     return () => clearTimeout(timer);
   }, [hasPlanned, recommendation]);
@@ -471,15 +480,18 @@ export default function ExplorePage() {
                   <div className="callout successCallout">
                     Preview date: <strong>{previewDate}</strong>{tripLength === "multi-day" ? " (day 1 preview for multi-day journey)" : ""}
                   </div>
-                  <div className="timeline compactTimeline">
+                  <div className="schedulePreviewCard">
                     {recommendation.stops.map((stop, index) => {
                       const nextStop = recommendation.stops[index + 1];
+                      const stopWinery = resolveWinery(stop.winery_name);
+                      const frames = placeholderGalleryFrames(stopWinery);
+                      const rollingFrames = [...frames, ...frames];
                       return (
                         <div key={`${stop.winery_id}-${index}`}>
-                          <div className="timelineItem">
-                            <div className="timelineTime">{formatDisplayTime(stop.arrival_time)}</div>
-                            <div>
-                              <h3>
+                          <div className="scheduleStopRow">
+                            <div className="scheduleStopInfo">
+                              <p className="timelineTime">{formatDisplayTime(stop.arrival_time)}</p>
+                              <h3 className="scheduleStopTitle">
                                 <button
                                   type="button"
                                   className="timelineWineryLink"
@@ -489,6 +501,15 @@ export default function ExplorePage() {
                                 </button>
                               </h3>
                               <p className="subtle">Depart {formatDisplayTime(stop.departure_time)}.</p>
+                            </div>
+                            <div className="scheduleGalleryViewport" aria-label={`${stop.winery_name} gallery preview`}>
+                              <div className="scheduleGalleryTrack">
+                                {rollingFrames.map((frame, frameIndex) => (
+                                  <div className="scheduleGalleryTile" key={`${stop.winery_id}-${frameIndex}`}>
+                                    <p>{frame}</p>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           </div>
                           {nextStop ? (
