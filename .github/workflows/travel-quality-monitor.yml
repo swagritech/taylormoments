@@ -1,0 +1,59 @@
+name: Travel Quality Monitor
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "services/api/src/lib/recommendation-service.ts"
+      - "services/api/src/lib/travel-time-provider.ts"
+      - "services/api/src/domain/models.ts"
+      - "services/api/scripts/travel-quality-check.mjs"
+      - "services/api/package.json"
+      - ".github/workflows/travel-quality-monitor.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: services/api/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/api
+        run: npm ci
+
+      - name: Run travel quality gate
+        working-directory: services/api
+        run: |
+          set -o pipefail
+          npm run quality:travel | tee travel-quality-report.json
+
+      - name: Upload quality report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: travel-quality-report
+          path: services/api/travel-quality-report.json
+          retention-days: 14
+
+      - name: Failure summary
+        if: failure()
+        run: |
+          echo "Travel quality gate failed."
+          echo "Open the travel-quality-report artifact for details."
