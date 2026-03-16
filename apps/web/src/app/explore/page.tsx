@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import {
-  createBooking,
   formatDisplayTime,
   getWineryMediaPublic,
   listWineries,
   recommendItineraries,
-  type BookingResponse,
   type Recommendation,
   type WineryListResponse,
 } from "@/lib/live-api";
@@ -21,6 +20,7 @@ import {
   saveExplorePreferences,
   type ExplorePreferences,
 } from "@/lib/explore-preferences";
+import { saveExploreTourSummary } from "@/lib/explore-tour-summary";
 
 type TripLength = "half-day" | "full-day" | "multi-day";
 type YesNo = "yes" | "no";
@@ -171,6 +171,7 @@ function placeholderGalleryFrames(winery: WineryCatalogItem | null) {
 }
 
 export default function ExplorePage() {
+  const router = useRouter();
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [name, setName] = useState(initialPreferences?.name ?? "");
@@ -184,7 +185,6 @@ export default function ExplorePage() {
   const [prefCheeseBoard, setPrefCheeseBoard] = useState(initialPreferences?.prefCheeseBoard ?? false);
   const [vibe, setVibe] = useState<Vibe>(initialPreferences?.vibe ?? "");
   const [requesting, setRequesting] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [matchedWineries, setMatchedWineries] = useState<WineryCatalogItem[]>(
     () =>
       (initialPreferences?.matchedWineryIds ?? [])
@@ -193,7 +193,6 @@ export default function ExplorePage() {
   );
   const [previewDate, setPreviewDate] = useState<string>(initialPreferences?.previewDate ?? "");
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
-  const [booking, setBooking] = useState<BookingResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasPlanned, setHasPlanned] = useState(false);
   const [isPreferencesCollapsed, setIsPreferencesCollapsed] = useState(false);
@@ -322,7 +321,6 @@ export default function ExplorePage() {
     setHasPlanned(true);
     setIsPreferencesCollapsed(true);
     setError(null);
-    setBooking(null);
     setRequesting(true);
     setRecommendation(null);
 
@@ -446,39 +444,36 @@ export default function ExplorePage() {
     }
   }
 
-  async function handleBook() {
+  function handleOpenTourSummary() {
     if (!recommendation) {
       return;
     }
+    const pickupLocation =
+      needTransport === "yes"
+        ? "Margaret River Visitor Centre"
+        : "Self-drive (no transport required)";
 
-    if (!name.trim() || !email.trim()) {
-      setError("Please provide name and email before booking.");
-      return;
-    }
+    saveExploreTourSummary({
+      lead_name: name.trim(),
+      lead_email: email.trim(),
+      party_size: groupSize,
+      pickup_location: pickupLocation,
+      trip_length: tripLength,
+      preview_date: previewDate,
+      preferred_start_time: timeWindow.start,
+      preferred_end_time: timeWindow.end,
+      matched_winery_ids: matchedWineries.map((entry) => entry.id),
+      stops: recommendation.stops.map((stop) => {
+        const remoteProfile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
+        return {
+          ...stop,
+          tasting_price: remoteProfile?.tasting_price,
+        };
+      }),
+      generated_at: new Date().toISOString(),
+    });
 
-    setError(null);
-    setSubmitting(true);
-
-    try {
-      const created = await createBooking({
-        lead_name: name.trim(),
-        lead_email: email.trim(),
-        booking_date: previewDate,
-        preferred_start_time: timeWindow.start,
-        preferred_end_time: timeWindow.end,
-        pickup_location:
-          needTransport === "yes"
-            ? "Margaret River Visitor Centre"
-            : "Self-drive (no transport required)",
-        party_size: groupSize,
-        preferred_wineries: matchedWineries.map((entry) => slugToWineryUuid(entry.id)),
-      });
-      setBooking(created);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Unable to submit booking.");
-    } finally {
-      setSubmitting(false);
-    }
+    router.push("/explore/summary");
   }
 
   function resolveWinery(stopName: string) {
@@ -696,8 +691,8 @@ export default function ExplorePage() {
                       );
                     })}
                   </div>
-                  <button type="button" className="buttonPrimary fullWidthButton" onClick={handleBook} disabled={submitting}>
-                    {submitting ? "Booking..." : "Book"}
+                  <button type="button" className="buttonPrimary fullWidthButton" onClick={handleOpenTourSummary}>
+                    Tour summary
                   </button>
                 </div>
               )}
@@ -718,11 +713,6 @@ export default function ExplorePage() {
                 <p className="subtle">Current matching uses partner profile fields where available. Additional explicit preference columns can be added later for more precise matching.</p>
               </div>
 
-              {booking ? (
-                <div className="callout successCallout">
-                  Booking created. Reference <strong>{booking.bookingId}</strong>.
-                </div>
-              ) : null}
               {error ? <div className="callout errorCallout">{error}</div> : null}
             </SectionCard>
           </div>

@@ -5,9 +5,15 @@ import { AppShell } from "@/components/app-shell";
 import { CustomerWineryCatalog } from "@/components/customer-winery-catalog";
 import { LiveBookingFlow } from "@/components/live-booking-flow";
 import { loadExplorePreferences } from "@/lib/explore-preferences";
+import { loadExploreTourSummary } from "@/lib/explore-tour-summary";
 
 export default function PlanPage() {
   const [selectedWineries, setSelectedWineries] = useState<string[]>(() => {
+    const summary = loadExploreTourSummary();
+    if (summary?.matched_winery_ids?.length) {
+      return summary.matched_winery_ids.slice(0, 6);
+    }
+
     const saved = loadExplorePreferences();
     return (saved?.matchedWineryIds ?? []).slice(0, 6);
   });
