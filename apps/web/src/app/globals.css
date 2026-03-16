@@ -338,6 +338,22 @@ button {
   font-weight: 700;
 }
 
+.itineraryConnector {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 6px 0 10px;
+}
+
+.itineraryConnector span {
+  border: 1px dashed #bcd0c7;
+  border-radius: 999px;
+  background: #f5faf8;
+  color: #4f655c;
+  font-size: 0.82rem;
+  padding: 5px 12px;
+}
+
 .summaryRibbon {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

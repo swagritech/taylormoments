@@ -304,17 +304,27 @@ export function LiveBookingFlow({
                   <span className="status ready">{expertPick.score}% fit</span>
                 </div>
                 <div className="timeline compactTimeline">
-                  {expertPick.stops.map((stop) => (
-                    <div key={stop.winery_id} className="timelineItem">
-                      <div className="timelineTime">{formatDisplayTime(stop.arrival_time)}</div>
-                      <div>
-                        <h3>{stop.winery_name}</h3>
-                        <p className="subtle">
-                          Depart {formatDisplayTime(stop.departure_time)} after a {stop.drive_minutes}-minute drive.
-                        </p>
+                  {expertPick.stops.map((stop, index) => {
+                    const nextStop = expertPick.stops[index + 1];
+                    return (
+                      <div key={stop.winery_id}>
+                        <div className="timelineItem">
+                          <div className="timelineTime">{formatDisplayTime(stop.arrival_time)}</div>
+                          <div>
+                            <h3>{stop.winery_name}</h3>
+                            <p className="subtle">
+                              Depart {formatDisplayTime(stop.departure_time)}.
+                            </p>
+                          </div>
+                        </div>
+                        {nextStop ? (
+                          <div className="itineraryConnector">
+                            <span>{nextStop.drive_minutes} min drive to next stop</span>
+                          </div>
+                        ) : null}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <TurnstileWidget
                   action="request_quote"
