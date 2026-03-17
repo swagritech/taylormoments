@@ -448,7 +448,7 @@ export default function ExplorePage() {
     >
       <div className="exploreLayout">
         <div className="exploreUnifiedPanel">
-        <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`}>
+        <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`} style={{ width: "100%", maxWidth: "100%", margin: 0 }}>
           <section className="exploreSectionBlock">
             <div className="sectionHeader">
               <div>
@@ -564,7 +564,7 @@ export default function ExplorePage() {
         </div>
 
         {hasPlanned ? (
-          <div ref={previewRef} className="explorePreviewWrap">
+          <div ref={previewRef} className="explorePreviewWrap" style={{ width: "100%", maxWidth: "100%", margin: 0 }}>
             <section className="exploreSectionBlock">
               <div className="sectionHeader">
                 <div>
