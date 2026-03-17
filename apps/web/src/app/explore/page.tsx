@@ -277,6 +277,7 @@ export default function ExplorePage() {
   const router = useRouter();
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
   const previewRef = useRef<HTMLDivElement | null>(null);
+  const itineraryCardRef = useRef<HTMLDivElement | null>(null);
   const [name, setName] = useState(initialPreferences?.name ?? "");
   const [email, setEmail] = useState(initialPreferences?.email ?? "");
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
@@ -373,15 +374,17 @@ export default function ExplorePage() {
   }, []);
 
   useEffect(() => {
-    if (!hasPlanned || !previewRef.current) {
+    const target = recommendation ? itineraryCardRef.current : previewRef.current;
+    if (!hasPlanned || !target) {
       return;
     }
+
     const timer = setTimeout(() => {
-      previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 380);
 
     return () => clearTimeout(timer);
-  }, [hasPlanned, recommendation]);
+  }, [hasPlanned, recommendation, itineraryReplaySeed]);
 
   async function handlePlanTrip() {
     setHasPlanned(true);
@@ -729,7 +732,7 @@ export default function ExplorePage() {
                     itineraryAnimationCursor = 120;
                     return null;
                   })()}
-                  <div className="bespokeItineraryCard">
+                  <div ref={itineraryCardRef} className="bespokeItineraryCard">
                     <div className="bespokeItineraryBorder" />
                     <div className="bespokeItineraryHeader">
                       <p className="bespokeKicker">Bespoke day arranged for</p>
