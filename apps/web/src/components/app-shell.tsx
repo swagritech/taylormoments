@@ -13,6 +13,7 @@ type AppShellProps = {
   children: ReactNode;
   actionMode?: boolean;
   showWorkflowStatus?: boolean;
+  showPageHeader?: boolean;
   navMode?: "public" | "partner";
 };
 
@@ -50,6 +51,7 @@ export function AppShell({
   children,
   actionMode = false,
   showWorkflowStatus = true,
+  showPageHeader = true,
   navMode = "public",
 }: AppShellProps) {
   const { user, logout } = useAuth();
@@ -119,12 +121,14 @@ export function AppShell({
       </header>
 
       <main className="pageFrame">
-        <section className="pageHeader">
-          <p className="eyebrow">{eyebrow}</p>
-          <h1>{title}</h1>
-          <p className="heroCopy">{intro}</p>
-          {!actionMode && showWorkflowStatus ? <WorkflowStatus /> : null}
-        </section>
+        {showPageHeader ? (
+          <section className="pageHeader">
+            <p className="eyebrow">{eyebrow}</p>
+            <h1>{title}</h1>
+            <p className="heroCopy">{intro}</p>
+            {!actionMode && showWorkflowStatus ? <WorkflowStatus /> : null}
+          </section>
+        ) : null}
         {children}
       </main>
     </div>

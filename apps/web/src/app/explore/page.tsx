@@ -444,10 +444,16 @@ export default function ExplorePage() {
       title="Find your ideal winery day"
       intro="Answer a few quick preferences and we will build an efficient schedule with minimal travel between matching wineries."
       showWorkflowStatus={false}
+      showPageHeader={false}
       navMode="public"
     >
       <div className="exploreLayout">
         <div className="exploreUnifiedPanel" style={{ width: "100%" }}>
+        <section className="exploreSectionBlock exploreUnifiedHero">
+          <p className="eyebrow">Explore</p>
+          <h1>Find your ideal winery day</h1>
+          <p className="heroCopy">Answer a few quick preferences and we will build an efficient schedule with minimal travel between matching wineries.</p>
+        </section>
         <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`} style={{ width: "100%", maxWidth: "100%", margin: 0 }}>
           <section className="exploreSectionBlock">
             <div className="sectionHeader">
