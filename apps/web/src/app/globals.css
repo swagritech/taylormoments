@@ -2,6 +2,9 @@
   --sage: #4f6359;
   --teal: #2f7a74;
   --gold: #b89457;
+  --gold-deep: #86601f;
+  --gold-soft: #d4b67a;
+  --gold-bright: #f3e2ad;
   --aqua: #d9e7e2;
   --sand: #f7f3ea;
   --paper: #fcfbf8;
@@ -566,19 +569,28 @@ button {
 }
 
 .bespokeKicker {
-  color: #8b6b31;
+  color: var(--gold-deep);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.72rem;
+  text-shadow: 0 1px 0 rgba(255, 250, 235, 0.72);
 }
 
 .bespokeItineraryHeader h3 {
   font-family: var(--font-display), serif;
-  color: #9b7231;
+  color: var(--gold);
   font-size: clamp(2rem, 4.3vw, 3.3rem);
   line-height: 0.95;
   font-weight: 500;
   font-style: italic;
+  background:
+    linear-gradient(180deg, var(--gold-bright) 0%, var(--gold-soft) 22%, var(--gold) 48%, var(--gold-deep) 76%, var(--gold-soft) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow:
+    0 1px 0 rgba(255, 249, 231, 0.85),
+    0 2px 10px rgba(134, 96, 31, 0.18);
 }
 
 .bespokeDateLine {
@@ -637,10 +649,18 @@ button {
 
 .bespokeChapterHeading h4 {
   font-family: var(--font-display), serif;
-  color: #a17936;
+  color: var(--gold);
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   font-style: italic;
   font-weight: 500;
+  background:
+    linear-gradient(180deg, var(--gold-bright) 0%, var(--gold-soft) 24%, var(--gold) 54%, var(--gold-deep) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow:
+    0 1px 0 rgba(255, 249, 231, 0.8),
+    0 1px 8px rgba(134, 96, 31, 0.14);
 }
 
 .bespokeStopStack {
@@ -690,7 +710,7 @@ button {
 }
 
 .bespokeTravelNote {
-  color: #8b6b31;
+  color: var(--gold-deep);
   font-size: 0.92rem;
   letter-spacing: 0.02em;
 }
