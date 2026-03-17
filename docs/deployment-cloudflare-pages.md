@@ -15,6 +15,25 @@ This project is deployed to Cloudflare Pages as a static Next.js export.
 - Build command: `npm run build`
 - Build output directory: `out`
 
+## CLI deployment (one-command)
+
+From `apps/web`, you can now deploy directly with Wrangler:
+
+```bash
+npm run deploy:pages
+```
+
+This command:
+- builds the static export
+- deploys `out` to the Cloudflare Pages project `tailormoments`
+- targets the production branch (`main`)
+
+For a preview deployment instead of production:
+
+```bash
+npm run deploy:pages:preview
+```
+
 ## Environment variables
 
 Use these in the Cloudflare Pages production environment:

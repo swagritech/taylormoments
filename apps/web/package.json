@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy:pages": "npm run build && npx wrangler pages deploy out --project-name tailormoments --branch main",
+    "deploy:pages:preview": "npm run build && npx wrangler pages deploy out --project-name tailormoments"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.21",

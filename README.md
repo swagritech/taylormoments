@@ -32,6 +32,12 @@ npm install
 npm run dev
 ```
 
+Cloudflare Pages deploy from `apps/web`:
+
+```bash
+npm run deploy:pages
+```
+
 ## Running the backend workspace
 
 ```bash
