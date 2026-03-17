@@ -107,7 +107,7 @@ function AnimatedWords({
   text,
   animationKey,
   delayMs = 0,
-  intervalMs = 58,
+  intervalMs = 36,
   className,
 }: AnimatedWordsProps) {
   const words = text.trim().split(/\s+/).filter(Boolean);
@@ -149,13 +149,17 @@ function AnimatedWords({
     return null;
   }
 
-  const visibleText = words.slice(0, visibleCount).join(" ");
-  const showCaret = visibleCount < words.length;
-
   return (
     <span className={className}>
-      {visibleText}
-      {showCaret ? <span className="wordRevealCaret" aria-hidden="true" /> : null}
+      {words.map((word, index) => (
+        <span
+          key={`${animationKey}-${index}-${word}`}
+          className={`wordRevealToken ${index < visibleCount ? "visible" : ""}`}
+        >
+          {word}
+          {index < words.length - 1 ? " " : ""}
+        </span>
+      ))}
     </span>
   );
 }
