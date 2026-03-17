@@ -302,6 +302,14 @@ export default function ExplorePage() {
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
   const itineraryChapters = recommendation ? buildItineraryChapters(recommendation.stops) : [];
   const itineraryAnimationKey = recommendation ? `${recommendation.itinerary_id}-${itineraryReplaySeed}` : "idle";
+  let itineraryAnimationCursor = 120;
+
+  function reserveItineraryDelay(text: string, intervalMs = 58, pauseMs = 260) {
+    const delay = itineraryAnimationCursor;
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    itineraryAnimationCursor += wordCount * intervalMs + pauseMs;
+    return delay;
+  }
 
   useEffect(() => {
     const payload: ExplorePreferences = {
@@ -713,6 +721,10 @@ export default function ExplorePage() {
                 )
               ) : (
                 <div className="recommendationStack">
+                  {(() => {
+                    itineraryAnimationCursor = 120;
+                    return null;
+                  })()}
                   <div className="bespokeItineraryCard">
                     <div className="bespokeItineraryBorder" />
                     <div className="bespokeItineraryHeader">
@@ -724,20 +736,30 @@ export default function ExplorePage() {
                       </p>
                     </div>
                     <div className="bespokeIntro">
+                      {(() => {
+                        const greetingText = `Dear ${name || "guest"},`;
+                        const introText = "We have prepared a polished winery journey shaped around your preferences, pace, and the smoothest travel flow available for the day.";
+                        const greetingDelay = reserveItineraryDelay(greetingText, 58, 320);
+                        const introDelay = reserveItineraryDelay(introText, 58, 380);
+                        return (
+                          <>
                       <p>
                         <AnimatedWords
-                          text={`Dear ${name || "guest"},`}
+                          text={greetingText}
                           animationKey={`${itineraryAnimationKey}-greeting`}
-                          delayMs={80}
+                          delayMs={greetingDelay}
                         />
                       </p>
                       <p>
                         <AnimatedWords
-                          text="We have prepared a polished winery journey shaped around your preferences, pace, and the smoothest travel flow available for the day."
+                          text={introText}
                           animationKey={`${itineraryAnimationKey}-intro`}
-                          delayMs={220}
+                          delayMs={introDelay}
                         />
                       </p>
+                          </>
+                        );
+                      })()}
                     </div>
                     <div className="bespokeMetaRow">
                       <span>{groupSize} guests</span>
@@ -773,31 +795,50 @@ export default function ExplorePage() {
                               const travelNote = nextStop
                                 ? `${nextStop.drive_minutes} min ${travelModeLabel} to your next stop.`
                                 : "A graceful finish to the day.";
-                              const narrativeDelay = 360 + stopIndex * 220;
+                              const stopTimeText = formatDisplayTime(stop.arrival_time);
+                              const stopTitleText = stop.winery_name;
+                              const stopBodyText = `Arrive for a curated cellar-door experience and depart at ${formatDisplayTime(stop.departure_time)}. ${tastingNote} ${cheeseBoardNote}`.trim();
+                              const stopTimeDelay = reserveItineraryDelay(stopTimeText, 82, 140);
+                              const stopTitleDelay = reserveItineraryDelay(stopTitleText, 72, 180);
+                              const stopBodyDelay = reserveItineraryDelay(stopBodyText, 58, 240);
+                              const travelDelay = reserveItineraryDelay(travelNote, 52, 280);
                               return (
                                 <article key={`${stop.winery_id}-${chapterIndex}`} className="bespokeStop">
-                                  <p className="bespokeStopTime">{formatDisplayTime(stop.arrival_time)}</p>
+                                  <p className="bespokeStopTime">
+                                    <AnimatedWords
+                                      text={stopTimeText}
+                                      animationKey={`${itineraryAnimationKey}-${stop.winery_id}-time`}
+                                      delayMs={stopTimeDelay}
+                                      intervalMs={82}
+                                    />
+                                  </p>
                                   <h5>
                                     <button
                                       type="button"
                                       className="timelineWineryLink bespokeWineryLink"
                                       onClick={() => setSelectedPreviewWinery(resolveWineryById(stop.winery_id) ?? resolveWinery(stop.winery_name))}
                                     >
-                                      {stop.winery_name}
+                                      <AnimatedWords
+                                        text={stopTitleText}
+                                        animationKey={`${itineraryAnimationKey}-${stop.winery_id}-title`}
+                                        delayMs={stopTitleDelay}
+                                        intervalMs={72}
+                                        className="bespokeAnimatedTitle"
+                                      />
                                     </button>
                                   </h5>
                                   <p className="bespokeStopBody">
                                     <AnimatedWords
-                                      text={`Arrive for a curated cellar-door experience and depart at ${formatDisplayTime(stop.departure_time)}. ${tastingNote} ${cheeseBoardNote}`.trim()}
+                                      text={stopBodyText}
                                       animationKey={`${itineraryAnimationKey}-${stop.winery_id}-body`}
-                                      delayMs={narrativeDelay}
+                                      delayMs={stopBodyDelay}
                                     />
                                   </p>
                                   <p className="bespokeTravelNote">
                                     <AnimatedWords
                                       text={travelNote}
                                       animationKey={`${itineraryAnimationKey}-${stop.winery_id}-travel`}
-                                      delayMs={narrativeDelay + 180}
+                                      delayMs={travelDelay}
                                       intervalMs={52}
                                     />
                                   </p>

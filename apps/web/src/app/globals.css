@@ -679,6 +679,10 @@ button {
   color: inherit;
 }
 
+.bespokeAnimatedTitle {
+  display: inline;
+}
+
 .bespokeStopBody {
   max-width: 64ch;
   color: #4f4a40;
