@@ -179,6 +179,25 @@ button {
   gap: 16px;
   max-width: 1120px;
   margin: 0 auto;
+  padding: 0 18px;
+}
+
+.exploreUnifiedPanel {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  display: grid;
+  gap: 18px;
+}
+
+.exploreUnifiedPanel .sectionCard {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
 }
 
 .explorePreferencesWrap {
@@ -198,6 +217,22 @@ button {
   margin: 0 auto;
   scroll-margin-top: 18px;
   animation: previewFadeIn 720ms ease both;
+}
+
+.exploreUnifiedPanel .explorePreferencesWrap,
+.exploreUnifiedPanel .explorePreferencesWrap.compact,
+.exploreUnifiedPanel .explorePreviewWrap {
+  max-width: none;
+  margin: 0;
+}
+
+.exploreUnifiedPanel .explorePreferencesWrap {
+  transition: none;
+}
+
+.exploreUnifiedPanel .explorePreviewWrap {
+  border-top: 1px solid rgba(185, 205, 197, 0.65);
+  padding-top: 18px;
 }
 
 .explorePreferenceActions {

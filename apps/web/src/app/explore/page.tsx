@@ -448,6 +448,7 @@ export default function ExplorePage() {
       navMode="public"
     >
       <div className="exploreLayout">
+        <div className="exploreUnifiedPanel">
         <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`}>
           <SectionCard
             title="Trip preferences"
@@ -635,6 +636,7 @@ export default function ExplorePage() {
             </SectionCard>
           </div>
         ) : null}
+        </div>
       </div>
 
       {selectedPreviewWinery ? (
