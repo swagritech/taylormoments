@@ -65,6 +65,12 @@ const LUNCH_WINDOW_START = 11 * 60 + 30;
 const LUNCH_WINDOW_END = 14 * 60;
 const LUNCH_BREAK_MINUTES = 45;
 const DEFAULT_TASTING_DURATION_MINUTES = 45;
+const CANDIDATE_BUILD_TIME_BUDGET_MS = 1200;
+const MAX_GROUP_SUBSETS_TO_EVALUATE = 10;
+const MAX_SLOT_COMBINATIONS_PER_SUBSET = 24;
+const MAX_TOTAL_COMBINATIONS = 240;
+const MAX_PERMUTATIONS_PER_SELECTION = 18;
+const MAX_FEASIBLE_ROUTES_TO_SCORE = 60;
 
 const pickupPoints: Array<{ key: string; point: Point }> = [
   { key: "margaret river visitor centre", point: { lat: -33.952, lon: 115.075 } },
@@ -76,6 +82,10 @@ const pickupPoints: Array<{ key: string; point: Point }> = [
 function roundTo(value: number, digits = 2) {
   const scale = 10 ** digits;
   return Math.round(value * scale) / scale;
+}
+
+function isPastDeadline(deadlineMs?: number) {
+  return typeof deadlineMs === "number" && Date.now() > deadlineMs;
 }
 
 function scoreCandidate(winery: Winery, availability: WineryAvailability, partySize: number) {
@@ -360,14 +370,23 @@ function findBestPermutationForSelection(params: {
   request: RecommendItineraryRequest;
   selection: Array<{ winery: Winery; slot: WineryAvailability }>;
   travelTimes: TravelTimeMatrix;
+  deadlineMs?: number;
+  maxPermutations?: number;
 }): { bestRoute: EvaluatedRoute | null; permutationsTested: number } {
-  const { request, selection, travelTimes } = params;
+  const { request, selection, travelTimes, deadlineMs, maxPermutations } = params;
   const remaining = [...selection];
   const current: Array<{ winery: Winery; slot: WineryAvailability }> = [];
   let permutationsTested = 0;
   let bestRoute: EvaluatedRoute | null = null;
 
   function walk() {
+    if (isPastDeadline(deadlineMs)) {
+      return;
+    }
+    if (typeof maxPermutations === "number" && permutationsTested >= maxPermutations) {
+      return;
+    }
+
     if (current.length === selection.length) {
       permutationsTested += 1;
       const route = buildFeasibleRoute({
@@ -397,6 +416,13 @@ function findBestPermutationForSelection(params: {
     }
 
     for (let index = 0; index < remaining.length; index += 1) {
+      if (isPastDeadline(deadlineMs)) {
+        return;
+      }
+      if (typeof maxPermutations === "number" && permutationsTested >= maxPermutations) {
+        return;
+      }
+
       const item = remaining.splice(index, 1)[0];
       if (!item) {
         continue;
@@ -577,20 +603,33 @@ export function buildCandidateItineraries(params: {
       slot.remainingCapacity >= request.party_size &&
       slot.status === "open",
   );
+  const startBound = toTimeValue(request.preferred_start_time ?? DEFAULT_DAY_START);
+  const endBound = toTimeValue(request.preferred_end_time ?? DEFAULT_DAY_END);
+  const slotsByWineryId = new Map<string, WineryAvailability[]>();
+
+  for (const slot of openAvailability) {
+    const slotStart = toTimeValue(slot.startTime);
+    const slotEnd = toTimeValue(slot.endTime);
+    if (slotStart < startBound || slotEnd > endBound) {
+      continue;
+    }
+
+    const existing = slotsByWineryId.get(slot.wineryId);
+    if (existing) {
+      existing.push(slot);
+    } else {
+      slotsByWineryId.set(slot.wineryId, [slot]);
+    }
+  }
+
+  for (const entries of slotsByWineryId.values()) {
+    entries.sort((a, b) => toTimeValue(a.startTime) - toTimeValue(b.startTime));
+  }
 
   const slotGroups = filteredWineries
     .map((winery) => ({
       winery,
-      slots: openAvailability
-        .filter((slot) => slot.wineryId === winery.wineryId)
-        .filter((slot) => {
-          const slotStart = toTimeValue(slot.startTime);
-          const slotEnd = toTimeValue(slot.endTime);
-          const startBound = toTimeValue(request.preferred_start_time ?? DEFAULT_DAY_START);
-          const endBound = toTimeValue(request.preferred_end_time ?? DEFAULT_DAY_END);
-          return slotStart >= startBound && slotEnd <= endBound;
-        })
-        .sort((a, b) => toTimeValue(a.startTime) - toTimeValue(b.startTime)),
+      slots: slotsByWineryId.get(winery.wineryId) ?? [],
     }))
     .filter((entry) => entry.slots.length > 0);
 
@@ -603,20 +642,42 @@ export function buildCandidateItineraries(params: {
   }
 
   const groupSubsets = buildGroupSubsets(slotGroups);
-  const combinations = groupSubsets.flatMap((subset) => buildSlotCombinations(subset, 120));
-  diagnostics.combinationsTested = combinations.length;
+  const limitedSubsets = groupSubsets.slice(0, MAX_GROUP_SUBSETS_TO_EVALUATE);
+  const searchDeadlineMs = Date.now() + CANDIDATE_BUILD_TIME_BUDGET_MS;
   const scoredRoutes: EvaluatedRoute[] = [];
 
-  for (const selection of combinations) {
-    const permutationResult = findBestPermutationForSelection({
-      request,
-      selection,
-      travelTimes,
-    });
-    diagnostics.permutationsTested += permutationResult.permutationsTested;
+  for (const subset of limitedSubsets) {
+    if (
+      isPastDeadline(searchDeadlineMs) ||
+      diagnostics.combinationsTested >= MAX_TOTAL_COMBINATIONS ||
+      scoredRoutes.length >= MAX_FEASIBLE_ROUTES_TO_SCORE
+    ) {
+      break;
+    }
 
-    if (permutationResult.bestRoute) {
-      scoredRoutes.push(permutationResult.bestRoute);
+    const combinations = buildSlotCombinations(subset, MAX_SLOT_COMBINATIONS_PER_SUBSET);
+    for (const selection of combinations) {
+      if (
+        isPastDeadline(searchDeadlineMs) ||
+        diagnostics.combinationsTested >= MAX_TOTAL_COMBINATIONS ||
+        scoredRoutes.length >= MAX_FEASIBLE_ROUTES_TO_SCORE
+      ) {
+        break;
+      }
+
+      diagnostics.combinationsTested += 1;
+      const permutationResult = findBestPermutationForSelection({
+        request,
+        selection,
+        travelTimes,
+        deadlineMs: searchDeadlineMs,
+        maxPermutations: MAX_PERMUTATIONS_PER_SELECTION,
+      });
+      diagnostics.permutationsTested += permutationResult.permutationsTested;
+
+      if (permutationResult.bestRoute) {
+        scoredRoutes.push(permutationResult.bestRoute);
+      }
     }
   }
   diagnostics.feasibleRoutesFound = scoredRoutes.length;
