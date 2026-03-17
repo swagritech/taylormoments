@@ -1099,3 +1099,12 @@ button {
     justify-content: space-between;
   }
 }
+
+/* Explore page: render preferences + schedule as one continuous panel. */
+.exploreUnifiedPanel .sectionCard {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
