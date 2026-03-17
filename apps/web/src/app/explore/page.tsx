@@ -107,7 +107,7 @@ function AnimatedWords({
   text,
   animationKey,
   delayMs = 0,
-  intervalMs = 36,
+  intervalMs = 28,
   className,
 }: AnimatedWordsProps) {
   const words = text.trim().split(/\s+/).filter(Boolean);
@@ -307,9 +307,9 @@ export default function ExplorePage() {
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
   const itineraryChapters = recommendation ? buildItineraryChapters(recommendation.stops) : [];
   const itineraryAnimationKey = recommendation ? `${recommendation.itinerary_id}-${itineraryReplaySeed}` : "idle";
-  let itineraryAnimationCursor = 120;
+  let itineraryAnimationCursor = 90;
 
-  function reserveItineraryDelay(text: string, intervalMs = 58, pauseMs = 260) {
+  function reserveItineraryDelay(text: string, intervalMs = 32, pauseMs = 180) {
     const delay = itineraryAnimationCursor;
     const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
     itineraryAnimationCursor += wordCount * intervalMs + pauseMs;
@@ -379,11 +379,24 @@ export default function ExplorePage() {
       return;
     }
 
-    const timer = setTimeout(() => {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 380);
+    const timer = window.setTimeout(() => {
+      const scrollTargetToCenter = () => {
+        const rect = target.getBoundingClientRect();
+        const absoluteTop = window.scrollY + rect.top;
+        const centeredTop = Math.max(0, absoluteTop - (window.innerHeight - rect.height) / 2 - 18);
+        window.scrollTo({ top: centeredTop, behavior: "smooth" });
+      };
 
-    return () => clearTimeout(timer);
+      const rafOne = window.requestAnimationFrame(() => {
+        const rafTwo = window.requestAnimationFrame(() => {
+          scrollTargetToCenter();
+        });
+        window.setTimeout(() => window.cancelAnimationFrame(rafTwo), 250);
+      });
+      window.setTimeout(() => window.cancelAnimationFrame(rafOne), 250);
+    }, 220);
+
+    return () => window.clearTimeout(timer);
   }, [hasPlanned, recommendation, itineraryReplaySeed]);
 
   async function handlePlanTrip() {
