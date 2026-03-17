@@ -36,6 +36,11 @@ type SearchProfile = {
   supportsMultiDay: boolean;
 };
 
+type ItineraryChapter = {
+  label: "Morning" | "Afternoon" | "Evening";
+  stops: Recommendation["stops"];
+};
+
 function toTimeWindow(length: TripLength) {
   if (length === "half-day") {
     return { start: "09:00", end: "13:30", stops: 2 };
@@ -48,6 +53,46 @@ function toIsoDate(dayOffset = 7) {
   date.setHours(0, 0, 0, 0);
   date.setDate(date.getDate() + dayOffset);
   return date.toISOString().slice(0, 10);
+}
+
+function chapterLabelForStop(timeValue: string): ItineraryChapter["label"] {
+  const hour = new Date(timeValue).getHours();
+  if (hour < 12) {
+    return "Morning";
+  }
+  if (hour < 17) {
+    return "Afternoon";
+  }
+  return "Evening";
+}
+
+function buildItineraryChapters(stops: Recommendation["stops"]): ItineraryChapter[] {
+  const chapterOrder: ItineraryChapter["label"][] = ["Morning", "Afternoon", "Evening"];
+  const grouped = new Map<ItineraryChapter["label"], Recommendation["stops"]>();
+
+  for (const stop of stops) {
+    const label = chapterLabelForStop(stop.arrival_time);
+    const existing = grouped.get(label) ?? [];
+    existing.push(stop);
+    grouped.set(label, existing);
+  }
+
+  return chapterOrder
+    .map((label) => ({ label, stops: grouped.get(label) ?? [] }))
+    .filter((chapter) => chapter.stops.length > 0);
+}
+
+function formatPreviewDate(value: string) {
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return parsed.toLocaleDateString("en-AU", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function toSearchProfile(
@@ -189,6 +234,7 @@ export default function ExplorePage() {
   const [profilesById, setProfilesById] = useState<Record<string, WineryListResponse["wineries"][number]>>({});
 
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
+  const itineraryChapters = recommendation ? buildItineraryChapters(recommendation.stops) : [];
 
   useEffect(() => {
     const payload: ExplorePreferences = {
@@ -579,50 +625,93 @@ export default function ExplorePage() {
                 </div>
               </div>
               {!recommendation ? (
-                <div className="emptyStateCard">
-                  <h3>Preview appears here</h3>
-                  <p className="subtle">We are checking matches and travel-efficient routing for your preferences.</p>
-                </div>
+                requesting ? (
+                  <div className="itineraryLoadingCard" aria-live="polite">
+                    <div className="itineraryLoadingGlow" />
+                    <p className="itineraryLoadingEyebrow">Tailor Moments Concierge Desk</p>
+                    <h3>Preparing your bespoke itinerary</h3>
+                    <p className="subtle">Reviewing partner availability, shaping the travel flow, and arranging a polished recommendation for {name || "you"}.</p>
+                    <div className="itineraryLoadingLines">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="emptyStateCard">
+                    <h3>Preview appears here</h3>
+                    <p className="subtle">We are checking matches and travel-efficient routing for your preferences.</p>
+                  </div>
+                )
               ) : (
                 <div className="recommendationStack">
-                  <div className="callout successCallout">
-                    Preview date: <strong>{previewDate}</strong>{tripLength === "multi-day" ? " (day 1 preview for multi-day journey)" : ""}
-                  </div>
-                  <div className="schedulePreviewCard">
-                    {recommendation.stops.map((stop, index) => {
-                      const nextStop = recommendation.stops[index + 1];
-                      const remoteProfile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
-                      return (
-                        <div key={`${stop.winery_id}-${index}`}>
-                          <div className="scheduleStopRow">
-                            <div className="scheduleStopInfo">
-                              <p className="timelineTime">{formatDisplayTime(stop.arrival_time)}</p>
-                              <h3 className="scheduleStopTitle">
-                                <button
-                                  type="button"
-                                  className="timelineWineryLink"
-                                  onClick={() => setSelectedPreviewWinery(resolveWineryById(stop.winery_id) ?? resolveWinery(stop.winery_name))}
-                                >
-                                  {stop.winery_name}
-                                </button>
-                              </h3>
-                              <p className="subtle">Depart {formatDisplayTime(stop.departure_time)}.</p>
-                              {remoteProfile?.tasting_price !== undefined ? (
-                                <p className="subtle">Tasting from ${remoteProfile.tasting_price}</p>
-                              ) : null}
-                              {remoteProfile?.offers_cheese_board ? (
-                                <p className="subtle">Cheese board available</p>
-                              ) : null}
-                            </div>
+                  <div className="bespokeItineraryCard">
+                    <div className="bespokeItineraryBorder" />
+                    <div className="bespokeItineraryHeader">
+                      <p className="bespokeKicker">Bespoke day arranged for</p>
+                      <h3>{name || "Your Group"}</h3>
+                      <p className="bespokeDateLine">
+                        {formatPreviewDate(previewDate)}
+                        {tripLength === "multi-day" ? " · day one preview" : ""}
+                      </p>
+                    </div>
+                    <div className="bespokeIntro">
+                      <p>Dear {name || "guest"},</p>
+                      <p>We have prepared a polished winery journey shaped around your preferences, pace, and the smoothest travel flow available for the day.</p>
+                    </div>
+                    <div className="bespokeMetaRow">
+                      <span>{groupSize} guests</span>
+                      <span>{tripLength.replace("-", " ")}</span>
+                      <span>transport {needTransport}</span>
+                    </div>
+                    <div className="bespokeChapterStack">
+                      {itineraryChapters.map((chapter) => (
+                        <section key={chapter.label} className="bespokeChapter">
+                          <div className="bespokeChapterHeading">
+                            <span />
+                            <h4>{chapter.label}</h4>
+                            <span />
                           </div>
-                          {nextStop ? (
-                            <div className="itineraryConnector">
-                              <span>{nextStop.drive_minutes} min drive to next stop</span>
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    })}
+                          <div className="bespokeStopStack">
+                            {chapter.stops.map((stop, chapterIndex) => {
+                              const stopIndex = recommendation.stops.findIndex(
+                                (entry) =>
+                                  entry.winery_id === stop.winery_id &&
+                                  entry.arrival_time === stop.arrival_time,
+                              );
+                              const nextStop = stopIndex >= 0 ? recommendation.stops[stopIndex + 1] : undefined;
+                              const remoteProfile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
+                              const tastingNote = remoteProfile?.tasting_price !== undefined
+                                ? `Tasting from $${remoteProfile.tasting_price}.`
+                                : "Hosted tasting arranged for your visit.";
+                              const cheeseBoardNote = remoteProfile?.offers_cheese_board
+                                ? "A cheeseboard is available here if you would like to linger."
+                                : "";
+                              const travelNote = nextStop ? `${nextStop.drive_minutes} min chauffeured drive to your next stop.` : "A graceful finish to the day.";
+                              return (
+                                <article key={`${stop.winery_id}-${chapterIndex}`} className="bespokeStop">
+                                  <p className="bespokeStopTime">{formatDisplayTime(stop.arrival_time)}</p>
+                                  <h5>
+                                    <button
+                                      type="button"
+                                      className="timelineWineryLink bespokeWineryLink"
+                                      onClick={() => setSelectedPreviewWinery(resolveWineryById(stop.winery_id) ?? resolveWinery(stop.winery_name))}
+                                    >
+                                      {stop.winery_name}
+                                    </button>
+                                  </h5>
+                                  <p className="bespokeStopBody">
+                                    Arrive for a curated cellar-door experience and depart at {formatDisplayTime(stop.departure_time)}. {tastingNote} {cheeseBoardNote}
+                                  </p>
+                                  <p className="bespokeTravelNote">{travelNote}</p>
+                                </article>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      ))}
+                    </div>
+                    <p className="bespokeSignature">Prepared with care by Tailor Moments Concierge.</p>
                   </div>
                   <button type="button" className="buttonPrimary fullWidthButton" onClick={handleOpenTourSummary}>
                     Tour summary
