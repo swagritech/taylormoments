@@ -700,6 +700,19 @@ button {
   font-size: 1.05rem;
 }
 
+.bespokeActionsRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bespokeReplayButton {
+  position: relative;
+  z-index: 1;
+  border-color: rgba(184, 148, 87, 0.42);
+  background: rgba(255, 251, 242, 0.72);
+  color: #7d6536;
+}
+
 .wordRevealCaret {
   display: inline-block;
   width: 0.08em;

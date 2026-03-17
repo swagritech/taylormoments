@@ -107,7 +107,7 @@ function AnimatedWords({
   text,
   animationKey,
   delayMs = 0,
-  intervalMs = 34,
+  intervalMs = 58,
   className,
 }: AnimatedWordsProps) {
   const words = text.trim().split(/\s+/).filter(Boolean);
@@ -297,10 +297,11 @@ export default function ExplorePage() {
   const [isPreferencesCollapsed, setIsPreferencesCollapsed] = useState(false);
   const [selectedPreviewWinery, setSelectedPreviewWinery] = useState<WineryCatalogItem | null>(null);
   const [profilesById, setProfilesById] = useState<Record<string, WineryListResponse["wineries"][number]>>({});
+  const [itineraryReplaySeed, setItineraryReplaySeed] = useState(0);
 
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
   const itineraryChapters = recommendation ? buildItineraryChapters(recommendation.stops) : [];
-  const itineraryAnimationKey = recommendation?.itinerary_id ?? "idle";
+  const itineraryAnimationKey = recommendation ? `${recommendation.itinerary_id}-${itineraryReplaySeed}` : "idle";
 
   useEffect(() => {
     const payload: ExplorePreferences = {
@@ -376,6 +377,7 @@ export default function ExplorePage() {
     setError(null);
     setRequesting(true);
     setRecommendation(null);
+    setItineraryReplaySeed(0);
 
     try {
       const hasCheeseBoardMatch = (winery: WineryCatalogItem) =>
@@ -796,7 +798,7 @@ export default function ExplorePage() {
                                       text={travelNote}
                                       animationKey={`${itineraryAnimationKey}-${stop.winery_id}-travel`}
                                       delayMs={narrativeDelay + 180}
-                                      intervalMs={30}
+                                      intervalMs={52}
                                     />
                                   </p>
                                 </article>
@@ -807,6 +809,15 @@ export default function ExplorePage() {
                       ))}
                     </div>
                     <p className="bespokeSignature">Prepared with care by Tailor Moments Concierge.</p>
+                    <div className="bespokeActionsRow">
+                      <button
+                        type="button"
+                        className="buttonGhost bespokeReplayButton"
+                        onClick={() => setItineraryReplaySeed((value) => value + 1)}
+                      >
+                        Replay animation
+                      </button>
+                    </div>
                   </div>
                   <button type="button" className="buttonPrimary fullWidthButton" onClick={handleOpenTourSummary}>
                     Tour summary
