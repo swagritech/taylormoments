@@ -6,7 +6,6 @@ import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import {
   formatDisplayTime,
-  getWineryMediaPublic,
   listWineries,
   recommendItineraries,
   type Recommendation,
@@ -161,20 +160,10 @@ function pickNearestRoute(
   return selected;
 }
 
-function placeholderGalleryFrames(winery: WineryCatalogItem | null) {
-  const label = winery?.name ?? "Winery";
-  return [
-    `${label} cellar door`,
-    `${label} tasting room`,
-    `${label} estate view`,
-  ];
-}
-
 export default function ExplorePage() {
   const router = useRouter();
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
   const previewRef = useRef<HTMLDivElement | null>(null);
-  const mediaCacheRef = useRef<Record<string, string[]>>({});
   const [name, setName] = useState(initialPreferences?.name ?? "");
   const [email, setEmail] = useState(initialPreferences?.email ?? "");
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
@@ -199,7 +188,6 @@ export default function ExplorePage() {
   const [isPreferencesCollapsed, setIsPreferencesCollapsed] = useState(false);
   const [selectedPreviewWinery, setSelectedPreviewWinery] = useState<WineryCatalogItem | null>(null);
   const [profilesById, setProfilesById] = useState<Record<string, WineryListResponse["wineries"][number]>>({});
-  const [mediaUrlsByWineryId, setMediaUrlsByWineryId] = useState<Record<string, string[]>>({});
 
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
 
@@ -270,60 +258,6 @@ export default function ExplorePage() {
 
     return () => clearTimeout(timer);
   }, [hasPlanned, recommendation]);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadMedia() {
-      if (!recommendation || recommendation.stops.length === 0) {
-        if (active) {
-          setMediaUrlsByWineryId({});
-        }
-        return;
-      }
-
-      const wineryIds = Array.from(new Set(recommendation.stops.map((stop) => stop.winery_id).filter(Boolean)));
-      try {
-        const entries = await Promise.all(
-          wineryIds.map(async (wineryId) => {
-            const cached = mediaCacheRef.current[wineryId];
-            if (cached) {
-              return [wineryId, cached] as [string, string[]];
-            }
-
-            try {
-              const response = await getWineryMediaPublic(wineryId);
-              const urls = response.assets.slice(0, 3).map((asset) => asset.public_url);
-              mediaCacheRef.current[wineryId] = urls;
-              return [wineryId, urls] as [string, string[]];
-            } catch {
-              return [wineryId, []] as [string, string[]];
-            }
-          }),
-        );
-
-        if (!active) {
-          return;
-        }
-
-        const next: Record<string, string[]> = {};
-        for (const [wineryId, urls] of entries) {
-          next[wineryId] = urls;
-        }
-        setMediaUrlsByWineryId(next);
-      } catch {
-        if (active) {
-          setMediaUrlsByWineryId({});
-        }
-      }
-    }
-
-    void loadMedia();
-
-    return () => {
-      active = false;
-    };
-  }, [recommendation]);
 
   async function handlePlanTrip() {
     setHasPlanned(true);
@@ -642,13 +576,7 @@ export default function ExplorePage() {
                   <div className="schedulePreviewCard">
                     {recommendation.stops.map((stop, index) => {
                       const nextStop = recommendation.stops[index + 1];
-                      const stopWinery = resolveWineryById(stop.winery_id) ?? resolveWinery(stop.winery_name);
                       const remoteProfile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
-                      const mediaFrames = mediaUrlsByWineryId[stop.winery_id] ?? [];
-                      const placeholderFrames = placeholderGalleryFrames(stopWinery);
-                      const rollingFrames = mediaFrames.length > 0
-                        ? [...mediaFrames, ...mediaFrames]
-                        : [...placeholderFrames, ...placeholderFrames];
                       return (
                         <div key={`${stop.winery_id}-${index}`}>
                           <div className="scheduleStopRow">
@@ -670,27 +598,6 @@ export default function ExplorePage() {
                               {remoteProfile?.offers_cheese_board ? (
                                 <p className="subtle">Cheese board available</p>
                               ) : null}
-                            </div>
-                            <div className="scheduleGalleryViewport" aria-label={`${stop.winery_name} gallery preview`}>
-                              <div className="scheduleGalleryTrack">
-                                {rollingFrames.map((frame, frameIndex) => (
-                                  <div className="scheduleGalleryTile" key={`${stop.winery_id}-${frameIndex}`}>
-                                    {mediaFrames.length > 0 ? (
-                                      <img
-                                        src={frame}
-                                        alt={`${stop.winery_name} preview ${frameIndex + 1}`}
-                                        className="scheduleGalleryImage"
-                                        loading="lazy"
-                                        decoding="async"
-                                        width={150}
-                                        height={72}
-                                      />
-                                    ) : (
-                                      <p>{frame}</p>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
                             </div>
                           </div>
                           {nextStop ? (
