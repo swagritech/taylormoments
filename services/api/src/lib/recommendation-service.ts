@@ -61,6 +61,7 @@ const DEFAULT_DAY_START = "09:30";
 const DEFAULT_DAY_END = "17:30";
 const MAX_STOPS_PER_DAY = 4;
 const MIN_STOPS_PER_DAY = 2;
+const ACCEPTABLE_DRIVE_MINUTES_PER_STOP = 30;
 const LUNCH_WINDOW_START = 11 * 60 + 30;
 const LUNCH_WINDOW_END = 14 * 60;
 const LUNCH_BREAK_MINUTES = 45;
@@ -354,14 +355,16 @@ function scoreRoute(params: {
     ) / route.stops.length;
 
   const qualityBonus = Math.max(0, (candidateScore - 70) * 0.18);
-  const drivePenalty = route.totalDriveMinutes / 6;
+  const acceptableDriveMinutes = route.stops.length * ACCEPTABLE_DRIVE_MINUTES_PER_STOP;
+  const excessDriveMinutes = Math.max(0, route.totalDriveMinutes - acceptableDriveMinutes);
+  const drivePenalty = excessDriveMinutes / 6;
   const idlePenalty = route.totalIdleMinutes / 12;
   const stopBonus = route.stops.length * 4;
   const score = Math.max(
     55,
     Math.min(99, Math.round(80 + stopBonus + qualityBonus - drivePenalty - idlePenalty)),
   );
-  const objectiveCost = route.totalDriveMinutes + route.totalIdleMinutes * 1.1 - qualityBonus;
+  const objectiveCost = excessDriveMinutes + route.totalIdleMinutes * 1.1 - qualityBonus;
 
   return { score, objectiveCost };
 }

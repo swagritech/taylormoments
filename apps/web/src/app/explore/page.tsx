@@ -296,7 +296,8 @@ export default function ExplorePage() {
         .filter((entry): entry is WineryCatalogItem => Boolean(entry)),
   );
   const [previewDate, setPreviewDate] = useState<string>(initialPreferences?.previewDate ?? "");
-  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [recommendationOptions, setRecommendationOptions] = useState<Recommendation[]>([]);
+  const [selectedRecommendationIndex, setSelectedRecommendationIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [hasPlanned, setHasPlanned] = useState(false);
   const [isPreferencesCollapsed, setIsPreferencesCollapsed] = useState(false);
@@ -305,6 +306,7 @@ export default function ExplorePage() {
   const [itineraryReplaySeed, setItineraryReplaySeed] = useState(0);
 
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
+  const recommendation = recommendationOptions[selectedRecommendationIndex] ?? null;
   const itineraryChapters = recommendation ? buildItineraryChapters(recommendation.stops) : [];
   const itineraryAnimationKey = recommendation ? `${recommendation.itinerary_id}-${itineraryReplaySeed}` : "idle";
   let itineraryAnimationCursor = 90;
@@ -404,7 +406,8 @@ export default function ExplorePage() {
     setIsPreferencesCollapsed(true);
     setError(null);
     setRequesting(true);
-    setRecommendation(null);
+    setRecommendationOptions([]);
+    setSelectedRecommendationIndex(0);
     setItineraryReplaySeed(0);
 
     try {
@@ -441,17 +444,17 @@ export default function ExplorePage() {
       });
 
       let candidatePool = filterByPreferences(true);
-      const shortlist = candidatePool
+      let apiPreferredPool = candidatePool
         .sort((a, b) => b.rating - a.rating)
-        .slice(0, 14);
-      let routeOptimized = pickNearestRoute(shortlist, timeWindow.stops, profilesById);
+        .slice(0, 10);
+      let routeOptimized = pickNearestRoute(apiPreferredPool, timeWindow.stops, profilesById);
 
       if (routeOptimized.length < 2 && vibe) {
         candidatePool = filterByPreferences(false);
-        const relaxedShortlist = candidatePool
+        apiPreferredPool = candidatePool
           .sort((a, b) => b.rating - a.rating)
-          .slice(0, 14);
-        routeOptimized = pickNearestRoute(relaxedShortlist, timeWindow.stops, profilesById);
+          .slice(0, 10);
+        routeOptimized = pickNearestRoute(apiPreferredPool, timeWindow.stops, profilesById);
       }
 
       if (prefCheeseBoard) {
@@ -482,14 +485,14 @@ export default function ExplorePage() {
         }
       }
 
-      setMatchedWineries(routeOptimized);
+      setMatchedWineries(apiPreferredPool);
 
       if (routeOptimized.length < 2) {
         setError("Not enough winery matches for this preference set yet. Try relaxing one filter.");
         return;
       }
 
-      let found: Recommendation | null = null;
+      let foundOptions: Recommendation[] = [];
       let usedDate = toIsoDate(7);
 
       for (let offset = 1; offset <= 14; offset += 1) {
@@ -503,23 +506,26 @@ export default function ExplorePage() {
           party_size: groupSize,
           preferred_start_time: timeWindow.start,
           preferred_end_time: timeWindow.end,
-          preferred_wineries: routeOptimized.map((winery) => slugToWineryUuid(winery.id)),
+          preferred_wineries: apiPreferredPool.map((winery) => slugToWineryUuid(winery.id)),
         });
 
         if (response.itineraries.length > 0) {
-          found = response.itineraries.find((entry) => entry.expert_pick) ?? response.itineraries[0] ?? null;
+          foundOptions = [...response.itineraries].sort(
+            (a, b) => Number(b.expert_pick) - Number(a.expert_pick) || b.score - a.score,
+          );
           usedDate = candidateDate;
           break;
         }
       }
 
-      if (!found) {
+      if (foundOptions.length === 0) {
         setError("No preview schedule found in the next 14 days for this preference set.");
         return;
       }
 
       setPreviewDate(usedDate);
-      setRecommendation(found);
+      setRecommendationOptions(foundOptions);
+      setSelectedRecommendationIndex(0);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to plan trip right now.");
     } finally {
@@ -880,6 +886,20 @@ export default function ExplorePage() {
                       </button>
                     </div>
                   </div>
+                  {recommendationOptions.length > 1 ? (
+                    <div className="itineraryOptionToggle">
+                      <button
+                        type="button"
+                        className="buttonGhost"
+                        onClick={() => {
+                          setSelectedRecommendationIndex((value) => (value === 0 ? 1 : 0));
+                          setItineraryReplaySeed((value) => value + 1);
+                        }}
+                      >
+                        {selectedRecommendationIndex === 0 ? "Show Option B" : "Return to Option A"}
+                      </button>
+                    </div>
+                  ) : null}
                   <button type="button" className="buttonPrimary fullWidthButton" onClick={handleOpenTourSummary}>
                     Tour summary
                   </button>

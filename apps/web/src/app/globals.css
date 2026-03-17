@@ -737,6 +737,11 @@ button {
   color: #7d6536;
 }
 
+.itineraryOptionToggle {
+  display: flex;
+  justify-content: center;
+}
+
 .wordRevealToken {
   display: inline;
   opacity: 0;
