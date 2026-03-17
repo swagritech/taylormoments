@@ -202,19 +202,19 @@ button {
 
 .explorePreferencesWrap {
   width: 100%;
-  max-width: 920px;
-  margin: 0 auto;
-  transition: max-width 220ms ease;
+  max-width: none;
+  margin: 0;
+  transition: none;
 }
 
 .explorePreferencesWrap.compact {
-  max-width: 760px;
+  max-width: none;
 }
 
 .explorePreviewWrap {
   width: 100%;
-  max-width: 920px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   scroll-margin-top: 18px;
   animation: previewFadeIn 720ms ease both;
 }
@@ -233,6 +233,11 @@ button {
 .exploreUnifiedPanel .explorePreviewWrap {
   border-top: 1px solid rgba(185, 205, 197, 0.65);
   padding-top: 18px;
+}
+
+.exploreSectionBlock {
+  display: grid;
+  gap: 10px;
 }
 
 .explorePreferenceActions {

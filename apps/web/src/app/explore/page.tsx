@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { SectionCard } from "@/components/section-card";
 import {
   formatDisplayTime,
   listWineries,
@@ -450,14 +449,17 @@ export default function ExplorePage() {
       <div className="exploreLayout">
         <div className="exploreUnifiedPanel">
         <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`}>
-          <SectionCard
-            title="Trip preferences"
-            description={
-              isPreferencesCollapsed
-                ? "Preferences minimized. Expand to edit and run a new plan."
-                : "Public explore form for guests before account creation/login."
-            }
-          >
+          <section className="exploreSectionBlock">
+            <div className="sectionHeader">
+              <div>
+                <h2>Trip preferences</h2>
+                <p>
+                  {isPreferencesCollapsed
+                    ? "Preferences minimized. Expand to edit and run a new plan."
+                    : "Public explore form for guests before account creation/login."}
+                </p>
+              </div>
+            </div>
             <div className="explorePreferenceActions">
               {isPreferencesCollapsed ? (
                 <button type="button" className="buttonGhost" onClick={() => setIsPreferencesCollapsed(false)}>
@@ -558,12 +560,18 @@ export default function ExplorePage() {
               </button>
             </div>
             )}
-          </SectionCard>
+          </section>
         </div>
 
         {hasPlanned ? (
           <div ref={previewRef} className="explorePreviewWrap">
-            <SectionCard title="Schedule preview" description="Closest matching wineries with efficient travel flow.">
+            <section className="exploreSectionBlock">
+              <div className="sectionHeader">
+                <div>
+                  <h2>Schedule preview</h2>
+                  <p>Closest matching wineries with efficient travel flow.</p>
+                </div>
+              </div>
               {!recommendation ? (
                 <div className="emptyStateCard">
                   <h3>Preview appears here</h3>
@@ -633,7 +641,7 @@ export default function ExplorePage() {
               </div>
 
               {error ? <div className="callout errorCallout">{error}</div> : null}
-            </SectionCard>
+            </section>
           </div>
         ) : null}
         </div>
