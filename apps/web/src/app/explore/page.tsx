@@ -687,7 +687,12 @@ export default function ExplorePage() {
                               const cheeseBoardNote = remoteProfile?.offers_cheese_board
                                 ? "A cheeseboard is available here if you would like to linger."
                                 : "";
-                              const travelNote = nextStop ? `${nextStop.drive_minutes} min chauffeured drive to your next stop.` : "A graceful finish to the day.";
+                              const travelModeLabel = needTransport === "yes"
+                                ? "chauffeured drive"
+                                : "leisurely drive";
+                              const travelNote = nextStop
+                                ? `${nextStop.drive_minutes} min ${travelModeLabel} to your next stop.`
+                                : "A graceful finish to the day.";
                               return (
                                 <article key={`${stop.winery_id}-${chapterIndex}`} className="bespokeStop">
                                   <p className="bespokeStopTime">{formatDisplayTime(stop.arrival_time)}</p>
