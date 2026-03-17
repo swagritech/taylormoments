@@ -447,7 +447,7 @@ export default function ExplorePage() {
       navMode="public"
     >
       <div className="exploreLayout">
-        <div className="exploreUnifiedPanel">
+        <div className="exploreUnifiedPanel" style={{ width: "100%" }}>
         <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`} style={{ width: "100%", maxWidth: "100%", margin: 0 }}>
           <section className="exploreSectionBlock">
             <div className="sectionHeader">
