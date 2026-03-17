@@ -41,6 +41,14 @@ type ItineraryChapter = {
   stops: Recommendation["stops"];
 };
 
+type AnimatedWordsProps = {
+  text: string;
+  animationKey: string;
+  delayMs?: number;
+  intervalMs?: number;
+  className?: string;
+};
+
 function toTimeWindow(length: TripLength) {
   if (length === "half-day") {
     return { start: "09:00", end: "13:30", stops: 2 };
@@ -93,6 +101,63 @@ function formatPreviewDate(value: string) {
     month: "long",
     year: "numeric",
   });
+}
+
+function AnimatedWords({
+  text,
+  animationKey,
+  delayMs = 0,
+  intervalMs = 34,
+  className,
+}: AnimatedWordsProps) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  const [visibleCount, setVisibleCount] = useState(words.length);
+
+  useEffect(() => {
+    if (words.length === 0) {
+      setVisibleCount(0);
+      return;
+    }
+
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setVisibleCount(words.length);
+      return;
+    }
+
+    setVisibleCount(0);
+    let count = 0;
+    let intervalId: number | undefined;
+    const timeoutId = window.setTimeout(() => {
+      intervalId = window.setInterval(() => {
+        count += 1;
+        setVisibleCount(count);
+        if (count >= words.length && intervalId !== undefined) {
+          window.clearInterval(intervalId);
+        }
+      }, intervalMs);
+    }, delayMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (intervalId !== undefined) {
+        window.clearInterval(intervalId);
+      }
+    };
+  }, [animationKey, delayMs, intervalMs, text, words.length]);
+
+  if (words.length === 0) {
+    return null;
+  }
+
+  const visibleText = words.slice(0, visibleCount).join(" ");
+  const showCaret = visibleCount < words.length;
+
+  return (
+    <span className={className}>
+      {visibleText}
+      {showCaret ? <span className="wordRevealCaret" aria-hidden="true" /> : null}
+    </span>
+  );
 }
 
 function toSearchProfile(
@@ -235,6 +300,7 @@ export default function ExplorePage() {
 
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
   const itineraryChapters = recommendation ? buildItineraryChapters(recommendation.stops) : [];
+  const itineraryAnimationKey = recommendation?.itinerary_id ?? "idle";
 
   useEffect(() => {
     const payload: ExplorePreferences = {
@@ -656,8 +722,20 @@ export default function ExplorePage() {
                       </p>
                     </div>
                     <div className="bespokeIntro">
-                      <p>Dear {name || "guest"},</p>
-                      <p>We have prepared a polished winery journey shaped around your preferences, pace, and the smoothest travel flow available for the day.</p>
+                      <p>
+                        <AnimatedWords
+                          text={`Dear ${name || "guest"},`}
+                          animationKey={`${itineraryAnimationKey}-greeting`}
+                          delayMs={80}
+                        />
+                      </p>
+                      <p>
+                        <AnimatedWords
+                          text="We have prepared a polished winery journey shaped around your preferences, pace, and the smoothest travel flow available for the day."
+                          animationKey={`${itineraryAnimationKey}-intro`}
+                          delayMs={220}
+                        />
+                      </p>
                     </div>
                     <div className="bespokeMetaRow">
                       <span>{groupSize} guests</span>
@@ -693,6 +771,7 @@ export default function ExplorePage() {
                               const travelNote = nextStop
                                 ? `${nextStop.drive_minutes} min ${travelModeLabel} to your next stop.`
                                 : "A graceful finish to the day.";
+                              const narrativeDelay = 360 + stopIndex * 220;
                               return (
                                 <article key={`${stop.winery_id}-${chapterIndex}`} className="bespokeStop">
                                   <p className="bespokeStopTime">{formatDisplayTime(stop.arrival_time)}</p>
@@ -706,9 +785,20 @@ export default function ExplorePage() {
                                     </button>
                                   </h5>
                                   <p className="bespokeStopBody">
-                                    Arrive for a curated cellar-door experience and depart at {formatDisplayTime(stop.departure_time)}. {tastingNote} {cheeseBoardNote}
+                                    <AnimatedWords
+                                      text={`Arrive for a curated cellar-door experience and depart at ${formatDisplayTime(stop.departure_time)}. ${tastingNote} ${cheeseBoardNote}`.trim()}
+                                      animationKey={`${itineraryAnimationKey}-${stop.winery_id}-body`}
+                                      delayMs={narrativeDelay}
+                                    />
                                   </p>
-                                  <p className="bespokeTravelNote">{travelNote}</p>
+                                  <p className="bespokeTravelNote">
+                                    <AnimatedWords
+                                      text={travelNote}
+                                      animationKey={`${itineraryAnimationKey}-${stop.winery_id}-travel`}
+                                      delayMs={narrativeDelay + 180}
+                                      intervalMs={30}
+                                    />
+                                  </p>
                                 </article>
                               );
                             })}

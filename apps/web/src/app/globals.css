@@ -700,6 +700,16 @@ button {
   font-size: 1.05rem;
 }
 
+.wordRevealCaret {
+  display: inline-block;
+  width: 0.08em;
+  height: 0.95em;
+  margin-left: 0.12em;
+  vertical-align: -0.08em;
+  background: rgba(155, 114, 49, 0.75);
+  animation: conciergeCaret 0.9s steps(1, end) infinite;
+}
+
 .itineraryLoadingCard {
   position: relative;
   overflow: hidden;
@@ -797,6 +807,17 @@ button {
   100% {
     background-position: 0% 50%;
     opacity: 0.75;
+  }
+}
+
+@keyframes conciergeCaret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
   }
 }
 
