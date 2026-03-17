@@ -174,6 +174,7 @@ export default function ExplorePage() {
   const router = useRouter();
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
   const previewRef = useRef<HTMLDivElement | null>(null);
+  const mediaCacheRef = useRef<Record<string, string[]>>({});
   const [name, setName] = useState(initialPreferences?.name ?? "");
   const [email, setEmail] = useState(initialPreferences?.email ?? "");
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
@@ -285,9 +286,16 @@ export default function ExplorePage() {
       try {
         const entries = await Promise.all(
           wineryIds.map(async (wineryId) => {
+            const cached = mediaCacheRef.current[wineryId];
+            if (cached) {
+              return [wineryId, cached] as [string, string[]];
+            }
+
             try {
               const response = await getWineryMediaPublic(wineryId);
-              return [wineryId, response.assets.map((asset) => asset.public_url)] as [string, string[]];
+              const urls = response.assets.slice(0, 3).map((asset) => asset.public_url);
+              mediaCacheRef.current[wineryId] = urls;
+              return [wineryId, urls] as [string, string[]];
             } catch {
               return [wineryId, []] as [string, string[]];
             }
@@ -673,6 +681,9 @@ export default function ExplorePage() {
                                         alt={`${stop.winery_name} preview ${frameIndex + 1}`}
                                         className="scheduleGalleryImage"
                                         loading="lazy"
+                                        decoding="async"
+                                        width={150}
+                                        height={72}
                                       />
                                     ) : (
                                       <p>{frame}</p>

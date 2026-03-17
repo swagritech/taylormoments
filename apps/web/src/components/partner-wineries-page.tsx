@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { useAuth } from "@/lib/auth-state";
+import { optimizeWineryUploadImage } from "@/lib/image-utils";
 import {
   approveWineryToken,
   completeWineryMediaUpload,
@@ -241,17 +242,18 @@ export function PartnerWineriesPage() {
     try {
       setUploading(true);
       setError(null);
+      const optimizedFile = await optimizeWineryUploadImage(selectedFile);
       const ticket = await createWineryMediaUploadUrl(selectedWineryId, token, {
-        file_name: selectedFile.name,
-        content_type: selectedFile.type || "image/jpeg",
-        file_size_bytes: selectedFile.size,
+        file_name: optimizedFile.name,
+        content_type: optimizedFile.type || "image/jpeg",
+        file_size_bytes: optimizedFile.size,
         caption: captionDraft.trim() || undefined,
       });
 
       const uploadResponse = await fetch(ticket.upload_url, {
         method: ticket.upload_method,
         headers: ticket.upload_headers,
-        body: selectedFile,
+        body: optimizedFile,
       });
 
       if (!uploadResponse.ok) {
@@ -584,7 +586,7 @@ export function PartnerWineriesPage() {
                 >
                   {deletingMediaId === asset.media_id ? "..." : "X"}
                 </button>
-                <img src={asset.public_url} alt={asset.caption || asset.file_name} loading="lazy" />
+                <img src={asset.public_url} alt={asset.caption || asset.file_name} loading="lazy" decoding="async" />
                 <div className="mediaMeta">
                   <p><strong>{asset.file_name}</strong></p>
                   <p className="subtle">{asset.caption || "No caption"}</p>
