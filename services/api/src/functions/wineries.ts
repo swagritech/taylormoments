@@ -17,13 +17,65 @@ import {
   isMediaStorageConfigured,
 } from "../lib/media-storage.js";
 
+const PUBLIC_CACHE_TTL_MS = 60_000;
+
+type CacheEntry<T> = {
+  expiresAt: number;
+  value: T;
+};
+
+let wineriesPublicCache: CacheEntry<{ wineries: unknown[] }> | null = null;
+const wineryMediaPublicCache = new Map<string, CacheEntry<{ assets: unknown[] }>>();
+
+function getCached<T>(entry: CacheEntry<T> | null): T | null {
+  if (!entry) {
+    return null;
+  }
+  if (Date.now() > entry.expiresAt) {
+    return null;
+  }
+  return entry.value;
+}
+
+function setCached<T>(value: T): CacheEntry<T> {
+  return {
+    value,
+    expiresAt: Date.now() + PUBLIC_CACHE_TTL_MS,
+  };
+}
+
+function okPublicCached(body: unknown): HttpResponseInit {
+  return {
+    status: 200,
+    jsonBody: body,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=120",
+    },
+  };
+}
+
+function invalidatePublicCaches(wineryId?: string) {
+  wineriesPublicCache = null;
+  if (wineryId) {
+    wineryMediaPublicCache.delete(wineryId);
+  } else {
+    wineryMediaPublicCache.clear();
+  }
+}
+
 export async function listWineriesHandler(
   _request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
   try {
+    const cached = getCached(wineriesPublicCache);
+    if (cached) {
+      return okPublicCached(cached);
+    }
+
     const wineries = await workflowRepository.getWineries();
-    return ok({
+    const responseBody = {
       wineries: wineries.map((winery) => ({
         winery_id: winery.wineryId,
         name: winery.name,
@@ -41,7 +93,9 @@ export async function listWineriesHandler(
         offers_cheese_board: winery.offersCheeseBoard,
         unique_experience_offers: winery.uniqueExperienceOffers,
       })),
-    });
+    };
+    wineriesPublicCache = setCached(responseBody);
+    return okPublicCached(responseBody);
   } catch (error) {
     context.error(error);
     return badRequest(error instanceof Error ? error.message : "Unable to fetch wineries.");
@@ -164,9 +218,14 @@ export async function listWineryMediaPublicHandler(
 ): Promise<HttpResponseInit> {
   try {
     const { wineryId } = wineryRouteSchema.parse(request.params);
+    const cached = getCached(wineryMediaPublicCache.get(wineryId) ?? null);
+    if (cached) {
+      return okPublicCached(cached);
+    }
+
     const assets = await workflowRepository.listWineryMediaAssets(wineryId);
     const uploaded = assets.filter((asset) => asset.status === "uploaded");
-    return ok({
+    const responseBody = {
       assets: uploaded.map((asset) => ({
         media_id: asset.mediaId,
         winery_id: asset.wineryId,
@@ -176,7 +235,9 @@ export async function listWineryMediaPublicHandler(
         created_at: asset.createdAt,
         updated_at: asset.updatedAt,
       })),
-    });
+    };
+    wineryMediaPublicCache.set(wineryId, setCached(responseBody));
+    return okPublicCached(responseBody);
   } catch (error) {
     context.error(error);
     return badRequest(error instanceof Error ? error.message : "Unable to fetch winery media.");
@@ -266,6 +327,7 @@ export async function updateWineryProfileHandler(
     if (!updated) {
       return notFound("Winery not found.");
     }
+    invalidatePublicCaches(wineryId);
 
     return ok({
       winery_id: updated.wineryId,
@@ -331,6 +393,7 @@ export async function createWineryMediaUploadUrlHandler(
       status: "pending",
       uploadedByUserId: session.userId,
     });
+    invalidatePublicCaches(wineryId);
 
     return created({
       media_id: mediaId,
@@ -384,6 +447,7 @@ export async function completeWineryMediaUploadHandler(
     if (!completed) {
       return notFound("Media asset not found.");
     }
+    invalidatePublicCaches(wineryId);
 
     return ok({
       media_id: completed.mediaId,
@@ -432,6 +496,7 @@ export async function deleteWineryMediaHandler(
     if (!archived) {
       return notFound("Media asset not found.");
     }
+    invalidatePublicCaches(wineryId);
 
     if (isMediaStorageConfigured()) {
       try {
