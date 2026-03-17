@@ -177,12 +177,14 @@ button {
 .exploreLayout {
   display: grid;
   gap: 16px;
-  max-width: 1120px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 0 18px;
 }
 
 .exploreUnifiedPanel {
+  width: 100%;
+  max-width: none;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.82);
