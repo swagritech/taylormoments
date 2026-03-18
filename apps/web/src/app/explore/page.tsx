@@ -1062,22 +1062,6 @@ export default function ExplorePage() {
                 </div>
               )}
 
-              {matchedWineries.length > 0 ? (
-                <div className="callout">
-                  <p className="miniLabel">Closest matches</p>
-                  {matchedWineries.map((winery) => (
-                    <p key={winery.id} className="subtle">
-                      <strong>{winery.name}</strong> · {winery.region}
-                    </p>
-                  ))}
-                </div>
-              ) : null}
-
-              <div className="callout">
-                <p className="miniLabel">Searchable placeholders</p>
-                <p className="subtle">Current matching uses partner profile fields where available. Additional explicit preference columns can be added later for more precise matching.</p>
-              </div>
-
               {error ? <div className="callout errorCallout">{error}</div> : null}
             </section>
           </div>
