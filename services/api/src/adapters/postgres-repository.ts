@@ -165,6 +165,7 @@ function mapWinery(row: Record<string, unknown>): Winery {
       ? Number(row.longitude)
       : undefined,
     address: row.address ? String(row.address) : undefined,
+    website: row.website ? String(row.website) : undefined,
     openingHours: row.opening_hours ? String(row.opening_hours) : undefined,
     active: Boolean(row.active),
     tastingPrice: row.tasting_price !== null && row.tasting_price !== undefined
@@ -279,12 +280,14 @@ function mapUserAccount(row: Record<string, unknown>): UserAccount {
     displayName: String(row.display_name),
     firstName: row.first_name ? String(row.first_name) : undefined,
     lastName: row.last_name ? String(row.last_name) : undefined,
+    partnerRoleTitle: row.partner_role_title ? String(row.partner_role_title) : undefined,
     phone: row.phone ? String(row.phone) : undefined,
     homeCountry: row.home_country ? String(row.home_country) : undefined,
     ageGroup: row.age_group ? String(row.age_group) : undefined,
     gender: row.gender ? String(row.gender) : undefined,
     wineryId: row.winery_id ? String(row.winery_id) : undefined,
     transportCompany: row.transport_company ? String(row.transport_company) : undefined,
+    termsAcceptedAt: row.terms_accepted_at ? new Date(String(row.terms_accepted_at)).toISOString() : undefined,
     createdAt: new Date(String(row.created_at)).toISOString(),
     updatedAt: new Date(String(row.updated_at)).toISOString(),
   };
@@ -306,8 +309,8 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
   async getWineries(): Promise<Winery[]> {
     const pool = getPool();
     const result = await pool.query(`
-      select distinct on (lower(name))
-             winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, opening_hours, active,
+        select distinct on (lower(name))
+             winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, website, opening_hours, active,
              tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers, wine_styles, winery_signals
       from winery
       order by lower(name) asc, updated_at desc, created_at desc
@@ -321,7 +324,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const result = await pool.query(
       `
         select winery_id, name, region, confirmation_mode, capacity, latitude, longitude, active,
-               address, opening_hours,
+               address, website, opening_hours,
                tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers, wine_styles, winery_signals
         from winery
         where winery_id = $1
@@ -340,6 +343,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     wineryId: string;
     capacity: number;
     address?: string;
+    website?: string;
     openingHours?: string;
     tastingPrice?: number;
     tastingDurationMinutes?: number;
@@ -356,24 +360,26 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
         update winery
         set capacity = $2,
             address = $3,
-            opening_hours = $4,
-            tasting_price = $5,
-            tasting_duration_minutes = coalesce($10, tasting_duration_minutes),
-            description = $6,
-            famous_for = $7,
-            offers_cheese_board = $8,
-            unique_experience_offers = $9::jsonb,
-            wine_styles = $11::jsonb,
-            winery_signals = $12::jsonb,
+            website = coalesce($4, website),
+            opening_hours = $5,
+            tasting_price = $6,
+            tasting_duration_minutes = coalesce($11, tasting_duration_minutes),
+            description = $7,
+            famous_for = $8,
+            offers_cheese_board = $9,
+            unique_experience_offers = $10::jsonb,
+            wine_styles = $12::jsonb,
+            winery_signals = $13::jsonb,
             updated_at = now()
         where winery_id = $1
-        returning winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, opening_hours, active,
+        returning winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, website, opening_hours, active,
                   tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers, wine_styles, winery_signals
       `,
       [
         request.wineryId,
         request.capacity,
         request.address ?? null,
+        request.website ?? null,
         request.openingHours ?? null,
         request.tastingPrice ?? null,
         request.description ?? null,
@@ -690,11 +696,13 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     display_name: string;
     first_name?: string;
     last_name?: string;
+    partner_role_title?: string;
     phone?: string;
     home_country?: string;
     age_group?: string;
     gender?: string;
     winery_id?: string;
+    terms_accepted?: boolean;
     transport_company?: string;
     password_hash: string;
   }): Promise<UserAccount> {
@@ -710,16 +718,18 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
           display_name,
           first_name,
           last_name,
+          partner_role_title,
           phone,
           home_country,
           age_group,
           gender,
           winery_id,
-          transport_company
+          transport_company,
+          terms_accepted_at
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        returning user_id, email, password_hash, role, display_name, first_name, last_name, phone, home_country, age_group, gender,
-                  winery_id, transport_company, created_at, updated_at
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        returning user_id, email, password_hash, role, display_name, first_name, last_name, partner_role_title, phone, home_country, age_group, gender,
+                  winery_id, transport_company, terms_accepted_at, created_at, updated_at
       `,
       [
         userId,
@@ -729,12 +739,14 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
         request.display_name,
         request.first_name ?? null,
         request.last_name ?? null,
+        request.partner_role_title ?? null,
         request.phone ?? null,
         request.home_country ?? null,
         request.age_group ?? null,
         request.gender ?? null,
         request.winery_id ?? null,
         request.transport_company ?? null,
+        request.terms_accepted ? new Date().toISOString() : null,
       ],
     );
 
@@ -745,8 +757,8 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const pool = getPool();
     const result = await pool.query(
       `
-        select user_id, email, password_hash, role, display_name, first_name, last_name, phone, home_country, age_group, gender,
-               winery_id, transport_company, created_at, updated_at
+        select user_id, email, password_hash, role, display_name, first_name, last_name, partner_role_title, phone, home_country, age_group, gender,
+               winery_id, transport_company, terms_accepted_at, created_at, updated_at
         from user_account
         where email = $1
       `,
@@ -763,8 +775,8 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const pool = getPool();
     const result = await pool.query(
       `
-        select user_id, email, password_hash, role, display_name, first_name, last_name, phone, home_country, age_group, gender,
-               winery_id, transport_company, created_at, updated_at
+        select user_id, email, password_hash, role, display_name, first_name, last_name, partner_role_title, phone, home_country, age_group, gender,
+               winery_id, transport_company, terms_accepted_at, created_at, updated_at
         from user_account
         where user_id = $1
       `,
@@ -800,6 +812,69 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
       [email, passwordHash],
     );
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async updateUserContactProfile(request: {
+    userId: string;
+    first_name?: string;
+    last_name?: string;
+    partner_role_title?: string;
+    phone?: string;
+  }): Promise<UserAccount | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        update user_account
+        set first_name = coalesce($2, first_name),
+            last_name = coalesce($3, last_name),
+            partner_role_title = coalesce($4, partner_role_title),
+            phone = coalesce($5, phone),
+            updated_at = now()
+        where user_id = $1
+        returning user_id, email, password_hash, role, display_name, first_name, last_name, partner_role_title, phone, home_country, age_group, gender,
+                  winery_id, transport_company, terms_accepted_at, created_at, updated_at
+      `,
+      [
+        request.userId,
+        request.first_name ?? null,
+        request.last_name ?? null,
+        request.partner_role_title ?? null,
+        request.phone ?? null,
+      ],
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+    return mapUserAccount(result.rows[0]);
+  }
+
+  async updateWinerySignupBasics(request: {
+    wineryId: string;
+    address?: string;
+    website?: string;
+  }): Promise<Winery | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        update winery
+        set address = coalesce($2, address),
+            website = coalesce($3, website),
+            updated_at = now()
+        where winery_id = $1
+        returning winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, website, opening_hours, active,
+                  tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers, wine_styles, winery_signals
+      `,
+      [
+        request.wineryId,
+        request.address ?? null,
+        request.website ?? null,
+      ],
+    );
+    if (result.rowCount === 0) {
+      return null;
+    }
+    return mapWinery(result.rows[0]);
   }
 
   async savePasswordResetToken(token: PasswordResetToken): Promise<void> {

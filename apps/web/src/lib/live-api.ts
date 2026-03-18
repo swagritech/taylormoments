@@ -240,6 +240,7 @@ export type WineryListResponse = {
     latitude?: number;
     longitude?: number;
     address?: string;
+    website?: string;
     opening_hours?: string;
     tasting_price?: number;
     tasting_duration_minutes?: number;
@@ -263,6 +264,7 @@ export type WineryProfileResponse = {
   latitude?: number;
   longitude?: number;
   address?: string;
+  website?: string;
   opening_hours?: string;
   tasting_price?: number;
   tasting_duration_minutes?: number;
@@ -284,12 +286,14 @@ export type AuthUser = {
   display_name: string;
   first_name?: string;
   last_name?: string;
+  partner_role_title?: string;
   phone?: string;
   home_country?: string;
   age_group?: string;
   gender?: string;
   winery_id?: string;
   transport_company?: string;
+  terms_accepted_at?: string;
 };
 
 export type AuthResponse = {
@@ -435,6 +439,7 @@ export async function updateWineryProfileAuthed(
   payload: {
     capacity: number;
     address?: string;
+    website?: string;
     opening_hours?: string;
     tasting_price?: number;
     tasting_duration_minutes?: number;
@@ -539,11 +544,15 @@ export async function registerAccount(payload: {
   display_name: string;
   first_name?: string;
   last_name?: string;
+  partner_role_title?: string;
   phone?: string;
   home_country?: string;
   age_group?: string;
   gender?: string;
   winery_id?: string;
+  winery_address?: string;
+  winery_website?: string;
+  terms_accepted?: boolean;
   transport_company?: string;
 }) {
   const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/auth/register`, {

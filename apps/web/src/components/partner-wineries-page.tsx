@@ -319,6 +319,7 @@ export function PartnerWineriesPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [capacity, setCapacity] = useState("");
   const [address, setAddress] = useState("");
+  const [website, setWebsite] = useState("");
   const [openingHours, setOpeningHours] = useState("");
   const [tastingPrice, setTastingPrice] = useState("");
   const [tastingDurationMinutes, setTastingDurationMinutes] = useState("45");
@@ -353,6 +354,7 @@ export function PartnerWineriesPage() {
       setStorageConfigured(mediaResponse.storage_configured);
       setCapacity(String(profileResponse.capacity ?? ""));
       setAddress(profileResponse.address ?? "");
+      setWebsite(profileResponse.website ?? "");
       setOpeningHours(profileResponse.opening_hours ?? "");
       setTastingPrice(
         profileResponse.tasting_price !== undefined ? String(profileResponse.tasting_price) : "",
@@ -642,6 +644,7 @@ export function PartnerWineriesPage() {
       const updated = await updateWineryProfileAuthed(selectedWineryId, token, {
         capacity: normalizedCapacity,
         address: address.trim() || undefined,
+        website: website.trim() || undefined,
         opening_hours: openingHours.trim() || undefined,
         tasting_price: tastingPrice.trim() ? Number(tastingPrice) : undefined,
         tasting_duration_minutes: normalizedTastingDurationMinutes,
@@ -654,6 +657,7 @@ export function PartnerWineriesPage() {
       });
       setCapacity(String(updated.capacity ?? ""));
       setAddress(updated.address ?? "");
+      setWebsite(updated.website ?? "");
       setOpeningHours(updated.opening_hours ?? "");
       setTastingPrice(updated.tasting_price !== undefined ? String(updated.tasting_price) : "");
       setTastingDurationMinutes(
@@ -934,6 +938,34 @@ export function PartnerWineriesPage() {
                     />
                   </div>
                 </div>
+                <div className="fieldRow">
+                  <div className="field">
+                    <label htmlFor="wineryWebsite">Website</label>
+                    <input
+                      id="wineryWebsite"
+                      type="url"
+                      className="inputLike inputField"
+                      value={website}
+                      onChange={(event) => setWebsite(event.target.value)}
+                      placeholder="https://"
+                    />
+                  </div>
+                </div>
+                {user?.role === "winery" ? (
+                  <div className="fieldRow">
+                    <div className="field">
+                      <label>Partner contact</label>
+                      <div className="explorePreferenceSummary">
+                        <p>
+                          <strong>{[user.first_name, user.last_name].filter(Boolean).join(" ") || user.display_name}</strong>
+                          {user.partner_role_title ? ` · ${user.partner_role_title}` : ""}
+                          {user.email ? ` · ${user.email}` : ""}
+                          {user.phone ? ` · ${user.phone}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
                 <div className="field">
                   <label htmlFor="openingHours">Opening hours</label>
                   <textarea

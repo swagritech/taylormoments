@@ -19,6 +19,7 @@ export interface WorkflowRepository {
     wineryId: string;
     capacity: number;
     address?: string;
+    website?: string;
     openingHours?: string;
     tastingPrice?: number;
     tastingDurationMinutes?: number;
@@ -121,6 +122,11 @@ export interface WorkflowRepository {
       | "small_production"
     >;
   }): Promise<Winery | null>;
+  updateWinerySignupBasics(request: {
+    wineryId: string;
+    address?: string;
+    website?: string;
+  }): Promise<Winery | null>;
   getAvailabilityForDate(serviceDate: string): Promise<WineryAvailability[]>;
   createBooking(request: CreateBookingRequest): Promise<Booking>;
   getBooking(bookingId: string): Promise<Booking | null>;
@@ -134,6 +140,13 @@ export interface WorkflowRepository {
   markWineryMediaAssetUploaded(mediaId: string, wineryId: string, fileSizeBytes?: number): Promise<WineryMediaAsset | null>;
   archiveWineryMediaAsset(mediaId: string, wineryId: string): Promise<WineryMediaAsset | null>;
   createUserAccount(request: RegisterUserRequest & { password_hash: string }): Promise<UserAccount>;
+  updateUserContactProfile(request: {
+    userId: string;
+    first_name?: string;
+    last_name?: string;
+    partner_role_title?: string;
+    phone?: string;
+  }): Promise<UserAccount | null>;
   getUserByEmail(email: string): Promise<UserAccount | null>;
   getUserById(userId: string): Promise<UserAccount | null>;
   updateUserPasswordByUserId(userId: string, passwordHash: string): Promise<boolean>;

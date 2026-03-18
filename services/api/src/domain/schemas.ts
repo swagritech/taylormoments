@@ -157,12 +157,23 @@ export const registerUserRequestSchema = z.object({
   display_name: z.string().min(1),
   first_name: z.string().min(1).optional(),
   last_name: z.string().min(1).optional(),
+  partner_role_title: z.string().min(1).max(120).optional(),
   phone: z.string().regex(/^\+?[1-9]\d{7,14}$/).optional(),
   home_country: z.string().min(2).optional(),
   age_group: z.string().min(2).optional(),
   gender: z.string().min(2).optional(),
   winery_id: z.string().uuid().optional(),
+  winery_address: z.string().max(500).optional(),
+  winery_website: z.string().url().max(500).optional(),
+  terms_accepted: z.boolean().optional(),
   transport_company: z.string().min(1).optional(),
+});
+
+export const updateMeProfileSchema = z.object({
+  first_name: z.string().min(1).max(80).optional(),
+  last_name: z.string().min(1).max(80).optional(),
+  partner_role_title: z.string().min(1).max(120).optional(),
+  phone: z.string().regex(/^\+?[1-9]\d{7,14}$/).optional(),
 });
 
 export const loginRequestSchema = z.object({
@@ -199,6 +210,7 @@ export const wineryMediaRouteSchema = wineryRouteSchema.extend({
 export const wineryProfileUpdateSchema = z.object({
   capacity: z.number().int().positive().max(10000),
   address: z.string().max(500).optional(),
+  website: z.string().url().max(500).optional(),
   opening_hours: z.string().max(1000).optional(),
   tasting_price: z.number().nonnegative().max(10000).optional(),
   tasting_duration_minutes: z.number().int().positive().max(480).optional(),

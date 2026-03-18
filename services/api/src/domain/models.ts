@@ -37,6 +37,7 @@ export type Winery = {
   latitude?: number;
   longitude?: number;
   address?: string;
+  website?: string;
   openingHours?: string;
   active: boolean;
   tastingPrice?: number;
@@ -236,12 +237,14 @@ export type UserAccount = {
   displayName: string;
   firstName?: string;
   lastName?: string;
+  partnerRoleTitle?: string;
   phone?: string;
   homeCountry?: string;
   ageGroup?: string;
   gender?: string;
   wineryId?: string;
   transportCompany?: string;
+  termsAcceptedAt?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -340,11 +343,15 @@ export type RegisterUserRequest = {
   display_name: string;
   first_name?: string;
   last_name?: string;
+  partner_role_title?: string;
   phone?: string;
   home_country?: string;
   age_group?: string;
   gender?: string;
   winery_id?: string;
+  winery_address?: string;
+  winery_website?: string;
+  terms_accepted?: boolean;
   transport_company?: string;
 };
 

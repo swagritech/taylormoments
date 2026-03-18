@@ -24,11 +24,15 @@ type AuthContextType = {
     display_name: string;
     first_name?: string;
     last_name?: string;
+    partner_role_title?: string;
     phone?: string;
     home_country?: string;
     age_group?: string;
     gender?: string;
     winery_id?: string;
+    winery_address?: string;
+    winery_website?: string;
+    terms_accepted?: boolean;
     transport_company?: string;
   }) => Promise<AuthUser>;
   logout: () => void;
@@ -110,11 +114,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     display_name: string;
     first_name?: string;
     last_name?: string;
+    partner_role_title?: string;
     phone?: string;
     home_country?: string;
     age_group?: string;
     gender?: string;
     winery_id?: string;
+    winery_address?: string;
+    winery_website?: string;
+    terms_accepted?: boolean;
     transport_company?: string;
   }) {
     const response = await registerAccount(params);

@@ -23,6 +23,7 @@ const wineries: Winery[] = [
     latitude: -33.81799462,
     longitude: 115.03681765,
     address: "4357 Caves Rd, Wilyabrup WA 6280",
+    website: "https://www.vassefelix.com.au",
     openingHours: "Daily 10:00-17:00",
     active: true,
     tastingPrice: 35,
@@ -43,6 +44,7 @@ const wineries: Winery[] = [
     latitude: -33.81791409,
     longitude: 115.03893560,
     address: "4323 Caves Rd, Wilyabrup WA 6280",
+    website: "https://www.cullenwines.com.au",
     openingHours: "Daily 10:00-17:00",
     active: true,
     tastingPrice: 40,
@@ -63,6 +65,7 @@ const wineries: Winery[] = [
     latitude: -33.78755329,
     longitude: 115.07903354,
     address: "281 Treeton Rd, Wilyabrup WA 6280",
+    website: "https://www.frasergallopestate.com.au",
     openingHours: "Daily 10:00-16:30",
     active: true,
     tastingPrice: 30,
@@ -83,6 +86,7 @@ const wineries: Winery[] = [
     latitude: -33.78835900,
     longitude: 115.03129902,
     address: "3948 Caves Rd, Wilyabrup WA 6280",
+    website: "https://www.woodlandswines.com.au",
     openingHours: "Daily 10:00-17:00",
     active: true,
     tastingPrice: 25,
@@ -167,6 +171,7 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     wineryId: string;
     capacity: number;
     address?: string;
+    website?: string;
     openingHours?: string;
     tastingPrice?: number;
     tastingDurationMinutes?: number;
@@ -187,6 +192,7 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
       ...current,
       capacity: request.capacity,
       address: request.address,
+      website: request.website ?? current.website,
       openingHours: request.openingHours,
       tastingPrice: request.tastingPrice,
       tastingDurationMinutes: request.tastingDurationMinutes ?? current.tastingDurationMinutes ?? 45,
@@ -342,11 +348,13 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     display_name: string;
     first_name?: string;
     last_name?: string;
+    partner_role_title?: string;
     phone?: string;
     home_country?: string;
     age_group?: string;
     gender?: string;
     winery_id?: string;
+    terms_accepted?: boolean;
     transport_company?: string;
     password_hash: string;
   }): Promise<UserAccount> {
@@ -359,12 +367,14 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
       displayName: request.display_name,
       firstName: request.first_name,
       lastName: request.last_name,
+      partnerRoleTitle: request.partner_role_title,
       phone: request.phone,
       homeCountry: request.home_country,
       ageGroup: request.age_group,
       gender: request.gender,
       wineryId: request.winery_id,
       transportCompany: request.transport_company,
+      termsAcceptedAt: request.terms_accepted ? now : undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -406,6 +416,47 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
       updatedAt: nowIso(),
     });
     return true;
+  }
+
+  async updateUserContactProfile(request: {
+    userId: string;
+    first_name?: string;
+    last_name?: string;
+    partner_role_title?: string;
+    phone?: string;
+  }): Promise<UserAccount | null> {
+    const existing = users.get(request.userId);
+    if (!existing) {
+      return null;
+    }
+    const updated: UserAccount = {
+      ...existing,
+      firstName: request.first_name ?? existing.firstName,
+      lastName: request.last_name ?? existing.lastName,
+      partnerRoleTitle: request.partner_role_title ?? existing.partnerRoleTitle,
+      phone: request.phone ?? existing.phone,
+      updatedAt: nowIso(),
+    };
+    users.set(request.userId, updated);
+    return updated;
+  }
+
+  async updateWinerySignupBasics(request: {
+    wineryId: string;
+    address?: string;
+    website?: string;
+  }): Promise<Winery | null> {
+    const index = wineries.findIndex((item) => item.wineryId === request.wineryId);
+    if (index < 0) {
+      return null;
+    }
+    const current = wineries[index];
+    wineries[index] = {
+      ...current,
+      address: request.address ?? current.address,
+      website: request.website ?? current.website,
+    };
+    return wineries[index];
   }
 
   async savePasswordResetToken(token: PasswordResetToken): Promise<void> {

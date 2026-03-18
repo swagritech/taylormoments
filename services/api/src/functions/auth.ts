@@ -7,6 +7,7 @@ import {
   loginRequestSchema,
   resetPasswordRequestSchema,
   registerUserRequestSchema,
+  updateMeProfileSchema,
 } from "../domain/schemas.js";
 import { hashPassword, verifyPassword } from "../lib/passwords.js";
 import { issueAuthToken } from "../lib/auth-token.js";
@@ -26,12 +27,14 @@ function toUserView(user: {
   displayName: string;
   firstName?: string;
   lastName?: string;
+  partnerRoleTitle?: string;
   phone?: string;
   homeCountry?: string;
   ageGroup?: string;
   gender?: string;
   wineryId?: string;
   transportCompany?: string;
+  termsAcceptedAt?: string;
 }) {
   return {
     user_id: user.userId,
@@ -40,12 +43,14 @@ function toUserView(user: {
     display_name: user.displayName,
     first_name: user.firstName,
     last_name: user.lastName,
+    partner_role_title: user.partnerRoleTitle,
     phone: user.phone,
     home_country: user.homeCountry,
     age_group: user.ageGroup,
     gender: user.gender,
     winery_id: user.wineryId,
     transport_company: user.transportCompany,
+    terms_accepted_at: user.termsAcceptedAt,
   };
 }
 
@@ -64,6 +69,18 @@ export async function registerHandler(
       return badRequest("transport_company is required for transport role.");
     }
 
+    if (payload.role === "winery") {
+      if (!payload.first_name || !payload.last_name || !payload.phone || !payload.partner_role_title) {
+        return badRequest("first_name, last_name, phone, and partner_role_title are required for winery role.");
+      }
+      if (!payload.terms_accepted) {
+        return badRequest("terms_accepted is required for winery role.");
+      }
+      if (!/(?=.*\d).{8,}/.test(payload.password)) {
+        return badRequest("Password must be at least 8 characters and include at least one number.");
+      }
+    }
+
     if (payload.role === "customer") {
       if (!payload.first_name || !payload.last_name || !payload.phone || !payload.home_country) {
         return badRequest("first_name, last_name, phone, and home_country are required for customer role.");
@@ -80,6 +97,14 @@ export async function registerHandler(
       password_hash: hashPassword(payload.password),
     });
 
+    if (payload.role === "winery" && payload.winery_id) {
+      await workflowRepository.updateWinerySignupBasics({
+        wineryId: payload.winery_id,
+        address: payload.winery_address?.trim() || undefined,
+        website: payload.winery_website?.trim() || undefined,
+      });
+    }
+
     const authToken = issueAuthToken({
       userId: user.userId,
       role: user.role,
@@ -94,6 +119,34 @@ export async function registerHandler(
   } catch (error) {
     context.error(error);
     return badRequest(error instanceof Error ? error.message : "Unable to create account.");
+  }
+}
+
+export async function updateMeProfileHandler(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  try {
+    const session = requireSession(request);
+    if (!session) {
+      return unauthorized("You must be signed in.");
+    }
+
+    const payload = updateMeProfileSchema.parse(await request.json());
+    const updated = await workflowRepository.updateUserContactProfile({
+      userId: session.userId,
+      first_name: payload.first_name?.trim() || undefined,
+      last_name: payload.last_name?.trim() || undefined,
+      partner_role_title: payload.partner_role_title?.trim() || undefined,
+      phone: payload.phone,
+    });
+    if (!updated) {
+      return unauthorized("Session is no longer valid.");
+    }
+    return ok({ user: toUserView(updated) });
+  } catch (error) {
+    context.error(error);
+    return badRequest(error instanceof Error ? error.message : "Unable to update profile.");
   }
 }
 
@@ -297,6 +350,13 @@ app.http("auth-me", {
   authLevel: "anonymous",
   route: "v1/auth/me",
   handler: meHandler,
+});
+
+app.http("auth-me-update", {
+  methods: ["PUT"],
+  authLevel: "anonymous",
+  route: "v1/auth/me",
+  handler: updateMeProfileHandler,
 });
 
 app.http("auth-forgot-password", {

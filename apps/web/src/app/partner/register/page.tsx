@@ -13,12 +13,19 @@ export default function PartnerRegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
   const [displayName, setDisplayName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [partnerRoleTitle, setPartnerRoleTitle] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [role, setRole] = useState<PartnerRole>("winery");
   const [wineryId, setWineryId] = useState("");
+  const [wineryAddress, setWineryAddress] = useState("");
+  const [wineryWebsite, setWineryWebsite] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [transportCompany, setTransportCompany] = useState("");
-  const [wineries, setWineries] = useState<Array<{ winery_id: string; name: string }>>([]);
+  const [wineries, setWineries] = useState<Array<{ winery_id: string; name: string; address?: string }>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,8 +37,18 @@ export default function PartnerRegisterPage() {
         if (!active) {
           return;
         }
-        setWineries(response.wineries.map((item) => ({ winery_id: item.winery_id, name: item.name })));
-        setWineryId((current) => current || response.wineries[0]?.winery_id || "");
+        const next = response.wineries.map((item) => ({
+          winery_id: item.winery_id,
+          name: item.name,
+          address: item.address,
+        }));
+        setWineries(next);
+        const initialWineryId = next[0]?.winery_id || "";
+        setWineryId((current) => current || initialWineryId);
+        if (initialWineryId) {
+          const selected = next.find((entry) => entry.winery_id === initialWineryId);
+          setWineryAddress(selected?.address ?? "");
+        }
       } catch {
         // Partner registration should still render if winery list fails.
       }
@@ -49,12 +66,23 @@ export default function PartnerRegisterPage() {
     setError(null);
 
     try {
+      if (role === "winery" && !termsAccepted) {
+        throw new Error("You must agree to the Partner Terms to continue.");
+      }
+      const normalizedDisplayName = `${firstName} ${lastName}`.trim() || displayName.trim();
       const created = await register({
-        display_name: displayName,
+        display_name: normalizedDisplayName || "Partner",
         email,
         password,
         role,
+        first_name: role === "winery" ? firstName.trim() : undefined,
+        last_name: role === "winery" ? lastName.trim() : undefined,
+        partner_role_title: role === "winery" ? partnerRoleTitle.trim() : undefined,
+        phone: role === "winery" ? phone.trim() : undefined,
         winery_id: role === "winery" ? wineryId || undefined : undefined,
+        winery_address: role === "winery" ? wineryAddress.trim() || undefined : undefined,
+        winery_website: role === "winery" ? wineryWebsite.trim() || undefined : undefined,
+        terms_accepted: role === "winery" ? termsAccepted : undefined,
         transport_company: role === "transport" ? transportCompany || undefined : undefined,
       });
 
@@ -98,65 +126,186 @@ export default function PartnerRegisterPage() {
               <input
                 id="displayName"
                 className="inputLike inputField"
-                required
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="Optional - defaults to your first and last name"
               />
-            </div>
-            <div className="fieldRow">
-              <div className="field">
-                <label htmlFor="email">Email</label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  className="inputLike inputField"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  minLength={8}
-                  className="inputLike inputField"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-              </div>
             </div>
 
             {role === "winery" ? (
-              <div className="field">
-                <label htmlFor="winery">Cellar door venue</label>
-                <select
-                  id="winery"
-                  className="inputLike inputField"
-                  value={wineryId}
-                  onChange={(event) => setWineryId(event.target.value)}
-                  required
-                >
-                  {wineries.map((item) => (
-                    <option key={item.winery_id} value={item.winery_id}>{item.name}</option>
-                  ))}
-                </select>
-              </div>
+              <>
+                <div className="fieldRow">
+                  <div className="field">
+                    <label htmlFor="firstName">Your first name</label>
+                    <input
+                      id="firstName"
+                      className="inputLike inputField"
+                      required
+                      value={firstName}
+                      onChange={(event) => setFirstName(event.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="lastName">Your last name</label>
+                    <input
+                      id="lastName"
+                      className="inputLike inputField"
+                      required
+                      value={lastName}
+                      onChange={(event) => setLastName(event.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="fieldRow">
+                  <div className="field">
+                    <label htmlFor="partnerRoleTitle">Your role at the winery</label>
+                    <input
+                      id="partnerRoleTitle"
+                      className="inputLike inputField"
+                      required
+                      value={partnerRoleTitle}
+                      onChange={(event) => setPartnerRoleTitle(event.target.value)}
+                      placeholder="Owner, Cellar Door Manager"
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="phone">Your phone number</label>
+                    <input
+                      id="phone"
+                      type="tel"
+                      required
+                      className="inputLike inputField"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="fieldRow">
+                  <div className="field">
+                    <label htmlFor="email">Your email address</label>
+                    <input
+                      id="email"
+                      type="email"
+                      required
+                      className="inputLike inputField"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="password">Create a password</label>
+                    <input
+                      id="password"
+                      type="password"
+                      required
+                      minLength={8}
+                      pattern="(?=.*\d).{8,}"
+                      title="Minimum 8 characters with at least one number."
+                      className="inputLike inputField"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label htmlFor="winery">Winery name</label>
+                  <select
+                    id="winery"
+                    className="inputLike inputField"
+                    value={wineryId}
+                    onChange={(event) => {
+                      const nextWineryId = event.target.value;
+                      setWineryId(nextWineryId);
+                      const selected = wineries.find((item) => item.winery_id === nextWineryId);
+                      setWineryAddress(selected?.address ?? "");
+                    }}
+                    required
+                  >
+                    {wineries.map((item) => (
+                      <option key={item.winery_id} value={item.winery_id}>{item.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="fieldRow">
+                  <div className="field">
+                    <label htmlFor="wineryAddress">Address</label>
+                    <input
+                      id="wineryAddress"
+                      className="inputLike inputField"
+                      value={wineryAddress}
+                      onChange={(event) => setWineryAddress(event.target.value)}
+                      placeholder="Auto-filled from winery record where available"
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="wineryWebsite">Your website (optional)</label>
+                    <input
+                      id="wineryWebsite"
+                      type="url"
+                      className="inputLike inputField"
+                      value={wineryWebsite}
+                      onChange={(event) => setWineryWebsite(event.target.value)}
+                      placeholder="https://"
+                    />
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label className="choicePill">
+                    <input
+                      type="checkbox"
+                      checked={termsAccepted}
+                      onChange={(event) => setTermsAccepted(event.target.checked)}
+                      required
+                    />
+                    I agree to the Partner Terms
+                  </label>
+                </div>
+              </>
             ) : null}
 
             {role === "transport" ? (
-              <div className="field">
-                <label htmlFor="transportCompany">Transport company</label>
-                <input
-                  id="transportCompany"
-                  className="inputLike inputField"
-                  value={transportCompany}
-                  onChange={(event) => setTransportCompany(event.target.value)}
-                  required
-                />
-              </div>
+              <>
+                <div className="fieldRow">
+                  <div className="field">
+                    <label htmlFor="email">Email</label>
+                    <input
+                      id="email"
+                      type="email"
+                      required
+                      className="inputLike inputField"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="password">Password</label>
+                    <input
+                      id="password"
+                      type="password"
+                      required
+                      minLength={8}
+                      className="inputLike inputField"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="field">
+                  <label htmlFor="transportCompany">Transport company</label>
+                  <input
+                    id="transportCompany"
+                    className="inputLike inputField"
+                    value={transportCompany}
+                    onChange={(event) => setTransportCompany(event.target.value)}
+                    required
+                  />
+                </div>
+              </>
             ) : null}
 
             {error ? <div className="callout errorCallout">{error}</div> : null}
