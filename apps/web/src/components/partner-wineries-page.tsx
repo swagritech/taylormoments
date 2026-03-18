@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
@@ -330,14 +330,100 @@ export function PartnerWineriesPage() {
   const [experienceRows, setExperienceRows] = useState<ExperienceDraft[]>([]);
   const [profileSavedAt, setProfileSavedAt] = useState<string | null>(null);
   const [activeProfileSection, setActiveProfileSection] = useState<ProfileSectionKey>("basics");
+  const [profileAutoSaving, setProfileAutoSaving] = useState(false);
+  const profileLoadedRef = useRef(false);
+  const profileAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastProfileSignatureRef = useRef("");
+
+  function normalizeProfileDraft() {
+    const normalizedRows = experienceRows
+      .map((row) => ({
+        name: row.name.trim(),
+        price: Number(row.price),
+      }))
+      .filter((row) => row.name && Number.isFinite(row.price) && row.price >= 0);
+    const normalizedSignals = new Set(winerySignals);
+    const hasAdvanceNotice = ADVANCE_NOTICE_SIGNALS.some((signal) => normalizedSignals.has(signal));
+    if (!hasAdvanceNotice) {
+      normalizedSignals.add("48_hours");
+    }
+    const normalizedCapacity = Number(capacity);
+    const normalizedTastingDurationMinutes = Number(tastingDurationMinutes);
+    const normalizedPayload = {
+      capacity: normalizedCapacity,
+      address: address.trim() || undefined,
+      website: website.trim() || undefined,
+      opening_hours: openingHours.trim() || undefined,
+      tasting_price: tastingPrice.trim() ? Number(tastingPrice) : undefined,
+      tasting_duration_minutes: normalizedTastingDurationMinutes,
+      description: wineryDescription.trim() || undefined,
+      famous_for: famousFor.trim() || undefined,
+      offers_cheese_board: normalizedSignals.has("cheese_board"),
+      wine_styles: [...wineStyles].sort(),
+      winery_signals: Array.from(normalizedSignals).sort(),
+      unique_experience_offers: normalizedRows,
+    };
+    return {
+      payload: normalizedPayload,
+      normalizedCapacity,
+      normalizedTastingDurationMinutes,
+      signature: JSON.stringify(normalizedPayload),
+    };
+  }
+
+  function profileSignatureFromResponse(profile: {
+    capacity?: number;
+    address?: string;
+    website?: string;
+    opening_hours?: string;
+    tasting_price?: number;
+    tasting_duration_minutes?: number;
+    description?: string;
+    famous_for?: string;
+    offers_cheese_board?: boolean;
+    wine_styles?: string[];
+    winery_signals?: string[];
+    unique_experience_offers?: Array<{ name: string; price: number }>;
+  }) {
+    const normalizedSignals = new Set(profile.winery_signals ?? []);
+    if (profile.offers_cheese_board) {
+      normalizedSignals.add("cheese_board");
+    }
+    if (!ADVANCE_NOTICE_SIGNALS.some((signal) => normalizedSignals.has(signal))) {
+      normalizedSignals.add("48_hours");
+    }
+    const normalizedRows = (profile.unique_experience_offers ?? [])
+      .map((row) => ({ name: row.name.trim(), price: Number(row.price) }))
+      .filter((row) => row.name && Number.isFinite(row.price) && row.price >= 0);
+    return JSON.stringify({
+      capacity: Number(profile.capacity ?? 0),
+      address: profile.address?.trim() || undefined,
+      website: profile.website?.trim() || undefined,
+      opening_hours: profile.opening_hours?.trim() || undefined,
+      tasting_price: profile.tasting_price,
+      tasting_duration_minutes: Number(profile.tasting_duration_minutes ?? 45),
+      description: profile.description?.trim() || undefined,
+      famous_for: profile.famous_for?.trim() || undefined,
+      offers_cheese_board: normalizedSignals.has("cheese_board"),
+      wine_styles: [...(profile.wine_styles ?? [])].sort(),
+      winery_signals: Array.from(normalizedSignals).sort(),
+      unique_experience_offers: normalizedRows,
+    });
+  }
 
   const loadRequests = useCallback(async (wineryId: string) => {
     if (!wineryId || !token) {
+      profileLoadedRef.current = false;
       setRequests([]);
       setSummary({ pending: 0, accepted: 0, declined: 0, expired: 0 });
       return;
     }
 
+    profileLoadedRef.current = false;
+    if (profileAutosaveTimerRef.current) {
+      clearTimeout(profileAutosaveTimerRef.current);
+      profileAutosaveTimerRef.current = null;
+    }
     setLoading(true);
     setError(null);
 
@@ -382,6 +468,8 @@ export function PartnerWineriesPage() {
           : [makeExperienceDraft()],
       );
       setProfileSavedAt(null);
+      lastProfileSignatureRef.current = profileSignatureFromResponse(profileResponse);
+      profileLoadedRef.current = true;
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load winery request queue.");
     } finally {
@@ -611,50 +699,38 @@ export function PartnerWineriesPage() {
     setExperienceRows((current) => (current.length > 1 ? current.filter((row) => row.id !== id) : current));
   }
 
-  async function handleSaveProfile() {
+  async function handleSaveProfile(options?: { silent?: boolean; autosave?: boolean }) {
     if (!selectedWineryId || !token) {
       return;
     }
 
-    const normalizedRows = experienceRows
-      .map((row) => ({
-        name: row.name.trim(),
-        price: Number(row.price),
-      }))
-      .filter((row) => row.name && Number.isFinite(row.price) && row.price >= 0);
-    const normalizedSignals = new Set(winerySignals);
-    const hasAdvanceNotice = ADVANCE_NOTICE_SIGNALS.some((signal) => normalizedSignals.has(signal));
-    if (!hasAdvanceNotice) {
-      normalizedSignals.add("48_hours");
-    }
-    const normalizedCapacity = Number(capacity);
-    const normalizedTastingDurationMinutes = Number(tastingDurationMinutes);
+    const silent = options?.silent ?? false;
+    const autosave = options?.autosave ?? false;
+    const normalizedDraft = normalizeProfileDraft();
+    const { payload, normalizedCapacity, normalizedTastingDurationMinutes, signature } = normalizedDraft;
     if (!Number.isFinite(normalizedCapacity) || normalizedCapacity <= 0) {
-      setError("Capacity must be greater than 0.");
+      if (!silent) {
+        setError("Capacity must be greater than 0.");
+      }
       return;
     }
     if (!Number.isFinite(normalizedTastingDurationMinutes) || normalizedTastingDurationMinutes <= 0) {
-      setError("Tasting length must be greater than 0 minutes.");
+      if (!silent) {
+        setError("Tasting length must be greater than 0 minutes.");
+      }
+      return;
+    }
+    if (autosave && signature === lastProfileSignatureRef.current) {
       return;
     }
 
     try {
       setProfileSaving(true);
-      setError(null);
-      const updated = await updateWineryProfileAuthed(selectedWineryId, token, {
-        capacity: normalizedCapacity,
-        address: address.trim() || undefined,
-        website: website.trim() || undefined,
-        opening_hours: openingHours.trim() || undefined,
-        tasting_price: tastingPrice.trim() ? Number(tastingPrice) : undefined,
-        tasting_duration_minutes: normalizedTastingDurationMinutes,
-        description: wineryDescription.trim() || undefined,
-        famous_for: famousFor.trim() || undefined,
-        offers_cheese_board: normalizedSignals.has("cheese_board"),
-        wine_styles: wineStyles,
-        winery_signals: Array.from(normalizedSignals),
-        unique_experience_offers: normalizedRows,
-      });
+      setProfileAutoSaving(autosave);
+      if (!silent) {
+        setError(null);
+      }
+      const updated = await updateWineryProfileAuthed(selectedWineryId, token, payload);
       setCapacity(String(updated.capacity ?? ""));
       setAddress(updated.address ?? "");
       setWebsite(updated.website ?? "");
@@ -680,12 +756,59 @@ export function PartnerWineriesPage() {
           : [makeExperienceDraft()],
       );
       setProfileSavedAt(new Date().toISOString());
+      lastProfileSignatureRef.current = profileSignatureFromResponse(updated);
+      if (autosave) {
+        setError(null);
+      }
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Unable to save winery profile.");
+      if (!silent) {
+        setError(saveError instanceof Error ? saveError.message : "Unable to save winery profile.");
+      }
     } finally {
       setProfileSaving(false);
+      setProfileAutoSaving(false);
     }
   }
+
+  useEffect(() => {
+    if (!selectedWineryId || !token || !profileLoadedRef.current || profileSaving) {
+      return;
+    }
+
+    const draft = normalizeProfileDraft();
+    if (draft.signature === lastProfileSignatureRef.current) {
+      return;
+    }
+
+    if (profileAutosaveTimerRef.current) {
+      clearTimeout(profileAutosaveTimerRef.current);
+    }
+    profileAutosaveTimerRef.current = setTimeout(() => {
+      void handleSaveProfile({ silent: true, autosave: true });
+    }, 700);
+
+    return () => {
+      if (profileAutosaveTimerRef.current) {
+        clearTimeout(profileAutosaveTimerRef.current);
+        profileAutosaveTimerRef.current = null;
+      }
+    };
+  }, [
+    selectedWineryId,
+    token,
+    profileSaving,
+    capacity,
+    address,
+    website,
+    openingHours,
+    tastingPrice,
+    tastingDurationMinutes,
+    wineryDescription,
+    famousFor,
+    wineStyles,
+    winerySignals,
+    experienceRows,
+  ]);
 
   const pendingItems = useMemo(
     () => requests.filter((item) => item.status === "pending"),
@@ -1434,10 +1557,17 @@ export function PartnerWineriesPage() {
             ) : null}
 
             <div className="ctaRow">
-              <button type="button" className="buttonPrimary profileSaveButton" onClick={handleSaveProfile} disabled={profileSaving}>
+              <button
+                type="button"
+                className="buttonPrimary profileSaveButton"
+                onClick={() => void handleSaveProfile()}
+                disabled={profileSaving}
+              >
                 {profileSaving ? "Saving..." : "Save winery profile"}
               </button>
+              {profileAutoSaving ? <span className="meta">Autosaving...</span> : null}
               {profileSavedAt ? <span className="meta">Saved {formatDateTime(profileSavedAt)}</span> : null}
+              {!profileAutoSaving && !profileSavedAt ? <span className="meta">Autosave enabled</span> : null}
             </div>
           </div>
         </div>

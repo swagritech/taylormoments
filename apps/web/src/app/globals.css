@@ -1371,6 +1371,33 @@ button {
   min-width: 0;
 }
 
+.profileEditorPane .field label {
+  font-size: 0.82rem;
+}
+
+.profileEditorPane .inputLike {
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+.profileEditorPane .inputField {
+  font-size: 0.94rem;
+  line-height: 1.3;
+}
+
+.profileEditorPane textarea.inputLike {
+  min-height: 92px;
+}
+
+.profileEditorPane .currencyField {
+  gap: 8px;
+}
+
+.profileEditorPane .currencyPrefix {
+  font-size: 1.12rem;
+}
+
 .profileChoiceGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1379,7 +1406,9 @@ button {
 
 .profileChoiceGrid .choicePill {
   width: 100%;
-  min-height: 42px;
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
   justify-content: flex-start;
 }
 
