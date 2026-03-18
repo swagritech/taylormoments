@@ -70,6 +70,8 @@ type ProfileSectionKey =
   | "allergies-intolerances"
   | "religious-requirements"
   | "food-policy"
+  | "open-days"
+  | "advance-notice"
   | "experiences";
 
 const WINE_STYLE_OPTIONS = [
@@ -90,6 +92,15 @@ const WINE_STYLE_OPTIONS = [
 
 const WELL_KNOWN_STYLE = "Well known Margaret River Name";
 const LESSER_KNOWN_STYLE = "Lesser known (off the beaten track)";
+const OPEN_DAY_SIGNALS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+const ADVANCE_NOTICE_SIGNALS = [
+  "same_day",
+  "24_hours",
+  "48_hours",
+  "72_hours",
+  "1_week",
+  "2_weeks",
+] as const;
 
 const WINERY_SIGNAL_GROUPS = [
   {
@@ -231,6 +242,29 @@ const WINERY_SIGNAL_GROUPS = [
       { value: "custom_on_request", label: "Most needs accommodated with notice" },
     ],
   },
+  {
+    heading: "Open Days",
+    options: [
+      { value: "mon", label: "Monday" },
+      { value: "tue", label: "Tuesday" },
+      { value: "wed", label: "Wednesday" },
+      { value: "thu", label: "Thursday" },
+      { value: "fri", label: "Friday" },
+      { value: "sat", label: "Saturday" },
+      { value: "sun", label: "Sunday" },
+    ],
+  },
+  {
+    heading: "Advance Notice",
+    options: [
+      { value: "same_day", label: "Same day - we're flexible" },
+      { value: "24_hours", label: "24 hours ahead" },
+      { value: "48_hours", label: "48 hours ahead (default)" },
+      { value: "72_hours", label: "3 days ahead" },
+      { value: "1_week", label: "1 week ahead" },
+      { value: "2_weeks", label: "2 weeks ahead" },
+    ],
+  },
 ] as const;
 
 const PROFILE_SECTION_MENU: Array<{ key: ProfileSectionKey; label: string }> = [
@@ -252,6 +286,8 @@ const PROFILE_SECTION_MENU: Array<{ key: ProfileSectionKey; label: string }> = [
   { key: "allergies-intolerances", label: "Allergies & intolerances" },
   { key: "religious-requirements", label: "Religious requirements" },
   { key: "food-policy", label: "Food policy" },
+  { key: "open-days", label: "Open days" },
+  { key: "advance-notice", label: "Advance notice" },
   { key: "experiences", label: "Experiences" },
 ];
 
@@ -288,7 +324,6 @@ export function PartnerWineriesPage() {
   const [tastingDurationMinutes, setTastingDurationMinutes] = useState("45");
   const [wineryDescription, setWineryDescription] = useState("");
   const [famousFor, setFamousFor] = useState("");
-  const [offersCheeseBoard, setOffersCheeseBoard] = useState(false);
   const [wineStyles, setWineStyles] = useState<string[]>([]);
   const [winerySignals, setWinerySignals] = useState<string[]>([]);
   const [experienceRows, setExperienceRows] = useState<ExperienceDraft[]>([]);
@@ -329,11 +364,16 @@ export function PartnerWineriesPage() {
       );
       setWineryDescription(profileResponse.description ?? "");
       setFamousFor(profileResponse.famous_for ?? "");
-      setOffersCheeseBoard(
-        profileResponse.offers_cheese_board || (profileResponse.winery_signals ?? []).includes("cheese_board"),
-      );
+      const loadedSignals = new Set(profileResponse.winery_signals ?? []);
+      if (profileResponse.offers_cheese_board) {
+        loadedSignals.add("cheese_board");
+      }
+      const hasAdvanceNotice = ADVANCE_NOTICE_SIGNALS.some((signal) => loadedSignals.has(signal));
+      if (!hasAdvanceNotice) {
+        loadedSignals.add("48_hours");
+      }
       setWineStyles(profileResponse.wine_styles ?? []);
-      setWinerySignals(profileResponse.winery_signals ?? []);
+      setWinerySignals(Array.from(loadedSignals));
       setExperienceRows(
         profileResponse.unique_experience_offers.length > 0
           ? profileResponse.unique_experience_offers.map((entry) => makeExperienceDraft(entry))
@@ -539,9 +579,30 @@ export function PartnerWineriesPage() {
       }
       return Array.from(next);
     });
-    if (signal === "cheese_board") {
-      setOffersCheeseBoard(checked);
-    }
+  }
+
+  function applyOpenDayShortcut(mode: "weekdays" | "weekend" | "all-week" | "clear") {
+    setWinerySignals((current) => {
+      const next = new Set(current.filter((signal) => !OPEN_DAY_SIGNALS.includes(signal as typeof OPEN_DAY_SIGNALS[number])));
+      if (mode === "weekdays") {
+        ["mon", "tue", "wed", "thu", "fri"].forEach((day) => next.add(day));
+      }
+      if (mode === "weekend") {
+        ["sat", "sun"].forEach((day) => next.add(day));
+      }
+      if (mode === "all-week") {
+        OPEN_DAY_SIGNALS.forEach((day) => next.add(day));
+      }
+      return Array.from(next);
+    });
+  }
+
+  function setAdvanceNotice(signal: string) {
+    setWinerySignals((current) => {
+      const next = new Set(current.filter((entry) => !ADVANCE_NOTICE_SIGNALS.includes(entry as typeof ADVANCE_NOTICE_SIGNALS[number])));
+      next.add(signal);
+      return Array.from(next);
+    });
   }
 
   function removeExperienceRow(id: string) {
@@ -560,10 +621,9 @@ export function PartnerWineriesPage() {
       }))
       .filter((row) => row.name && Number.isFinite(row.price) && row.price >= 0);
     const normalizedSignals = new Set(winerySignals);
-    if (offersCheeseBoard) {
-      normalizedSignals.add("cheese_board");
-    } else {
-      normalizedSignals.delete("cheese_board");
+    const hasAdvanceNotice = ADVANCE_NOTICE_SIGNALS.some((signal) => normalizedSignals.has(signal));
+    if (!hasAdvanceNotice) {
+      normalizedSignals.add("48_hours");
     }
     const normalizedCapacity = Number(capacity);
     const normalizedTastingDurationMinutes = Number(tastingDurationMinutes);
@@ -587,7 +647,7 @@ export function PartnerWineriesPage() {
         tasting_duration_minutes: normalizedTastingDurationMinutes,
         description: wineryDescription.trim() || undefined,
         famous_for: famousFor.trim() || undefined,
-        offers_cheese_board: offersCheeseBoard,
+        offers_cheese_board: normalizedSignals.has("cheese_board"),
         wine_styles: wineStyles,
         winery_signals: Array.from(normalizedSignals),
         unique_experience_offers: normalizedRows,
@@ -601,9 +661,15 @@ export function PartnerWineriesPage() {
       );
       setWineryDescription(updated.description ?? "");
       setFamousFor(updated.famous_for ?? "");
-      setOffersCheeseBoard(updated.offers_cheese_board);
       setWineStyles(updated.wine_styles ?? []);
-      setWinerySignals(updated.winery_signals ?? []);
+      const updatedSignals = new Set(updated.winery_signals ?? []);
+      if (updated.offers_cheese_board) {
+        updatedSignals.add("cheese_board");
+      }
+      if (!ADVANCE_NOTICE_SIGNALS.some((signal) => updatedSignals.has(signal))) {
+        updatedSignals.add("48_hours");
+      }
+      setWinerySignals(Array.from(updatedSignals));
       setExperienceRows(
         updated.unique_experience_offers.length > 0
           ? updated.unique_experience_offers.map((entry) => makeExperienceDraft(entry))
@@ -889,28 +955,6 @@ export function PartnerWineriesPage() {
                     onChange={(event) => setWineryDescription(event.target.value)}
                     placeholder="Describe your winery, atmosphere, and guest experience."
                   />
-                </div>
-                <div className="field">
-                  <label className="choicePill">
-                    <input
-                      type="checkbox"
-                      checked={offersCheeseBoard}
-                      onChange={(event) => {
-                        const checked = event.target.checked;
-                        setOffersCheeseBoard(checked);
-                        setWinerySignals((current) => {
-                          const next = new Set(current);
-                          if (checked) {
-                            next.add("cheese_board");
-                          } else {
-                            next.delete("cheese_board");
-                          }
-                          return Array.from(next);
-                        });
-                      }}
-                    />
-                    Offers cheese board
-                  </label>
                 </div>
               </>
             ) : null}
@@ -1270,6 +1314,49 @@ export function PartnerWineriesPage() {
                         type="checkbox"
                         checked={winerySignals.includes(option.value)}
                         onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "open-days" ? (
+              <div className="field">
+                <label>Open days</label>
+                <div className="ctaRow" style={{ marginBottom: 8 }}>
+                  <button type="button" className="buttonGhost" onClick={() => applyOpenDayShortcut("weekdays")}>Weekdays</button>
+                  <button type="button" className="buttonGhost" onClick={() => applyOpenDayShortcut("weekend")}>Weekend</button>
+                  <button type="button" className="buttonGhost" onClick={() => applyOpenDayShortcut("all-week")}>All week</button>
+                  <button type="button" className="buttonGhost" onClick={() => applyOpenDayShortcut("clear")}>Clear</button>
+                </div>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[15]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "advance-notice" ? (
+              <div className="field">
+                <label>Advance notice</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[16]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="radio"
+                        name="advanceNotice"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={() => setAdvanceNotice(option.value)}
                       />
                       {option.label}
                     </label>

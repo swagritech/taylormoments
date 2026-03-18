@@ -29,6 +29,8 @@ type SearchProfile = {
   organicFriendly: boolean;
   hasSpecialExperience: boolean;
   hasCheeseBoard: boolean;
+  openDays: string[];
+  minAdvanceDays: number;
   vibeTag: "popular" | "lesser-known";
   transportSuitable: boolean;
   supportsHalfDay: boolean;
@@ -188,6 +190,19 @@ function toSearchProfile(
 
   const hasStyle = (style: string) => styleSet.has(style);
   const hasSignal = (signal: string) => signalSet.has(signal);
+  const openDays = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].filter((day) => hasSignal(day));
+  const advanceDaysMap: Record<string, number> = {
+    same_day: 0,
+    "24_hours": 1,
+    "48_hours": 2,
+    "72_hours": 3,
+    "1_week": 7,
+    "2_weeks": 14,
+  };
+  const minAdvanceDays = Object.entries(advanceDaysMap)
+    .filter(([signal]) => hasSignal(signal))
+    .map(([, days]) => days)
+    .sort((a, b) => b - a)[0] ?? 2;
   const hasAnyFoodSignal =
     hasSignal("winery_lunch") ||
     hasSignal("cheese_board") ||
@@ -269,6 +284,8 @@ function toSearchProfile(
       combinedText.includes("masterclass"),
     hasCheeseBoard:
       (remoteProfile?.offers_cheese_board ?? false) || hasSignal("cheese_board"),
+    openDays,
+    minAdvanceDays,
     vibeTag: hasStyle("Well known Margaret River Name")
       ? "popular"
       : hasStyle("Lesser known (off the beaten track)")
@@ -496,9 +513,23 @@ export default function ExplorePage() {
     try {
       const hasCheeseBoardMatch = (winery: WineryCatalogItem) =>
         toSearchProfile(winery, profilesById[slugToWineryUuid(winery.id)]).hasCheeseBoard;
+      const requestDate = new Date(`${(previewDate || toIsoDate(7))}T00:00:00`);
+      const weekdayMap = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+      const requestedWeekday = weekdayMap[requestDate.getDay()] ?? "mon";
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const bookingDate = new Date(requestDate);
+      bookingDate.setHours(0, 0, 0, 0);
+      const daysAhead = Math.max(0, Math.floor((bookingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
 
       const filterByPreferences = (includeVibePreference: boolean) => wineryCatalog.filter((winery) => {
         const profile = toSearchProfile(winery, profilesById[slugToWineryUuid(winery.id)]);
+        if (profile.openDays.length > 0 && !profile.openDays.includes(requestedWeekday)) {
+          return false;
+        }
+        if (daysAhead < profile.minAdvanceDays) {
+          return false;
+        }
         if (includeLunch === "yes" && !profile.hasLunchExperience) {
           return false;
         }

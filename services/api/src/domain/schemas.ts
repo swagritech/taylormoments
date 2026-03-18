@@ -73,6 +73,19 @@ const winerySignalValues = [
   "no_food",
   "byo_food",
   "custom_on_request",
+  "mon",
+  "tue",
+  "wed",
+  "thu",
+  "fri",
+  "sat",
+  "sun",
+  "same_day",
+  "24_hours",
+  "48_hours",
+  "72_hours",
+  "1_week",
+  "2_weeks",
   "halliday_5star",
   "gold_medals",
   "exported_asia",
@@ -199,7 +212,7 @@ export const wineryProfileUpdateSchema = z.object({
     }),
   ).max(30),
   wine_styles: z.array(wineStyleEnum).max(13).default([]),
-  winery_signals: z.array(winerySignalEnum).max(50).default([]),
+  winery_signals: z.array(winerySignalEnum).max(120).default([]),
 }).superRefine((value, ctx) => {
   const hasWellKnown = value.wine_styles.includes("Well known Margaret River Name");
   const hasLesserKnown = value.wine_styles.includes("Lesser known (off the beaten track)");
