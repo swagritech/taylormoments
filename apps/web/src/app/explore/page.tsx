@@ -63,6 +63,15 @@ function toIsoDate(dayOffset = 7) {
   return date.toISOString().slice(0, 10);
 }
 
+function shiftIsoDate(dateValue: string, dayOffset = 0) {
+  const date = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return toIsoDate(dayOffset);
+  }
+  date.setDate(date.getDate() + dayOffset);
+  return date.toISOString().slice(0, 10);
+}
+
 function chapterLabelForStop(timeValue: string): ItineraryChapter["label"] {
   const hour = new Date(timeValue).getHours();
   if (hour < 12) {
@@ -295,7 +304,7 @@ export default function ExplorePage() {
         .map((entry) => wineryCatalog.find((item) => item.id === entry))
         .filter((entry): entry is WineryCatalogItem => Boolean(entry)),
   );
-  const [previewDate, setPreviewDate] = useState<string>(initialPreferences?.previewDate ?? "");
+  const [previewDate, setPreviewDate] = useState<string>(initialPreferences?.previewDate ?? toIsoDate(7));
   const [recommendationOptions, setRecommendationOptions] = useState<Recommendation[]>([]);
   const [selectedRecommendationIndex, setSelectedRecommendationIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -493,10 +502,11 @@ export default function ExplorePage() {
       }
 
       let foundOptions: Recommendation[] = [];
-      let usedDate = toIsoDate(7);
+      const requestedDate = previewDate || toIsoDate(7);
+      let usedDate = requestedDate;
 
-      for (let offset = 1; offset <= 14; offset += 1) {
-        const candidateDate = toIsoDate(offset);
+      for (let offset = 0; offset < 14; offset += 1) {
+        const candidateDate = shiftIsoDate(requestedDate, offset);
         const response = await recommendItineraries({
           booking_date: candidateDate,
           pickup_location:
@@ -653,7 +663,7 @@ export default function ExplorePage() {
             {isPreferencesCollapsed ? (
               <div className="explorePreferenceSummary">
                 <p>
-                  <strong>{name || "Guest"}</strong> · {groupSize} guests · {tripLength} · transport {needTransport}
+                  <strong>{name || "Guest"}</strong> · {groupSize} guests · {tripLength} · transport {needTransport} · {formatPreviewDate(previewDate)}
                 </p>
               </div>
             ) : (
@@ -680,6 +690,18 @@ export default function ExplorePage() {
                   placeholder="jane@example.com"
                 />
               </div>
+            </div>
+
+            <div className="field">
+              <label htmlFor="exploreDate">Preferred date</label>
+              <input
+                id="exploreDate"
+                type="date"
+                min={toIsoDate(1)}
+                className="inputLike inputField"
+                value={previewDate}
+                onChange={(event) => setPreviewDate(event.target.value)}
+              />
             </div>
 
             <div className="field">
