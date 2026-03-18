@@ -212,6 +212,10 @@ function toSearchProfile(
       hasSignal("trophy_winner") ||
       hasSignal("press_featured") ||
       hasSignal("small_production") ||
+      hasSignal("asian_pairing") ||
+      hasSignal("hosted_asian_groups") ||
+      hasSignal("mandarin_staff") ||
+      hasSignal("vietnamese_staff") ||
       combinedText.includes("tour") ||
       combinedText.includes("private") ||
       combinedText.includes("behind the scenes") ||

@@ -24,6 +24,16 @@ const winerySignalValues = [
   "historic_estate",
   "secluded",
   "garden_picnic",
+  "mandarin_staff",
+  "vietnamese_staff",
+  "asian_pairing",
+  "wechat_line",
+  "hosted_asian_groups",
+  "wheelchair_access",
+  "minibus_parking",
+  "dog_friendly",
+  "child_friendly",
+  "close_to_town",
   "halliday_5star",
   "gold_medals",
   "exported_asia",
@@ -150,7 +160,7 @@ export const wineryProfileUpdateSchema = z.object({
     }),
   ).max(30),
   wine_styles: z.array(wineStyleEnum).max(13).default([]),
-  winery_signals: z.array(winerySignalEnum).max(15).default([]),
+  winery_signals: z.array(winerySignalEnum).max(25).default([]),
 }).superRefine((value, ctx) => {
   const hasWellKnown = value.wine_styles.includes("Well known Margaret River Name");
   const hasLesserKnown = value.wine_styles.includes("Lesser known (off the beaten track)");

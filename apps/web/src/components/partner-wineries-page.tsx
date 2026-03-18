@@ -57,6 +57,8 @@ type ProfileSectionKey =
   | "setting-atmosphere"
   | "wine-quality"
   | "story-people"
+  | "asian-market"
+  | "practical"
   | "experiences";
 
 const WINE_STYLE_OPTIONS = [
@@ -109,6 +111,26 @@ const WINERY_SIGNAL_GROUPS = [
       { value: "small_production", label: "Produces fewer than 5,000 cases per year" },
     ],
   },
+  {
+    heading: "Asian Market Relevance",
+    options: [
+      { value: "mandarin_staff", label: "Mandarin-speaking staff available" },
+      { value: "vietnamese_staff", label: "Vietnamese-speaking staff available" },
+      { value: "asian_pairing", label: "Asian cuisine pairing experiences" },
+      { value: "wechat_line", label: "WeChat / Line friendly" },
+      { value: "hosted_asian_groups", label: "We've hosted groups from Singapore, Vietnam & beyond" },
+    ],
+  },
+  {
+    heading: "Practical",
+    options: [
+      { value: "wheelchair_access", label: "Wheelchair accessible" },
+      { value: "minibus_parking", label: "Easy parking for minibuses" },
+      { value: "dog_friendly", label: "Dog-friendly grounds" },
+      { value: "child_friendly", label: "Child-friendly - non-wine options available" },
+      { value: "close_to_town", label: "10 minutes from Margaret River town" },
+    ],
+  },
 ] as const;
 
 const PROFILE_SECTION_MENU: Array<{ key: ProfileSectionKey; label: string }> = [
@@ -117,6 +139,8 @@ const PROFILE_SECTION_MENU: Array<{ key: ProfileSectionKey; label: string }> = [
   { key: "setting-atmosphere", label: "Setting & atmosphere" },
   { key: "wine-quality", label: "Wine quality" },
   { key: "story-people", label: "Story & people" },
+  { key: "asian-market", label: "Asian market" },
+  { key: "practical", label: "Practical" },
   { key: "experiences", label: "Experiences" },
 ];
 
@@ -892,6 +916,42 @@ export function PartnerWineriesPage() {
                 <label>Story & people</label>
                 <div className="choiceRow profileChoiceGrid">
                   {(WINERY_SIGNAL_GROUPS[2]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "asian-market" ? (
+              <div className="field">
+                <label>Asian market relevance</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[3]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "practical" ? (
+              <div className="field">
+                <label>Practical</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[4]?.options ?? []).map((option) => (
                     <label key={option.value} className="choicePill">
                       <input
                         type="checkbox"
