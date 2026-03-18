@@ -833,7 +833,7 @@ export function PartnerWineriesPage() {
             {activeProfileSection === "wine-styles" ? (
               <div className="field">
                 <label>Wine styles (multi-select)</label>
-                <div className="choiceRow">
+                <div className="choiceRow profileChoiceGrid">
                   {WINE_STYLE_OPTIONS.map((style) => {
                     const checked = wineStyles.includes(style);
                     return (
@@ -854,7 +854,7 @@ export function PartnerWineriesPage() {
             {activeProfileSection === "setting-atmosphere" ? (
               <div className="field">
                 <label>Setting & atmosphere</label>
-                <div className="choiceRow">
+                <div className="choiceRow profileChoiceGrid">
                   {(WINERY_SIGNAL_GROUPS[0]?.options ?? []).map((option) => (
                     <label key={option.value} className="choicePill">
                       <input
@@ -872,7 +872,7 @@ export function PartnerWineriesPage() {
             {activeProfileSection === "wine-quality" ? (
               <div className="field">
                 <label>Wine quality & recognition</label>
-                <div className="choiceRow">
+                <div className="choiceRow profileChoiceGrid">
                   {(WINERY_SIGNAL_GROUPS[1]?.options ?? []).map((option) => (
                     <label key={option.value} className="choicePill">
                       <input
@@ -890,7 +890,7 @@ export function PartnerWineriesPage() {
             {activeProfileSection === "story-people" ? (
               <div className="field">
                 <label>Story & people</label>
-                <div className="choiceRow">
+                <div className="choiceRow profileChoiceGrid">
                   {(WINERY_SIGNAL_GROUPS[2]?.options ?? []).map((option) => (
                     <label key={option.value} className="choicePill">
                       <input
@@ -941,7 +941,7 @@ export function PartnerWineriesPage() {
             ) : null}
 
             <div className="ctaRow">
-              <button type="button" className="buttonPrimary" onClick={handleSaveProfile} disabled={profileSaving}>
+              <button type="button" className="buttonPrimary profileSaveButton" onClick={handleSaveProfile} disabled={profileSaving}>
                 {profileSaving ? "Saving..." : "Save winery profile"}
               </button>
               {profileSavedAt ? <span className="meta">Saved {formatDateTime(profileSavedAt)}</span> : null}
