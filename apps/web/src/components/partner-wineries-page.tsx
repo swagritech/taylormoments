@@ -53,12 +53,17 @@ type ExperienceDraft = {
 
 type ProfileSectionKey =
   | "basics"
+  | "gallery"
   | "wine-styles"
   | "setting-atmosphere"
   | "wine-quality"
   | "story-people"
   | "asian-market"
   | "practical"
+  | "tastings-pairings"
+  | "food-wine"
+  | "behind-scenes"
+  | "special-occasions"
   | "experiences";
 
 const WINE_STYLE_OPTIONS = [
@@ -131,16 +136,59 @@ const WINERY_SIGNAL_GROUPS = [
       { value: "close_to_town", label: "10 minutes from Margaret River town" },
     ],
   },
+  {
+    heading: "Tastings & Pairings",
+    options: [
+      { value: "cellar_door_tasting", label: "Standard cellar door tasting" },
+      { value: "guided_tasting", label: "Guided / hosted tasting" },
+      { value: "private_tasting_room", label: "Private tasting room" },
+      { value: "barrel_tasting", label: "Barrel tasting" },
+      { value: "sunset_tasting", label: "Sunset tasting session" },
+    ],
+  },
+  {
+    heading: "Food & Wine",
+    options: [
+      { value: "winery_lunch", label: "Lunch at the winery" },
+      { value: "cheese_board", label: "Cheese & wine pairing" },
+      { value: "wine_chocolate", label: "Wine & chocolate pairing" },
+      { value: "charcuterie_board", label: "Charcuterie & wine" },
+      { value: "cooking_class", label: "Food & wine cooking class" },
+      { value: "picnic_on_estate", label: "Picnic on the estate" },
+    ],
+  },
+  {
+    heading: "Behind the Scenes",
+    options: [
+      { value: "vineyard_walk", label: "Guided vineyard walk" },
+      { value: "cellar_tour", label: "Cellar & barrel hall tour" },
+      { value: "blending_experience", label: "Blending & winemaking experience" },
+      { value: "harvest_experience", label: "Harvest season experience" },
+    ],
+  },
+  {
+    heading: "Special Occasions",
+    options: [
+      { value: "accommodation", label: "Accommodation on-site" },
+      { value: "corporate_events", label: "Corporate & private events" },
+      { value: "wedding_venue", label: "Wedding venue" },
+    ],
+  },
 ] as const;
 
 const PROFILE_SECTION_MENU: Array<{ key: ProfileSectionKey; label: string }> = [
   { key: "basics", label: "Basics" },
+  { key: "gallery", label: "Image gallery" },
   { key: "wine-styles", label: "Wine styles" },
   { key: "setting-atmosphere", label: "Setting & atmosphere" },
   { key: "wine-quality", label: "Wine quality" },
   { key: "story-people", label: "Story & people" },
   { key: "asian-market", label: "Asian market" },
   { key: "practical", label: "Practical" },
+  { key: "tastings-pairings", label: "Tastings & pairings" },
+  { key: "food-wine", label: "Food & wine" },
+  { key: "behind-scenes", label: "Behind the scenes" },
+  { key: "special-occasions", label: "Special occasions" },
   { key: "experiences", label: "Experiences" },
 ];
 
@@ -218,7 +266,9 @@ export function PartnerWineriesPage() {
       );
       setWineryDescription(profileResponse.description ?? "");
       setFamousFor(profileResponse.famous_for ?? "");
-      setOffersCheeseBoard(profileResponse.offers_cheese_board);
+      setOffersCheeseBoard(
+        profileResponse.offers_cheese_board || (profileResponse.winery_signals ?? []).includes("cheese_board"),
+      );
       setWineStyles(profileResponse.wine_styles ?? []);
       setWinerySignals(profileResponse.winery_signals ?? []);
       setExperienceRows(
@@ -426,6 +476,9 @@ export function PartnerWineriesPage() {
       }
       return Array.from(next);
     });
+    if (signal === "cheese_board") {
+      setOffersCheeseBoard(checked);
+    }
   }
 
   function removeExperienceRow(id: string) {
@@ -443,6 +496,12 @@ export function PartnerWineriesPage() {
         price: Number(row.price),
       }))
       .filter((row) => row.name && Number.isFinite(row.price) && row.price >= 0);
+    const normalizedSignals = new Set(winerySignals);
+    if (offersCheeseBoard) {
+      normalizedSignals.add("cheese_board");
+    } else {
+      normalizedSignals.delete("cheese_board");
+    }
     const normalizedCapacity = Number(capacity);
     const normalizedTastingDurationMinutes = Number(tastingDurationMinutes);
     if (!Number.isFinite(normalizedCapacity) || normalizedCapacity <= 0) {
@@ -467,7 +526,7 @@ export function PartnerWineriesPage() {
         famous_for: famousFor.trim() || undefined,
         offers_cheese_board: offersCheeseBoard,
         wine_styles: wineStyles,
-        winery_signals: winerySignals,
+        winery_signals: Array.from(normalizedSignals),
         unique_experience_offers: normalizedRows,
       });
       setCapacity(String(updated.capacity ?? ""));
@@ -657,79 +716,6 @@ export function PartnerWineriesPage() {
       </div>
 
       <SectionCard
-        title="Winery image gallery"
-        description="Upload photos now so customer schedule previews can display real winery imagery."
-      >
-        {!storageConfigured ? (
-          <div className="callout errorCallout">
-            R2 storage is not configured in the API yet. Add `TM_R2_*` app settings first.
-          </div>
-        ) : null}
-
-        <div className="fieldRow">
-          <div className="field">
-            <label htmlFor="wineryImageUpload">Select image</label>
-            <input
-              id="wineryImageUpload"
-              type="file"
-              className="inputLike inputField"
-              accept="image/*"
-              onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="wineryImageCaption">Caption (optional)</label>
-            <input
-              id="wineryImageCaption"
-              className="inputLike inputField"
-              value={captionDraft}
-              onChange={(event) => setCaptionDraft(event.target.value)}
-              placeholder="Cellar door tasting room"
-            />
-          </div>
-        </div>
-
-        <div className="ctaRow">
-          <button
-            type="button"
-            className="buttonPrimary"
-            onClick={handleUploadImage}
-            disabled={!selectedFile || uploading || !storageConfigured}
-          >
-            {uploading ? "Uploading..." : "Upload image"}
-          </button>
-        </div>
-
-        <div className="mediaGrid">
-          {mediaAssets.length === 0 ? (
-            <div className="listRow">
-              <p className="subtle">No images uploaded yet for this winery.</p>
-            </div>
-          ) : (
-            mediaAssets.map((asset) => (
-              <article key={asset.media_id} className="mediaCard">
-                <button
-                  type="button"
-                  className="mediaDeleteButton"
-                  onClick={() => handleDeleteImage(asset.media_id)}
-                  disabled={deletingMediaId === asset.media_id}
-                  aria-label={`Delete ${asset.file_name}`}
-                  title="Delete image"
-                >
-                  {deletingMediaId === asset.media_id ? "..." : "X"}
-                </button>
-                <img src={asset.public_url} alt={asset.caption || asset.file_name} loading="lazy" decoding="async" />
-                <div className="mediaMeta">
-                  <p><strong>{asset.file_name}</strong></p>
-                  <p className="subtle">{asset.caption || "No caption"}</p>
-                </div>
-              </article>
-            ))
-          )}
-        </div>
-      </SectionCard>
-
-      <SectionCard
         title="Winery profile settings"
         description="Set tasting price, winery details, and experience offers shown to guests."
       >
@@ -846,10 +832,94 @@ export function PartnerWineriesPage() {
                     <input
                       type="checkbox"
                       checked={offersCheeseBoard}
-                      onChange={(event) => setOffersCheeseBoard(event.target.checked)}
+                      onChange={(event) => {
+                        const checked = event.target.checked;
+                        setOffersCheeseBoard(checked);
+                        setWinerySignals((current) => {
+                          const next = new Set(current);
+                          if (checked) {
+                            next.add("cheese_board");
+                          } else {
+                            next.delete("cheese_board");
+                          }
+                          return Array.from(next);
+                        });
+                      }}
                     />
                     Offers cheese board
                   </label>
+                </div>
+              </>
+            ) : null}
+
+            {activeProfileSection === "gallery" ? (
+              <>
+                {!storageConfigured ? (
+                  <div className="callout errorCallout">
+                    R2 storage is not configured in the API yet. Add `TM_R2_*` app settings first.
+                  </div>
+                ) : null}
+
+                <div className="fieldRow">
+                  <div className="field">
+                    <label htmlFor="wineryImageUpload">Select image</label>
+                    <input
+                      id="wineryImageUpload"
+                      type="file"
+                      className="inputLike inputField"
+                      accept="image/*"
+                      onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="wineryImageCaption">Caption (optional)</label>
+                    <input
+                      id="wineryImageCaption"
+                      className="inputLike inputField"
+                      value={captionDraft}
+                      onChange={(event) => setCaptionDraft(event.target.value)}
+                      placeholder="Cellar door tasting room"
+                    />
+                  </div>
+                </div>
+
+                <div className="ctaRow">
+                  <button
+                    type="button"
+                    className="buttonPrimary profileSaveButton"
+                    onClick={handleUploadImage}
+                    disabled={!selectedFile || uploading || !storageConfigured}
+                  >
+                    {uploading ? "Uploading..." : "Upload image"}
+                  </button>
+                </div>
+
+                <div className="mediaGrid">
+                  {mediaAssets.length === 0 ? (
+                    <div className="listRow">
+                      <p className="subtle">No images uploaded yet for this winery.</p>
+                    </div>
+                  ) : (
+                    mediaAssets.map((asset) => (
+                      <article key={asset.media_id} className="mediaCard">
+                        <button
+                          type="button"
+                          className="mediaDeleteButton"
+                          onClick={() => handleDeleteImage(asset.media_id)}
+                          disabled={deletingMediaId === asset.media_id}
+                          aria-label={`Delete ${asset.file_name}`}
+                          title="Delete image"
+                        >
+                          {deletingMediaId === asset.media_id ? "..." : "X"}
+                        </button>
+                        <img src={asset.public_url} alt={asset.caption || asset.file_name} loading="lazy" decoding="async" />
+                        <div className="mediaMeta">
+                          <p><strong>{asset.file_name}</strong></p>
+                          <p className="subtle">{asset.caption || "No caption"}</p>
+                        </div>
+                      </article>
+                    ))
+                  )}
                 </div>
               </>
             ) : null}
@@ -952,6 +1022,78 @@ export function PartnerWineriesPage() {
                 <label>Practical</label>
                 <div className="choiceRow profileChoiceGrid">
                   {(WINERY_SIGNAL_GROUPS[4]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "tastings-pairings" ? (
+              <div className="field">
+                <label>Tastings & pairings</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[5]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "food-wine" ? (
+              <div className="field">
+                <label>Food & wine</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[6]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "behind-scenes" ? (
+              <div className="field">
+                <label>Behind the scenes</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[7]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "special-occasions" ? (
+              <div className="field">
+                <label>Special occasions</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[8]?.options ?? []).map((option) => (
                     <label key={option.value} className="choicePill">
                       <input
                         type="checkbox"

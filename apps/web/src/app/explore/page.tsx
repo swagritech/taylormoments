@@ -191,6 +191,11 @@ function toSearchProfile(
 
   return {
     hasLunchExperience:
+      hasSignal("winery_lunch") ||
+      hasSignal("cheese_board") ||
+      hasSignal("charcuterie_board") ||
+      hasSignal("picnic_on_estate") ||
+      hasSignal("wine_chocolate") ||
       combinedText.includes("lunch") ||
       combinedText.includes("degustation") ||
       combinedText.includes("pairing") ||
@@ -207,6 +212,18 @@ function toSearchProfile(
       hasStyle("Small batch & Boutique") ||
       hasStyle("Family-owned Estate") ||
       hasStyle("Internationally awarded") ||
+      hasSignal("guided_tasting") ||
+      hasSignal("private_tasting_room") ||
+      hasSignal("barrel_tasting") ||
+      hasSignal("sunset_tasting") ||
+      hasSignal("vineyard_walk") ||
+      hasSignal("cellar_tour") ||
+      hasSignal("blending_experience") ||
+      hasSignal("harvest_experience") ||
+      hasSignal("cooking_class") ||
+      hasSignal("accommodation") ||
+      hasSignal("corporate_events") ||
+      hasSignal("wedding_venue") ||
       hasSignal("halliday_5star") ||
       hasSignal("gold_medals") ||
       hasSignal("trophy_winner") ||
@@ -221,7 +238,7 @@ function toSearchProfile(
       combinedText.includes("behind the scenes") ||
       combinedText.includes("masterclass"),
     hasCheeseBoard:
-      remoteProfile?.offers_cheese_board ?? false,
+      (remoteProfile?.offers_cheese_board ?? false) || hasSignal("cheese_board"),
     vibeTag: hasStyle("Well known Margaret River Name")
       ? "popular"
       : hasStyle("Lesser known (off the beaten track)")
