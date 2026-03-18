@@ -64,6 +64,12 @@ type ProfileSectionKey =
   | "food-wine"
   | "behind-scenes"
   | "special-occasions"
+  | "mobility-access"
+  | "sensory-communication"
+  | "dietary-preferences"
+  | "allergies-intolerances"
+  | "religious-requirements"
+  | "food-policy"
   | "experiences";
 
 const WINE_STYLE_OPTIONS = [
@@ -174,6 +180,57 @@ const WINERY_SIGNAL_GROUPS = [
       { value: "wedding_venue", label: "Wedding venue" },
     ],
   },
+  {
+    heading: "Mobility & Access",
+    options: [
+      { value: "wheelchair_pathways", label: "Wheelchair-accessible pathways" },
+      { value: "wheelchair_tasting", label: "Wheelchair-accessible tasting area" },
+      { value: "accessible_bathroom", label: "Accessible bathroom on-site" },
+      { value: "step_free_entry", label: "Step-free entry to all areas" },
+      { value: "accessible_parking", label: "Accessible parking bays" },
+      { value: "minibus_access", label: "Minibus / large vehicle drop-off" },
+    ],
+  },
+  {
+    heading: "Sensory & Communication",
+    options: [
+      { value: "hearing_loop", label: "Hearing loop / induction system" },
+      { value: "large_print", label: "Large-print menus & tasting notes" },
+      { value: "seated_tasting", label: "All tastings fully seated" },
+      { value: "quiet_space", label: "Quiet space available on request" },
+    ],
+  },
+  {
+    heading: "Dietary Preferences",
+    options: [
+      { value: "vegetarian", label: "Vegetarian food options" },
+      { value: "vegan", label: "Vegan food options" },
+      { value: "dairy_free", label: "Dairy-free options" },
+    ],
+  },
+  {
+    heading: "Allergies & Intolerances",
+    options: [
+      { value: "gluten_free", label: "Gluten-free options available" },
+      { value: "gluten_free_strict", label: "Strictly gluten-free kitchen" },
+      { value: "nut_free", label: "Nut-free kitchen" },
+    ],
+  },
+  {
+    heading: "Religious Requirements",
+    options: [
+      { value: "halal", label: "Halal-certified food" },
+      { value: "kosher", label: "Kosher food available" },
+    ],
+  },
+  {
+    heading: "Food Policy",
+    options: [
+      { value: "no_food", label: "No food served" },
+      { value: "byo_food", label: "Guests welcome to bring food" },
+      { value: "custom_on_request", label: "Most needs accommodated with notice" },
+    ],
+  },
 ] as const;
 
 const PROFILE_SECTION_MENU: Array<{ key: ProfileSectionKey; label: string }> = [
@@ -189,6 +246,12 @@ const PROFILE_SECTION_MENU: Array<{ key: ProfileSectionKey; label: string }> = [
   { key: "food-wine", label: "Food & wine" },
   { key: "behind-scenes", label: "Behind the scenes" },
   { key: "special-occasions", label: "Special occasions" },
+  { key: "mobility-access", label: "Mobility & access" },
+  { key: "sensory-communication", label: "Sensory & communication" },
+  { key: "dietary-preferences", label: "Dietary preferences" },
+  { key: "allergies-intolerances", label: "Allergies & intolerances" },
+  { key: "religious-requirements", label: "Religious requirements" },
+  { key: "food-policy", label: "Food policy" },
   { key: "experiences", label: "Experiences" },
 ];
 
@@ -1094,6 +1157,114 @@ export function PartnerWineriesPage() {
                 <label>Special occasions</label>
                 <div className="choiceRow profileChoiceGrid">
                   {(WINERY_SIGNAL_GROUPS[8]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "mobility-access" ? (
+              <div className="field">
+                <label>Mobility & access</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[9]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "sensory-communication" ? (
+              <div className="field">
+                <label>Sensory & communication</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[10]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "dietary-preferences" ? (
+              <div className="field">
+                <label>Dietary preferences</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[11]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "allergies-intolerances" ? (
+              <div className="field">
+                <label>Allergies & intolerances</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[12]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "religious-requirements" ? (
+              <div className="field">
+                <label>Religious requirements</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[13]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "food-policy" ? (
+              <div className="field">
+                <label>Food policy</label>
+                <div className="choiceRow profileChoiceGrid">
+                  {(WINERY_SIGNAL_GROUPS[14]?.options ?? []).map((option) => (
                     <label key={option.value} className="choicePill">
                       <input
                         type="checkbox"

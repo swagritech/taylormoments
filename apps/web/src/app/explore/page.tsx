@@ -188,18 +188,38 @@ function toSearchProfile(
 
   const hasStyle = (style: string) => styleSet.has(style);
   const hasSignal = (signal: string) => signalSet.has(signal);
+  const hasAnyFoodSignal =
+    hasSignal("winery_lunch") ||
+    hasSignal("cheese_board") ||
+    hasSignal("charcuterie_board") ||
+    hasSignal("picnic_on_estate") ||
+    hasSignal("wine_chocolate") ||
+    hasSignal("cooking_class") ||
+    hasSignal("vegetarian") ||
+    hasSignal("vegan") ||
+    hasSignal("dairy_free") ||
+    hasSignal("gluten_free") ||
+    hasSignal("gluten_free_strict") ||
+    hasSignal("nut_free") ||
+    hasSignal("halal") ||
+    hasSignal("kosher");
+  const noFoodPolicy = hasSignal("no_food");
 
   return {
     hasLunchExperience:
+      !noFoodPolicy &&
+      (
       hasSignal("winery_lunch") ||
       hasSignal("cheese_board") ||
       hasSignal("charcuterie_board") ||
       hasSignal("picnic_on_estate") ||
       hasSignal("wine_chocolate") ||
+      hasAnyFoodSignal ||
       combinedText.includes("lunch") ||
       combinedText.includes("degustation") ||
       combinedText.includes("pairing") ||
-      combinedText.includes("platter"),
+      combinedText.includes("platter")
+      ),
     organicFriendly:
       hasStyle("Organic & Biodynamic") ||
       hasStyle("Natural & Minimal Intervention") ||
@@ -224,6 +244,16 @@ function toSearchProfile(
       hasSignal("accommodation") ||
       hasSignal("corporate_events") ||
       hasSignal("wedding_venue") ||
+      hasSignal("wheelchair_pathways") ||
+      hasSignal("wheelchair_tasting") ||
+      hasSignal("accessible_bathroom") ||
+      hasSignal("step_free_entry") ||
+      hasSignal("accessible_parking") ||
+      hasSignal("minibus_access") ||
+      hasSignal("hearing_loop") ||
+      hasSignal("large_print") ||
+      hasSignal("seated_tasting") ||
+      hasSignal("quiet_space") ||
       hasSignal("halliday_5star") ||
       hasSignal("gold_medals") ||
       hasSignal("trophy_winner") ||
