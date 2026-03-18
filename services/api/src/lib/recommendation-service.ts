@@ -107,6 +107,13 @@ function toClockValue(minutes: number) {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
+function roundUpToNearestQuarterHour(minutes: number) {
+  if (!Number.isFinite(minutes)) {
+    return minutes;
+  }
+  return Math.ceil(minutes / 15) * 15;
+}
+
 function toLocalIso(serviceDate: string, hhmm: string) {
   return `${serviceDate}T${hhmm}:00`;
 }
@@ -294,7 +301,7 @@ function buildFeasibleRoute(params: {
     const tastingDurationMinutes = resolveTastingDurationMinutes(item.winery, item.slot);
     const slotDeparture = slotStart + tastingDurationMinutes;
     const drive = travelTimes.getMinutes(currentNodeId, item.winery.wineryId);
-    const earliestArrival = currentTime + drive;
+    const earliestArrival = roundUpToNearestQuarterHour(currentTime + drive);
 
     if (earliestArrival > slotStart || slotDeparture > slotWindowEnd || slotDeparture > dayEnd) {
       return null;
@@ -496,7 +503,7 @@ function buildRelaxedFallbackItinerary(params: {
     const representativeSlot = nextGroup.slots[0];
     const slotDurationMinutes = resolveTastingDurationMinutes(nextGroup.winery, representativeSlot);
 
-    const arrivalMinutes = currentTime + nextDrive;
+    const arrivalMinutes = roundUpToNearestQuarterHour(currentTime + nextDrive);
     const departureMinutes = arrivalMinutes + slotDurationMinutes;
     if (departureMinutes > dayEnd) {
       continue;
