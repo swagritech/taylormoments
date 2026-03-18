@@ -723,6 +723,7 @@ export function PartnerWineriesPage() {
       eyebrow="Winery portal"
       title="Booking requests"
       intro="Review pending requests and approve bookings for your winery."
+      showWorkflowStatus={false}
       navMode="partner"
     >
       <SectionCard
