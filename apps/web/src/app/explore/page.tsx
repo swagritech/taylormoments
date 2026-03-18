@@ -513,6 +513,35 @@ export default function ExplorePage() {
           foundOptions = [...response.itineraries].sort(
             (a, b) => Number(b.expert_pick) - Number(a.expert_pick) || b.score - a.score,
           );
+
+          if (foundOptions.length === 1) {
+            const primaryStopIds = new Set(foundOptions[0]?.stops.map((stop) => stop.winery_id) ?? []);
+            const alternatePreferredWineries = apiPreferredPool
+              .filter((winery) => !primaryStopIds.has(slugToWineryUuid(winery.id)))
+              .map((winery) => slugToWineryUuid(winery.id));
+
+            if (alternatePreferredWineries.length >= 2) {
+              const alternateResponse = await recommendItineraries({
+                booking_date: candidateDate,
+                pickup_location:
+                  needTransport === "yes"
+                    ? "Margaret River Visitor Centre"
+                    : "Self-drive (no transport required)",
+                party_size: groupSize,
+                preferred_start_time: timeWindow.start,
+                preferred_end_time: timeWindow.end,
+                preferred_wineries: alternatePreferredWineries,
+              });
+
+              const alternateOption = alternateResponse.itineraries
+                .sort((a, b) => Number(b.expert_pick) - Number(a.expert_pick) || b.score - a.score)[0];
+
+              if (alternateOption) {
+                foundOptions = [...foundOptions, { ...alternateOption, expert_pick: false, label: "Option B" }];
+              }
+            }
+          }
+
           usedDate = candidateDate;
           break;
         }
