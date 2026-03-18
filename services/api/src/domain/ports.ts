@@ -26,6 +26,21 @@ export interface WorkflowRepository {
     famousFor?: string;
     offersCheeseBoard: boolean;
     uniqueExperienceOffers: Array<{ name: string; price: number }>;
+    wineStyles: Array<
+      | "Organic & Biodynamic"
+      | "Natural & Minimal Intervention"
+      | "Small batch & Boutique"
+      | "Family-owned Estate"
+      | "Estate-grown fruit only"
+      | "Well known Margaret River Name"
+      | "Lesser known (off the beaten track)"
+      | "Red Wine Specialist"
+      | "White Wine Specialist"
+      | "Sparkling & Method traditionnelle Specialist"
+      | "Fortfied & Desert Wines"
+      | "Internationally awarded"
+      | "Wines only available at cellar door"
+    >;
   }): Promise<Winery | null>;
   getAvailabilityForDate(serviceDate: string): Promise<WineryAvailability[]>;
   createBooking(request: CreateBookingRequest): Promise<Booking>;

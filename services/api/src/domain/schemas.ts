@@ -1,5 +1,23 @@
 import { z } from "zod";
 
+const wineStyleValues = [
+  "Organic & Biodynamic",
+  "Natural & Minimal Intervention",
+  "Small batch & Boutique",
+  "Family-owned Estate",
+  "Estate-grown fruit only",
+  "Well known Margaret River Name",
+  "Lesser known (off the beaten track)",
+  "Red Wine Specialist",
+  "White Wine Specialist",
+  "Sparkling & Method traditionnelle Specialist",
+  "Fortfied & Desert Wines",
+  "Internationally awarded",
+  "Wines only available at cellar door",
+] as const;
+
+const wineStyleEnum = z.enum(wineStyleValues);
+
 const baseItineraryRequestSchema = z.object({
   booking_date: z.string().min(1),
   party_size: z.number().int().positive(),
@@ -111,6 +129,18 @@ export const wineryProfileUpdateSchema = z.object({
       price: z.number().nonnegative().max(10000),
     }),
   ).max(30),
+  wine_styles: z.array(wineStyleEnum).max(13).default([]),
+}).superRefine((value, ctx) => {
+  const hasWellKnown = value.wine_styles.includes("Well known Margaret River Name");
+  const hasLesserKnown = value.wine_styles.includes("Lesser known (off the beaten track)");
+  if (hasWellKnown && hasLesserKnown) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["wine_styles"],
+      message:
+        "\"Well known Margaret River Name\" and \"Lesser known (off the beaten track)\" cannot both be selected.",
+    });
+  }
 });
 
 export const createWineryMediaUploadRequestSchema = z.object({

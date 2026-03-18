@@ -183,6 +183,9 @@ function toSearchProfile(
   const profileDescription = remoteProfile?.description ?? "";
   const profileFamousFor = remoteProfile?.famous_for ?? "";
   const combinedText = `${remoteOfferNames} ${profileDescription} ${profileFamousFor}`.toLowerCase();
+  const styleSet = new Set(remoteProfile?.wine_styles ?? []);
+
+  const hasStyle = (style: string) => styleSet.has(style);
 
   return {
     hasLunchExperience:
@@ -191,17 +194,28 @@ function toSearchProfile(
       combinedText.includes("pairing") ||
       combinedText.includes("platter"),
     organicFriendly:
+      hasStyle("Organic & Biodynamic") ||
+      hasStyle("Natural & Minimal Intervention") ||
       combinedText.includes("organic") ||
       combinedText.includes("biodynamic") ||
       combinedText.includes("natural"),
     hasSpecialExperience:
+      hasStyle("Small batch & Boutique") ||
+      hasStyle("Family-owned Estate") ||
+      hasStyle("Internationally awarded") ||
       combinedText.includes("tour") ||
       combinedText.includes("private") ||
       combinedText.includes("behind the scenes") ||
       combinedText.includes("masterclass"),
     hasCheeseBoard:
       remoteProfile?.offers_cheese_board ?? false,
-    vibeTag: winery.selectedByCount >= 500 ? "popular" : "lesser-known",
+    vibeTag: hasStyle("Well known Margaret River Name")
+      ? "popular"
+      : hasStyle("Lesser known (off the beaten track)")
+        ? "lesser-known"
+        : winery.selectedByCount >= 500
+          ? "popular"
+          : "lesser-known",
     transportSuitable: true,
     supportsHalfDay: true,
     supportsFullDay: true,

@@ -31,6 +31,7 @@ const wineries: Winery[] = [
     famousFor: "Cabernet Sauvignon and Chardonnay",
     offersCheeseBoard: true,
     uniqueExperienceOffers: [{ name: "Estate tour", price: 70 }],
+    wineStyles: ["Well known Margaret River Name", "Internationally awarded"],
   },
   {
     wineryId: "22222222-2222-2222-2222-222222222222",
@@ -49,6 +50,7 @@ const wineries: Winery[] = [
     famousFor: "Biodynamic wines and dining",
     offersCheeseBoard: true,
     uniqueExperienceOffers: [{ name: "Private biodynamic tasting", price: 95 }],
+    wineStyles: ["Organic & Biodynamic", "Well known Margaret River Name"],
   },
   {
     wineryId: "33333333-3333-3333-3333-333333333333",
@@ -67,6 +69,7 @@ const wineries: Winery[] = [
     famousFor: "Parterre Cabernet Sauvignon",
     offersCheeseBoard: false,
     uniqueExperienceOffers: [{ name: "Library release tasting", price: 80 }],
+    wineStyles: ["Small batch & Boutique", "Red Wine Specialist"],
   },
   {
     wineryId: "44444444-4444-4444-4444-444444444444",
@@ -85,6 +88,7 @@ const wineries: Winery[] = [
     famousFor: "Classic reds and warm hospitality",
     offersCheeseBoard: true,
     uniqueExperienceOffers: [{ name: "Winemaker meet-and-greet", price: 60 }],
+    wineStyles: ["Family-owned Estate", "Small batch & Boutique"],
   },
 ];
 
@@ -166,6 +170,7 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     famousFor?: string;
     offersCheeseBoard: boolean;
     uniqueExperienceOffers: Array<{ name: string; price: number }>;
+    wineStyles: Winery["wineStyles"];
   }): Promise<Winery | null> {
     const index = wineries.findIndex((item) => item.wineryId === request.wineryId);
     if (index < 0) {
@@ -184,6 +189,7 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
       famousFor: request.famousFor,
       offersCheeseBoard: request.offersCheeseBoard,
       uniqueExperienceOffers: request.uniqueExperienceOffers,
+      wineStyles: request.wineStyles ?? [],
     };
 
     return wineries[index];

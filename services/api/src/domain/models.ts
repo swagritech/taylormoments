@@ -45,12 +45,28 @@ export type Winery = {
   famousFor?: string;
   offersCheeseBoard: boolean;
   uniqueExperienceOffers: WineryExperienceOffer[];
+  wineStyles: WineStyle[];
 };
 
 export type WineryExperienceOffer = {
   name: string;
   price: number;
 };
+
+export type WineStyle =
+  | "Organic & Biodynamic"
+  | "Natural & Minimal Intervention"
+  | "Small batch & Boutique"
+  | "Family-owned Estate"
+  | "Estate-grown fruit only"
+  | "Well known Margaret River Name"
+  | "Lesser known (off the beaten track)"
+  | "Red Wine Specialist"
+  | "White Wine Specialist"
+  | "Sparkling & Method traditionnelle Specialist"
+  | "Fortfied & Desert Wines"
+  | "Internationally awarded"
+  | "Wines only available at cellar door";
 
 export type WineryContact = {
   wineryId: string;

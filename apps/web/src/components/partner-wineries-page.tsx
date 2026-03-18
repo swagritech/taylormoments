@@ -51,6 +51,25 @@ type ExperienceDraft = {
   price: string;
 };
 
+const WINE_STYLE_OPTIONS = [
+  "Organic & Biodynamic",
+  "Natural & Minimal Intervention",
+  "Small batch & Boutique",
+  "Family-owned Estate",
+  "Estate-grown fruit only",
+  "Well known Margaret River Name",
+  "Lesser known (off the beaten track)",
+  "Red Wine Specialist",
+  "White Wine Specialist",
+  "Sparkling & Method traditionnelle Specialist",
+  "Fortfied & Desert Wines",
+  "Internationally awarded",
+  "Wines only available at cellar door",
+] as const;
+
+const WELL_KNOWN_STYLE = "Well known Margaret River Name";
+const LESSER_KNOWN_STYLE = "Lesser known (off the beaten track)";
+
 function makeExperienceDraft(entry?: { name: string; price: number }): ExperienceDraft {
   return {
     id: crypto.randomUUID(),
@@ -85,6 +104,7 @@ export function PartnerWineriesPage() {
   const [wineryDescription, setWineryDescription] = useState("");
   const [famousFor, setFamousFor] = useState("");
   const [offersCheeseBoard, setOffersCheeseBoard] = useState(false);
+  const [wineStyles, setWineStyles] = useState<string[]>([]);
   const [experienceRows, setExperienceRows] = useState<ExperienceDraft[]>([]);
   const [profileSavedAt, setProfileSavedAt] = useState<string | null>(null);
 
@@ -123,6 +143,7 @@ export function PartnerWineriesPage() {
       setWineryDescription(profileResponse.description ?? "");
       setFamousFor(profileResponse.famous_for ?? "");
       setOffersCheeseBoard(profileResponse.offers_cheese_board);
+      setWineStyles(profileResponse.wine_styles ?? []);
       setExperienceRows(
         profileResponse.unique_experience_offers.length > 0
           ? profileResponse.unique_experience_offers.map((entry) => makeExperienceDraft(entry))
@@ -300,6 +321,24 @@ export function PartnerWineriesPage() {
     setExperienceRows((current) => [...current, makeExperienceDraft()]);
   }
 
+  function toggleWineStyle(style: string, checked: boolean) {
+    setWineStyles((current) => {
+      const next = new Set(current);
+      if (checked) {
+        next.add(style);
+        if (style === WELL_KNOWN_STYLE) {
+          next.delete(LESSER_KNOWN_STYLE);
+        }
+        if (style === LESSER_KNOWN_STYLE) {
+          next.delete(WELL_KNOWN_STYLE);
+        }
+      } else {
+        next.delete(style);
+      }
+      return Array.from(next);
+    });
+  }
+
   function removeExperienceRow(id: string) {
     setExperienceRows((current) => (current.length > 1 ? current.filter((row) => row.id !== id) : current));
   }
@@ -338,6 +377,7 @@ export function PartnerWineriesPage() {
         description: wineryDescription.trim() || undefined,
         famous_for: famousFor.trim() || undefined,
         offers_cheese_board: offersCheeseBoard,
+        wine_styles: wineStyles,
         unique_experience_offers: normalizedRows,
       });
       setCapacity(String(updated.capacity ?? ""));
@@ -350,6 +390,7 @@ export function PartnerWineriesPage() {
       setWineryDescription(updated.description ?? "");
       setFamousFor(updated.famous_for ?? "");
       setOffersCheeseBoard(updated.offers_cheese_board);
+      setWineStyles(updated.wine_styles ?? []);
       setExperienceRows(
         updated.unique_experience_offers.length > 0
           ? updated.unique_experience_offers.map((entry) => makeExperienceDraft(entry))
@@ -706,6 +747,25 @@ export function PartnerWineriesPage() {
             />
             Offers cheese board
           </label>
+        </div>
+
+        <div className="field">
+          <label>Wine styles (multi-select)</label>
+          <div className="choiceRow">
+            {WINE_STYLE_OPTIONS.map((style) => {
+              const checked = wineStyles.includes(style);
+              return (
+                <label key={style} className="choicePill">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(event) => toggleWineStyle(style, event.target.checked)}
+                  />
+                  {style}
+                </label>
+              );
+            })}
+          </div>
         </div>
 
         <div className="field">

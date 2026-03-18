@@ -92,6 +92,7 @@ export async function listWineriesHandler(
         famous_for: winery.famousFor,
         offers_cheese_board: winery.offersCheeseBoard,
         unique_experience_offers: winery.uniqueExperienceOffers,
+        wine_styles: winery.wineStyles,
       })),
     };
     wineriesPublicCache = setCached(responseBody);
@@ -282,6 +283,7 @@ export async function getWineryProfileHandler(
       famous_for: winery.famousFor,
       offers_cheese_board: winery.offersCheeseBoard,
       unique_experience_offers: winery.uniqueExperienceOffers,
+      wine_styles: winery.wineStyles,
     });
   } catch (error) {
     context.error(error);
@@ -322,6 +324,7 @@ export async function updateWineryProfileHandler(
         name: entry.name.trim(),
         price: Number(entry.price),
       })),
+      wineStyles: payload.wine_styles,
     });
 
     if (!updated) {
@@ -344,6 +347,7 @@ export async function updateWineryProfileHandler(
       famous_for: updated.famousFor,
       offers_cheese_board: updated.offersCheeseBoard,
       unique_experience_offers: updated.uniqueExperienceOffers,
+      wine_styles: updated.wineStyles,
     });
   } catch (error) {
     context.error(error);
