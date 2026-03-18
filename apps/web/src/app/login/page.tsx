@@ -76,7 +76,7 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Log in"}
             </button>
           </form>
-          <div className="ctaRow" style={{ marginTop: 10 }}>
+          <div className="ctaRow" style={{ marginTop: 10, alignItems: "center" }}>
             <span className="subtle">Are you a partner?</span>
             <Link href="/partner/login" className="buttonGhost">Partner login</Link>
           </div>
