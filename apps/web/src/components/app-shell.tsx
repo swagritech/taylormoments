@@ -21,7 +21,6 @@ const publicNavItemsDefault = [
   { href: "/explore", label: "Explore" },
   { href: "/customer/dashboard", label: "Dashboard" },
   { href: "/plan", label: "Plan a day" },
-  { href: "/partner", label: "Partner login" },
 ];
 
 const partnerNavItems = [
