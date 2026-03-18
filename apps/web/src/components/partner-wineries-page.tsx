@@ -51,6 +51,14 @@ type ExperienceDraft = {
   price: string;
 };
 
+type ProfileSectionKey =
+  | "basics"
+  | "wine-styles"
+  | "setting-atmosphere"
+  | "wine-quality"
+  | "story-people"
+  | "experiences";
+
 const WINE_STYLE_OPTIONS = [
   "Organic & Biodynamic",
   "Natural & Minimal Intervention",
@@ -103,6 +111,15 @@ const WINERY_SIGNAL_GROUPS = [
   },
 ] as const;
 
+const PROFILE_SECTION_MENU: Array<{ key: ProfileSectionKey; label: string }> = [
+  { key: "basics", label: "Basics" },
+  { key: "wine-styles", label: "Wine styles" },
+  { key: "setting-atmosphere", label: "Setting & atmosphere" },
+  { key: "wine-quality", label: "Wine quality" },
+  { key: "story-people", label: "Story & people" },
+  { key: "experiences", label: "Experiences" },
+];
+
 function makeExperienceDraft(entry?: { name: string; price: number }): ExperienceDraft {
   return {
     id: crypto.randomUUID(),
@@ -141,6 +158,7 @@ export function PartnerWineriesPage() {
   const [winerySignals, setWinerySignals] = useState<string[]>([]);
   const [experienceRows, setExperienceRows] = useState<ExperienceDraft[]>([]);
   const [profileSavedAt, setProfileSavedAt] = useState<string | null>(null);
+  const [activeProfileSection, setActiveProfileSection] = useState<ProfileSectionKey>("basics");
 
   const loadRequests = useCallback(async (wineryId: string) => {
     if (!wineryId || !token) {
@@ -691,191 +709,244 @@ export function PartnerWineriesPage() {
         title="Winery profile settings"
         description="Set tasting price, winery details, and experience offers shown to guests."
       >
-        <div className="fieldRow profileCompactRow">
-          <div className="field compactField">
-            <label htmlFor="wineryCapacity">Guest capacity</label>
-            <input
-              id="wineryCapacity"
-              type="number"
-              min={1}
-              step={1}
-              className="inputLike inputField"
-              value={capacity}
-              onChange={(event) => setCapacity(event.target.value)}
-              placeholder="20"
-            />
-          </div>
-          <div className="field compactField">
-            <label htmlFor="tastingPrice">Tasting price (AUD)</label>
-            <div className="inputLike currencyField">
-              <span className="currencyPrefix" aria-hidden="true">$</span>
-              <input
-                id="tastingPrice"
-                type="number"
-                min={0}
-                step="0.01"
-                className="inputField currencyInput"
-                value={tastingPrice}
-                onChange={(event) => setTastingPrice(event.target.value)}
-                placeholder="35"
-              />
-            </div>
-          </div>
-          <div className="field compactField tastingDurationField">
-            <label htmlFor="tastingDurationMinutes">Tasting length (mins)</label>
-            <input
-              id="tastingDurationMinutes"
-              type="number"
-              min={1}
-              max={480}
-              step={1}
-              className="inputLike inputField"
-              value={tastingDurationMinutes}
-              onChange={(event) => setTastingDurationMinutes(event.target.value)}
-              placeholder="45"
-            />
-          </div>
-        </div>
+        <div className="profileEditorLayout">
+          <aside className="profileEditorMenu" aria-label="Winery profile sections">
+            {PROFILE_SECTION_MENU.map((entry) => (
+              <button
+                key={entry.key}
+                type="button"
+                className={`profileMenuItem ${activeProfileSection === entry.key ? "active" : ""}`}
+                onClick={() => setActiveProfileSection(entry.key)}
+              >
+                {entry.label}
+              </button>
+            ))}
+          </aside>
 
-        <div className="fieldRow">
-          <div className="field">
-            <label htmlFor="famousFor">What is your winery famous for?</label>
-            <input
-              id="famousFor"
-              className="inputLike inputField"
-              value={famousFor}
-              onChange={(event) => setFamousFor(event.target.value)}
-              placeholder="Cabernet Sauvignon and Chardonnay"
-            />
-          </div>
-        </div>
-
-        <div className="fieldRow">
-          <div className="field">
-            <label htmlFor="wineryAddress">Address</label>
-            <input
-              id="wineryAddress"
-              className="inputLike inputField"
-              value={address}
-              onChange={(event) => setAddress(event.target.value)}
-              placeholder="123 Caves Rd, Wilyabrup WA 6280"
-            />
-          </div>
-        </div>
-
-        <div className="field">
-          <label htmlFor="openingHours">Opening hours</label>
-          <textarea
-            id="openingHours"
-            className="inputLike inputField"
-            rows={3}
-            value={openingHours}
-            onChange={(event) => setOpeningHours(event.target.value)}
-            placeholder={"Mon-Fri 10:00-17:00\nSat-Sun 09:00-18:00"}
-          />
-        </div>
-
-        <div className="field">
-          <label htmlFor="wineryDescription">Winery description</label>
-          <textarea
-            id="wineryDescription"
-            className="inputLike inputField"
-            rows={4}
-            value={wineryDescription}
-            onChange={(event) => setWineryDescription(event.target.value)}
-            placeholder="Describe your winery, atmosphere, and guest experience."
-          />
-        </div>
-
-        <div className="field">
-          <label className="choicePill">
-            <input
-              type="checkbox"
-              checked={offersCheeseBoard}
-              onChange={(event) => setOffersCheeseBoard(event.target.checked)}
-            />
-            Offers cheese board
-          </label>
-        </div>
-
-        <div className="field">
-          <label>Wine styles (multi-select)</label>
-          <div className="choiceRow">
-            {WINE_STYLE_OPTIONS.map((style) => {
-              const checked = wineStyles.includes(style);
-              return (
-                <label key={style} className="choicePill">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(event) => toggleWineStyle(style, event.target.checked)}
+          <div className="profileEditorPane">
+            {activeProfileSection === "basics" ? (
+              <>
+                <div className="fieldRow profileCompactRow">
+                  <div className="field compactField">
+                    <label htmlFor="wineryCapacity">Guest capacity</label>
+                    <input
+                      id="wineryCapacity"
+                      type="number"
+                      min={1}
+                      step={1}
+                      className="inputLike inputField"
+                      value={capacity}
+                      onChange={(event) => setCapacity(event.target.value)}
+                      placeholder="20"
+                    />
+                  </div>
+                  <div className="field compactField">
+                    <label htmlFor="tastingPrice">Tasting price (AUD)</label>
+                    <div className="inputLike currencyField">
+                      <span className="currencyPrefix" aria-hidden="true">$</span>
+                      <input
+                        id="tastingPrice"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        className="inputField currencyInput"
+                        value={tastingPrice}
+                        onChange={(event) => setTastingPrice(event.target.value)}
+                        placeholder="35"
+                      />
+                    </div>
+                  </div>
+                  <div className="field compactField tastingDurationField">
+                    <label htmlFor="tastingDurationMinutes">Tasting length (mins)</label>
+                    <input
+                      id="tastingDurationMinutes"
+                      type="number"
+                      min={1}
+                      max={480}
+                      step={1}
+                      className="inputLike inputField"
+                      value={tastingDurationMinutes}
+                      onChange={(event) => setTastingDurationMinutes(event.target.value)}
+                      placeholder="45"
+                    />
+                  </div>
+                </div>
+                <div className="fieldRow">
+                  <div className="field">
+                    <label htmlFor="famousFor">What is your winery famous for?</label>
+                    <input
+                      id="famousFor"
+                      className="inputLike inputField"
+                      value={famousFor}
+                      onChange={(event) => setFamousFor(event.target.value)}
+                      placeholder="Cabernet Sauvignon and Chardonnay"
+                    />
+                  </div>
+                </div>
+                <div className="fieldRow">
+                  <div className="field">
+                    <label htmlFor="wineryAddress">Address</label>
+                    <input
+                      id="wineryAddress"
+                      className="inputLike inputField"
+                      value={address}
+                      onChange={(event) => setAddress(event.target.value)}
+                      placeholder="123 Caves Rd, Wilyabrup WA 6280"
+                    />
+                  </div>
+                </div>
+                <div className="field">
+                  <label htmlFor="openingHours">Opening hours</label>
+                  <textarea
+                    id="openingHours"
+                    className="inputLike inputField"
+                    rows={3}
+                    value={openingHours}
+                    onChange={(event) => setOpeningHours(event.target.value)}
+                    placeholder={"Mon-Fri 10:00-17:00\nSat-Sun 09:00-18:00"}
                   />
-                  {style}
-                </label>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="field">
-          <label>Setting, quality, and story signals (multi-select)</label>
-          {WINERY_SIGNAL_GROUPS.map((group) => (
-            <div key={group.heading} className="field" style={{ marginTop: 8 }}>
-              <p className="miniLabel">{group.heading}</p>
-              <div className="choiceRow">
-                {group.options.map((option) => (
-                  <label key={option.value} className="choicePill">
+                </div>
+                <div className="field">
+                  <label htmlFor="wineryDescription">Winery description</label>
+                  <textarea
+                    id="wineryDescription"
+                    className="inputLike inputField"
+                    rows={4}
+                    value={wineryDescription}
+                    onChange={(event) => setWineryDescription(event.target.value)}
+                    placeholder="Describe your winery, atmosphere, and guest experience."
+                  />
+                </div>
+                <div className="field">
+                  <label className="choicePill">
                     <input
                       type="checkbox"
-                      checked={winerySignals.includes(option.value)}
-                      onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      checked={offersCheeseBoard}
+                      onChange={(event) => setOffersCheeseBoard(event.target.checked)}
                     />
-                    {option.label}
+                    Offers cheese board
                   </label>
-                ))}
+                </div>
+              </>
+            ) : null}
+
+            {activeProfileSection === "wine-styles" ? (
+              <div className="field">
+                <label>Wine styles (multi-select)</label>
+                <div className="choiceRow">
+                  {WINE_STYLE_OPTIONS.map((style) => {
+                    const checked = wineStyles.includes(style);
+                    return (
+                      <label key={style} className="choicePill">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(event) => toggleWineStyle(style, event.target.checked)}
+                        />
+                        {style}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
+            ) : null}
+
+            {activeProfileSection === "setting-atmosphere" ? (
+              <div className="field">
+                <label>Setting & atmosphere</label>
+                <div className="choiceRow">
+                  {(WINERY_SIGNAL_GROUPS[0]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "wine-quality" ? (
+              <div className="field">
+                <label>Wine quality & recognition</label>
+                <div className="choiceRow">
+                  {(WINERY_SIGNAL_GROUPS[1]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "story-people" ? (
+              <div className="field">
+                <label>Story & people</label>
+                <div className="choiceRow">
+                  {(WINERY_SIGNAL_GROUPS[2]?.options ?? []).map((option) => (
+                    <label key={option.value} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={winerySignals.includes(option.value)}
+                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeProfileSection === "experiences" ? (
+              <div className="field">
+                <label>Unique experiences and prices</label>
+                <div className="experienceList">
+                  {experienceRows.map((row) => (
+                    <div key={row.id} className="experienceRow">
+                      <input
+                        className="inputLike inputField"
+                        value={row.name}
+                        onChange={(event) => updateExperienceRow(row.id, "name", event.target.value)}
+                        placeholder="Experience name"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        className="inputLike inputField"
+                        value={row.price}
+                        onChange={(event) => updateExperienceRow(row.id, "price", event.target.value)}
+                        placeholder="Price (AUD)"
+                      />
+                      <button type="button" className="buttonGhost" onClick={() => removeExperienceRow(row.id)}>
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="ctaRow">
+                  <button type="button" className="buttonGhost" onClick={addExperienceRow}>
+                    Add experience
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="ctaRow">
+              <button type="button" className="buttonPrimary" onClick={handleSaveProfile} disabled={profileSaving}>
+                {profileSaving ? "Saving..." : "Save winery profile"}
+              </button>
+              {profileSavedAt ? <span className="meta">Saved {formatDateTime(profileSavedAt)}</span> : null}
             </div>
-          ))}
-        </div>
-
-        <div className="field">
-          <label>Unique experiences and prices</label>
-          <div className="experienceList">
-            {experienceRows.map((row) => (
-              <div key={row.id} className="experienceRow">
-                <input
-                  className="inputLike inputField"
-                  value={row.name}
-                  onChange={(event) => updateExperienceRow(row.id, "name", event.target.value)}
-                  placeholder="Experience name"
-                />
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  className="inputLike inputField"
-                  value={row.price}
-                  onChange={(event) => updateExperienceRow(row.id, "price", event.target.value)}
-                  placeholder="Price (AUD)"
-                />
-                <button type="button" className="buttonGhost" onClick={() => removeExperienceRow(row.id)}>
-                  Remove
-                </button>
-              </div>
-            ))}
           </div>
-          <div className="ctaRow">
-            <button type="button" className="buttonGhost" onClick={addExperienceRow}>
-              Add experience
-            </button>
-          </div>
-        </div>
-
-        <div className="ctaRow">
-          <button type="button" className="buttonPrimary" onClick={handleSaveProfile} disabled={profileSaving}>
-            {profileSaving ? "Saving..." : "Save winery profile"}
-          </button>
-          {profileSavedAt ? <span className="meta">Saved {formatDateTime(profileSavedAt)}</span> : null}
         </div>
       </SectionCard>
     </AppShell>
