@@ -202,7 +202,7 @@ function toSearchProfile(
   const minAdvanceDays = Object.entries(advanceDaysMap)
     .filter(([signal]) => hasSignal(signal))
     .map(([, days]) => days)
-    .sort((a, b) => b - a)[0] ?? 2;
+    .sort((a, b) => b - a)[0] ?? 0;
   const hasAnyFoodSignal =
     hasSignal("winery_lunch") ||
     hasSignal("cheese_board") ||
