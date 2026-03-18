@@ -1,5 +1,6 @@
 import type { WorkflowRepository } from "../domain/ports.js";
 import type {
+  WinerySignal,
   WineStyle,
   ActionToken,
   Booking,
@@ -29,6 +30,24 @@ const allowedWineStyles = new Set<WineStyle>([
   "Fortfied & Desert Wines",
   "Internationally awarded",
   "Wines only available at cellar door",
+]);
+
+const allowedWinerySignals = new Set<WinerySignal>([
+  "view_stunning",
+  "intimate_welcome",
+  "historic_estate",
+  "secluded",
+  "garden_picnic",
+  "halliday_5star",
+  "gold_medals",
+  "exported_asia",
+  "trophy_winner",
+  "press_featured",
+  "multi_generation",
+  "female_winemaker",
+  "certified_organic",
+  "regenerative",
+  "small_production",
 ]);
 
 function formatPgDate(value: unknown) {
@@ -66,6 +85,9 @@ function mapWinery(row: Record<string, unknown>): Winery {
     : [];
   const rawWineStyles = Array.isArray(row.wine_styles)
     ? row.wine_styles
+    : [];
+  const rawWinerySignals = Array.isArray(row.winery_signals)
+    ? row.winery_signals
     : [];
 
   return {
@@ -109,6 +131,9 @@ function mapWinery(row: Record<string, unknown>): Winery {
     wineStyles: rawWineStyles
       .map((entry) => String(entry).trim())
       .filter((entry): entry is WineStyle => allowedWineStyles.has(entry as WineStyle)),
+    winerySignals: rawWinerySignals
+      .map((entry) => String(entry).trim())
+      .filter((entry): entry is WinerySignal => allowedWinerySignals.has(entry as WinerySignal)),
   };
 }
 
@@ -221,7 +246,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const result = await pool.query(`
       select distinct on (lower(name))
              winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, opening_hours, active,
-             tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers, wine_styles
+             tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers, wine_styles, winery_signals
       from winery
       order by lower(name) asc, updated_at desc, created_at desc
     `);
@@ -235,7 +260,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
       `
         select winery_id, name, region, confirmation_mode, capacity, latitude, longitude, active,
                address, opening_hours,
-               tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers, wine_styles
+               tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers, wine_styles, winery_signals
         from winery
         where winery_id = $1
       `,
@@ -261,6 +286,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     offersCheeseBoard: boolean;
     uniqueExperienceOffers: Array<{ name: string; price: number }>;
     wineStyles: Winery["wineStyles"];
+    winerySignals: Winery["winerySignals"];
   }): Promise<Winery | null> {
     const pool = getPool();
     const result = await pool.query(
@@ -276,10 +302,11 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
             offers_cheese_board = $8,
             unique_experience_offers = $9::jsonb,
             wine_styles = $11::jsonb,
+            winery_signals = $12::jsonb,
             updated_at = now()
         where winery_id = $1
         returning winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, opening_hours, active,
-                  tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers, wine_styles
+                  tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers, wine_styles, winery_signals
       `,
       [
         request.wineryId,
@@ -293,6 +320,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
         JSON.stringify(request.uniqueExperienceOffers ?? []),
         request.tastingDurationMinutes ?? null,
         JSON.stringify(request.wineStyles ?? []),
+        JSON.stringify(request.winerySignals ?? []),
       ],
     );
 

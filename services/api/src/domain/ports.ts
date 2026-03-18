@@ -41,6 +41,23 @@ export interface WorkflowRepository {
       | "Internationally awarded"
       | "Wines only available at cellar door"
     >;
+    winerySignals: Array<
+      | "view_stunning"
+      | "intimate_welcome"
+      | "historic_estate"
+      | "secluded"
+      | "garden_picnic"
+      | "halliday_5star"
+      | "gold_medals"
+      | "exported_asia"
+      | "trophy_winner"
+      | "press_featured"
+      | "multi_generation"
+      | "female_winemaker"
+      | "certified_organic"
+      | "regenerative"
+      | "small_production"
+    >;
   }): Promise<Winery | null>;
   getAvailabilityForDate(serviceDate: string): Promise<WineryAvailability[]>;
   createBooking(request: CreateBookingRequest): Promise<Booking>;

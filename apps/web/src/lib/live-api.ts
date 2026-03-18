@@ -247,6 +247,7 @@ export type WineryListResponse = {
     famous_for?: string;
     offers_cheese_board?: boolean;
     wine_styles?: string[];
+    winery_signals?: string[];
     unique_experience_offers?: Array<{
       name: string;
       price: number;
@@ -269,6 +270,7 @@ export type WineryProfileResponse = {
   famous_for?: string;
   offers_cheese_board: boolean;
   wine_styles: string[];
+  winery_signals: string[];
   unique_experience_offers: Array<{
     name: string;
     price: number;
@@ -440,6 +442,7 @@ export async function updateWineryProfileAuthed(
     famous_for?: string;
     offers_cheese_board: boolean;
     wine_styles: string[];
+    winery_signals: string[];
     unique_experience_offers: Array<{
       name: string;
       price: number;

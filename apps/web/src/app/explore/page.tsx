@@ -184,8 +184,10 @@ function toSearchProfile(
   const profileFamousFor = remoteProfile?.famous_for ?? "";
   const combinedText = `${remoteOfferNames} ${profileDescription} ${profileFamousFor}`.toLowerCase();
   const styleSet = new Set(remoteProfile?.wine_styles ?? []);
+  const signalSet = new Set(remoteProfile?.winery_signals ?? []);
 
   const hasStyle = (style: string) => styleSet.has(style);
+  const hasSignal = (signal: string) => signalSet.has(signal);
 
   return {
     hasLunchExperience:
@@ -196,6 +198,8 @@ function toSearchProfile(
     organicFriendly:
       hasStyle("Organic & Biodynamic") ||
       hasStyle("Natural & Minimal Intervention") ||
+      hasSignal("certified_organic") ||
+      hasSignal("regenerative") ||
       combinedText.includes("organic") ||
       combinedText.includes("biodynamic") ||
       combinedText.includes("natural"),
@@ -203,6 +207,11 @@ function toSearchProfile(
       hasStyle("Small batch & Boutique") ||
       hasStyle("Family-owned Estate") ||
       hasStyle("Internationally awarded") ||
+      hasSignal("halliday_5star") ||
+      hasSignal("gold_medals") ||
+      hasSignal("trophy_winner") ||
+      hasSignal("press_featured") ||
+      hasSignal("small_production") ||
       combinedText.includes("tour") ||
       combinedText.includes("private") ||
       combinedText.includes("behind the scenes") ||

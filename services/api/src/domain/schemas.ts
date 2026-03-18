@@ -18,6 +18,26 @@ const wineStyleValues = [
 
 const wineStyleEnum = z.enum(wineStyleValues);
 
+const winerySignalValues = [
+  "view_stunning",
+  "intimate_welcome",
+  "historic_estate",
+  "secluded",
+  "garden_picnic",
+  "halliday_5star",
+  "gold_medals",
+  "exported_asia",
+  "trophy_winner",
+  "press_featured",
+  "multi_generation",
+  "female_winemaker",
+  "certified_organic",
+  "regenerative",
+  "small_production",
+] as const;
+
+const winerySignalEnum = z.enum(winerySignalValues);
+
 const baseItineraryRequestSchema = z.object({
   booking_date: z.string().min(1),
   party_size: z.number().int().positive(),
@@ -130,6 +150,7 @@ export const wineryProfileUpdateSchema = z.object({
     }),
   ).max(30),
   wine_styles: z.array(wineStyleEnum).max(13).default([]),
+  winery_signals: z.array(winerySignalEnum).max(15).default([]),
 }).superRefine((value, ctx) => {
   const hasWellKnown = value.wine_styles.includes("Well known Margaret River Name");
   const hasLesserKnown = value.wine_styles.includes("Lesser known (off the beaten track)");

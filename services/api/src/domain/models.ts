@@ -46,6 +46,7 @@ export type Winery = {
   offersCheeseBoard: boolean;
   uniqueExperienceOffers: WineryExperienceOffer[];
   wineStyles: WineStyle[];
+  winerySignals: WinerySignal[];
 };
 
 export type WineryExperienceOffer = {
@@ -67,6 +68,23 @@ export type WineStyle =
   | "Fortfied & Desert Wines"
   | "Internationally awarded"
   | "Wines only available at cellar door";
+
+export type WinerySignal =
+  | "view_stunning"
+  | "intimate_welcome"
+  | "historic_estate"
+  | "secluded"
+  | "garden_picnic"
+  | "halliday_5star"
+  | "gold_medals"
+  | "exported_asia"
+  | "trophy_winner"
+  | "press_featured"
+  | "multi_generation"
+  | "female_winemaker"
+  | "certified_organic"
+  | "regenerative"
+  | "small_production";
 
 export type WineryContact = {
   wineryId: string;

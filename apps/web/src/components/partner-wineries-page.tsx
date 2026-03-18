@@ -70,6 +70,39 @@ const WINE_STYLE_OPTIONS = [
 const WELL_KNOWN_STYLE = "Well known Margaret River Name";
 const LESSER_KNOWN_STYLE = "Lesser known (off the beaten track)";
 
+const WINERY_SIGNAL_GROUPS = [
+  {
+    heading: "Setting & Atmosphere",
+    options: [
+      { value: "view_stunning", label: "Stunning vineyard views" },
+      { value: "intimate_welcome", label: "Intimate, small-group welcome" },
+      { value: "historic_estate", label: "Historic estate" },
+      { value: "secluded", label: "Secluded and unhurried - no crowds" },
+      { value: "garden_picnic", label: "Beautiful garden picnic grounds" },
+    ],
+  },
+  {
+    heading: "Wine Quality & Recognition",
+    options: [
+      { value: "halliday_5star", label: "James Halliday 5-Star winery" },
+      { value: "gold_medals", label: "Gold medals at international shows" },
+      { value: "exported_asia", label: "Wines exported to Asia" },
+      { value: "trophy_winner", label: "Consistent trophy winner at MR Wine Show" },
+      { value: "press_featured", label: "Featured in Decanter, Wine Spectator, or Halliday" },
+    ],
+  },
+  {
+    heading: "Story & People",
+    options: [
+      { value: "multi_generation", label: "Three generations of family winemaking" },
+      { value: "female_winemaker", label: "Female winemaker and founder" },
+      { value: "certified_organic", label: "Certified organic" },
+      { value: "regenerative", label: "Regenerative farming practices" },
+      { value: "small_production", label: "Produces fewer than 5,000 cases per year" },
+    ],
+  },
+] as const;
+
 function makeExperienceDraft(entry?: { name: string; price: number }): ExperienceDraft {
   return {
     id: crypto.randomUUID(),
@@ -105,6 +138,7 @@ export function PartnerWineriesPage() {
   const [famousFor, setFamousFor] = useState("");
   const [offersCheeseBoard, setOffersCheeseBoard] = useState(false);
   const [wineStyles, setWineStyles] = useState<string[]>([]);
+  const [winerySignals, setWinerySignals] = useState<string[]>([]);
   const [experienceRows, setExperienceRows] = useState<ExperienceDraft[]>([]);
   const [profileSavedAt, setProfileSavedAt] = useState<string | null>(null);
 
@@ -144,6 +178,7 @@ export function PartnerWineriesPage() {
       setFamousFor(profileResponse.famous_for ?? "");
       setOffersCheeseBoard(profileResponse.offers_cheese_board);
       setWineStyles(profileResponse.wine_styles ?? []);
+      setWinerySignals(profileResponse.winery_signals ?? []);
       setExperienceRows(
         profileResponse.unique_experience_offers.length > 0
           ? profileResponse.unique_experience_offers.map((entry) => makeExperienceDraft(entry))
@@ -339,6 +374,18 @@ export function PartnerWineriesPage() {
     });
   }
 
+  function toggleWinerySignal(signal: string, checked: boolean) {
+    setWinerySignals((current) => {
+      const next = new Set(current);
+      if (checked) {
+        next.add(signal);
+      } else {
+        next.delete(signal);
+      }
+      return Array.from(next);
+    });
+  }
+
   function removeExperienceRow(id: string) {
     setExperienceRows((current) => (current.length > 1 ? current.filter((row) => row.id !== id) : current));
   }
@@ -378,6 +425,7 @@ export function PartnerWineriesPage() {
         famous_for: famousFor.trim() || undefined,
         offers_cheese_board: offersCheeseBoard,
         wine_styles: wineStyles,
+        winery_signals: winerySignals,
         unique_experience_offers: normalizedRows,
       });
       setCapacity(String(updated.capacity ?? ""));
@@ -391,6 +439,7 @@ export function PartnerWineriesPage() {
       setFamousFor(updated.famous_for ?? "");
       setOffersCheeseBoard(updated.offers_cheese_board);
       setWineStyles(updated.wine_styles ?? []);
+      setWinerySignals(updated.winery_signals ?? []);
       setExperienceRows(
         updated.unique_experience_offers.length > 0
           ? updated.unique_experience_offers.map((entry) => makeExperienceDraft(entry))
@@ -766,6 +815,27 @@ export function PartnerWineriesPage() {
               );
             })}
           </div>
+        </div>
+
+        <div className="field">
+          <label>Setting, quality, and story signals (multi-select)</label>
+          {WINERY_SIGNAL_GROUPS.map((group) => (
+            <div key={group.heading} className="field" style={{ marginTop: 8 }}>
+              <p className="miniLabel">{group.heading}</p>
+              <div className="choiceRow">
+                {group.options.map((option) => (
+                  <label key={option.value} className="choicePill">
+                    <input
+                      type="checkbox"
+                      checked={winerySignals.includes(option.value)}
+                      onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
+                    />
+                    {option.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="field">
