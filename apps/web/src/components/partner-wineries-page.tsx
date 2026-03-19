@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-state";
 import { optimizeWineryUploadImage } from "@/lib/image-utils";
 import {
   approveWineryToken,
+  changePassword,
   completeWineryMediaUpload,
   createWineryMediaUploadUrl,
   deleteWineryMediaAuthed,
@@ -53,6 +54,7 @@ type ExperienceDraft = {
 
 type ProfileSectionKey =
   | "basics"
+  | "password"
   | "gallery"
   | "wine-styles"
   | "setting-atmosphere"
@@ -269,6 +271,7 @@ const WINERY_SIGNAL_GROUPS = [
 
 const PROFILE_SECTION_MENU: Array<{ key: ProfileSectionKey; label: string }> = [
   { key: "basics", label: "Basics" },
+  { key: "password", label: "Password" },
   { key: "gallery", label: "Image gallery" },
   { key: "wine-styles", label: "Wine styles" },
   { key: "setting-atmosphere", label: "Setting & atmosphere" },
@@ -330,6 +333,12 @@ export function PartnerWineriesPage() {
   const [experienceRows, setExperienceRows] = useState<ExperienceDraft[]>([]);
   const [profileSavedAt, setProfileSavedAt] = useState<string | null>(null);
   const [activeProfileSection, setActiveProfileSection] = useState<ProfileSectionKey>("basics");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [profileAutoSaving, setProfileAutoSaving] = useState(false);
   const profileLoadedRef = useRef(false);
   const profileAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -697,6 +706,46 @@ export function PartnerWineriesPage() {
 
   function removeExperienceRow(id: string) {
     setExperienceRows((current) => (current.length > 1 ? current.filter((row) => row.id !== id) : current));
+  }
+
+  async function handleChangePassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token) {
+      setPasswordError("Sign in first to change your password.");
+      return;
+    }
+
+    setPasswordError(null);
+    setPasswordMessage(null);
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Please complete all password fields.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New password confirmation does not match.");
+      return;
+    }
+
+    try {
+      setPasswordSaving(true);
+      const response = await changePassword(token, {
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      setPasswordMessage(response.message || "Password updated.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (changeError) {
+      setPasswordError(changeError instanceof Error ? changeError.message : "Unable to change password.");
+    } finally {
+      setPasswordSaving(false);
+    }
   }
 
   async function handleSaveProfile(options?: { silent?: boolean; autosave?: boolean }) {
@@ -1113,6 +1162,54 @@ export function PartnerWineriesPage() {
                   />
                 </div>
               </>
+            ) : null}
+
+            {activeProfileSection === "password" ? (
+              <form className="formPreview" onSubmit={handleChangePassword}>
+                <p className="miniLabel">Update your partner login password</p>
+                <div className="field">
+                  <label htmlFor="currentPassword">Current password</label>
+                  <input
+                    id="currentPassword"
+                    type="password"
+                    className="inputLike inputField"
+                    value={currentPassword}
+                    onChange={(event) => setCurrentPassword(event.target.value)}
+                    autoComplete="current-password"
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="newPassword">New password</label>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    minLength={8}
+                    className="inputLike inputField"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="confirmPassword">Confirm new password</label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    minLength={8}
+                    className="inputLike inputField"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    autoComplete="new-password"
+                  />
+                </div>
+                {passwordError ? <div className="callout errorCallout">{passwordError}</div> : null}
+                {passwordMessage ? <div className="callout successCallout">{passwordMessage}</div> : null}
+                <div className="ctaRow">
+                  <button type="submit" className="buttonPrimary profileSaveButton" disabled={passwordSaving}>
+                    {passwordSaving ? "Updating..." : "Update password"}
+                  </button>
+                </div>
+              </form>
             ) : null}
 
             {activeProfileSection === "gallery" ? (
@@ -1556,19 +1653,21 @@ export function PartnerWineriesPage() {
               </div>
             ) : null}
 
-            <div className="ctaRow">
-              <button
-                type="button"
-                className="buttonPrimary profileSaveButton"
-                onClick={() => void handleSaveProfile()}
-                disabled={profileSaving}
-              >
-                {profileSaving ? "Saving..." : "Save winery profile"}
-              </button>
-              {profileAutoSaving ? <span className="meta">Autosaving...</span> : null}
-              {profileSavedAt ? <span className="meta">Saved {formatDateTime(profileSavedAt)}</span> : null}
-              {!profileAutoSaving && !profileSavedAt ? <span className="meta">Autosave enabled</span> : null}
-            </div>
+            {activeProfileSection !== "password" ? (
+              <div className="ctaRow">
+                <button
+                  type="button"
+                  className="buttonPrimary profileSaveButton"
+                  onClick={() => void handleSaveProfile()}
+                  disabled={profileSaving}
+                >
+                  {profileSaving ? "Saving..." : "Save winery profile"}
+                </button>
+                {profileAutoSaving ? <span className="meta">Autosaving...</span> : null}
+                {profileSavedAt ? <span className="meta">Saved {formatDateTime(profileSavedAt)}</span> : null}
+                {!profileAutoSaving && !profileSavedAt ? <span className="meta">Autosave enabled</span> : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </SectionCard>

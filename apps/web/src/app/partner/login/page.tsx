@@ -7,19 +7,15 @@ import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { useAuth } from "@/lib/auth-state";
 import { routeForUser } from "@/lib/auth-routing";
-import { changePassword, forgotPassword } from "@/lib/live-api";
+import { forgotPassword } from "@/lib/live-api";
 
 export default function PartnerLoginPage() {
   const router = useRouter();
-  const { login, token, user, loading: authLoading } = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [forgotEmail, setForgotEmail] = useState("");
-  const [changeCurrentPassword, setChangeCurrentPassword] = useState("");
-  const [changeNewPassword, setChangeNewPassword] = useState("");
-  const [changeConfirmPassword, setChangeConfirmPassword] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [changeLoading, setChangeLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,38 +59,6 @@ export default function PartnerLoginPage() {
       setError(requestError instanceof Error ? requestError.message : "Unable to reset password.");
     } finally {
       setForgotLoading(false);
-    }
-  }
-
-  async function handleChangePassword(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!token) {
-      setError("Sign in first to change your password.");
-      return;
-    }
-
-    setError(null);
-    setMessage(null);
-
-    if (changeNewPassword !== changeConfirmPassword) {
-      setError("Change password confirmation does not match.");
-      return;
-    }
-
-    try {
-      setChangeLoading(true);
-      const response = await changePassword(token, {
-        current_password: changeCurrentPassword,
-        new_password: changeNewPassword,
-      });
-      setMessage(response.message);
-      setChangeCurrentPassword("");
-      setChangeNewPassword("");
-      setChangeConfirmPassword("");
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Unable to change password.");
-    } finally {
-      setChangeLoading(false);
     }
   }
 
@@ -177,46 +141,6 @@ export default function PartnerLoginPage() {
               </div>
             </form>
           ) : null}
-          <form className="formPreview" onSubmit={handleChangePassword} style={{ marginTop: 12 }}>
-            <p className="miniLabel">Change password (signed-in)</p>
-            <div className="fieldRow">
-              <div className="field">
-                <label htmlFor="changeCurrentPassword">Current password</label>
-                <input
-                  id="changeCurrentPassword"
-                  type="password"
-                  className="inputLike inputField"
-                  value={changeCurrentPassword}
-                  onChange={(event) => setChangeCurrentPassword(event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="changeNewPassword">New password</label>
-                <input
-                  id="changeNewPassword"
-                  type="password"
-                  minLength={8}
-                  className="inputLike inputField"
-                  value={changeNewPassword}
-                  onChange={(event) => setChangeNewPassword(event.target.value)}
-                />
-              </div>
-            </div>
-            <div className="field">
-              <label htmlFor="changeConfirmPassword">Confirm new password</label>
-              <input
-                id="changeConfirmPassword"
-                type="password"
-                minLength={8}
-                className="inputLike inputField"
-                value={changeConfirmPassword}
-                onChange={(event) => setChangeConfirmPassword(event.target.value)}
-              />
-            </div>
-            <button type="submit" className="buttonGhost fullWidthButton" disabled={changeLoading}>
-              {changeLoading ? "Updating..." : "Change password"}
-            </button>
-          </form>
           {message ? <div className="callout successCallout" style={{ marginTop: 10 }}>{message}</div> : null}
           <div className="ctaRow" style={{ marginTop: 10 }}>
             <span className="subtle">Need a new partner account?</span>
