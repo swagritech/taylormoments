@@ -20,6 +20,7 @@ export default function PartnerLoginPage() {
   const [changeConfirmPassword, setChangeConfirmPassword] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
   const [changeLoading, setChangeLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -135,28 +136,47 @@ export default function PartnerLoginPage() {
               {loading ? "Signing in..." : "Log in"}
             </button>
           </form>
-          <form className="formPreview" onSubmit={handleForgotPassword} style={{ marginTop: 12 }}>
-            <p className="miniLabel">Forgot password</p>
-            <div className="field">
-              <label htmlFor="forgotEmail">Account email</label>
-              <input
-                id="forgotEmail"
-                type="email"
-                required
-                className="inputLike inputField"
-                value={forgotEmail}
-                onChange={(event) => setForgotEmail(event.target.value)}
-              />
-            </div>
-            <p className="subtle">We will email a secure reset link if this account exists.</p>
-            <button type="submit" className="buttonGhost fullWidthButton" disabled={forgotLoading}>
-              {forgotLoading ? "Sending..." : "Send reset link"}
+          <div className="ctaRow" style={{ marginTop: 12, alignItems: "center" }}>
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword((current) => !current)}
+              style={{
+                padding: 0,
+                border: 0,
+                background: "transparent",
+                color: "var(--teal)",
+                textDecoration: "underline",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Forgot Password?
             </button>
-            <div className="ctaRow">
-              <span className="subtle">Have a reset link already?</span>
-              <Link href="/partner/reset-password" className="buttonGhost">Open reset page</Link>
-            </div>
-          </form>
+          </div>
+          {showForgotPassword ? (
+            <form className="formPreview" onSubmit={handleForgotPassword} style={{ marginTop: 8 }}>
+              <p className="miniLabel">Forgot password</p>
+              <div className="field">
+                <label htmlFor="forgotEmail">Account email</label>
+                <input
+                  id="forgotEmail"
+                  type="email"
+                  required
+                  className="inputLike inputField"
+                  value={forgotEmail}
+                  onChange={(event) => setForgotEmail(event.target.value)}
+                />
+              </div>
+              <p className="subtle">We will email a secure reset link if this account exists.</p>
+              <button type="submit" className="buttonGhost fullWidthButton" disabled={forgotLoading}>
+                {forgotLoading ? "Sending..." : "Send reset link"}
+              </button>
+              <div className="ctaRow">
+                <span className="subtle">Have a reset link already?</span>
+                <Link href="/partner/reset-password" className="buttonGhost">Open reset page</Link>
+              </div>
+            </form>
+          ) : null}
           <form className="formPreview" onSubmit={handleChangePassword} style={{ marginTop: 12 }}>
             <p className="miniLabel">Change password (signed-in)</p>
             <div className="fieldRow">
