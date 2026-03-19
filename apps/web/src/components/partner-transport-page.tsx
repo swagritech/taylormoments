@@ -82,64 +82,6 @@ export function PartnerTransportPage() {
           <p className="statHint">Current pickup zone for route planning.</p>
         </div>
       </div>
-
-      <div className="grid two">
-        <SectionCard
-          title="Carrier roster"
-          description="Active transport partners and fleet profile."
-        >
-          <div className="list">
-            {[
-              ["Cape to Vine Transfers", "Margaret River, Wilyabrup, Yallingup", "Available", "2 x 11-seat Mercedes vans", "4.9"],
-              ["Forest Coast Shuttle", "Town, coast, and lunch-transfer runs", "Busy soon", "Mini bus + executive SUV", "4.7"],
-              ["South West Charters", "Corporate groups and private wine tours", "Available", "14-seat midi coach", "4.8"],
-            ].map(([name, area, status, fleet, rating]) => (
-              <div key={name} className="listRow">
-                <div className="listTop">
-                  <div>
-                    <h3>{name}</h3>
-                    <p className="subtle">{area}</p>
-                  </div>
-                  <span className={`status ${transportStatusClass(status)}`}>{status}</span>
-                </div>
-                <div className="metaRow">
-                  <span className="meta">{fleet}</span>
-                  <span className="meta">Rating {rating}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          title="Open jobs"
-          description="Jobs generated from confirmed or near-confirmed itineraries."
-        >
-          <div className="list">
-            {jobs.map((job, index) => (
-              <div key={job.id} className="listRow">
-                <div className="listTop">
-                  <div>
-                    <h3>{job.id}</h3>
-                    <p className="subtle">{job.routeLabel}</p>
-                  </div>
-                  <span className={`status ${transportStatusClass(job.status)}`}>{job.status}</span>
-                </div>
-                <div className="metaRow">
-                  <span className="meta">{job.date}</span>
-                  <span className="meta">Pickup {job.pickupTime}</span>
-                  <span className="meta">{job.passengers} passengers</span>
-                  <span className="meta">{job.vehicleType}</span>
-                  <span className="meta">{job.payout}</span>
-                </div>
-                <div className="callout">
-                  {index === 0 && job.id.startsWith("TM-") ? "Live recommendation" : "Recommended provider"}: <strong>{job.recommendedProvider}</strong>
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      </div>
     </AppShell>
   );
 }
