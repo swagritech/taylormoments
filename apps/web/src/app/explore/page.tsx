@@ -445,6 +445,7 @@ export default function ExplorePage() {
   const [email, setEmail] = useState(initialPreferences?.email ?? "");
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
   const [needTransport, setNeedTransport] = useState<YesNo>(initialPreferences?.needTransport ?? "yes");
+  const [pickupAddress] = useState(initialPreferences?.pickupAddress ?? "");
   const [tripLength, setTripLength] = useState<TripLength>(initialPreferences?.tripLength ?? "full-day");
   const [selectedWineStyles, setSelectedWineStyles] = useState<WineStyleId[]>(() => {
     if (initialPreferences?.wineStyles?.length) {
@@ -564,6 +565,7 @@ export default function ExplorePage() {
       email,
       groupSize,
       needTransport,
+      pickupAddress,
       tripLength,
       includeLunch,
       prefOrganic,
@@ -586,6 +588,7 @@ export default function ExplorePage() {
     email,
     groupSize,
     needTransport,
+    pickupAddress,
     tripLength,
     selectedWineStyles,
     selectedExperiences,
@@ -770,7 +773,7 @@ export default function ExplorePage() {
           booking_date: candidateDate,
           pickup_location:
             needTransport === "yes"
-              ? "Margaret River Visitor Centre"
+              ? pickupAddress.trim() || "Margaret River Visitor Centre"
               : "Self-drive (no transport required)",
           party_size: groupSize,
           preferred_start_time: timeWindow.start,
@@ -794,7 +797,7 @@ export default function ExplorePage() {
                 booking_date: candidateDate,
                 pickup_location:
                   needTransport === "yes"
-                    ? "Margaret River Visitor Centre"
+                    ? pickupAddress.trim() || "Margaret River Visitor Centre"
                     : "Self-drive (no transport required)",
                 party_size: groupSize,
                 preferred_start_time: timeWindow.start,
@@ -837,7 +840,7 @@ export default function ExplorePage() {
     }
     const pickupLocation =
       needTransport === "yes"
-        ? "Margaret River Visitor Centre"
+        ? pickupAddress.trim() || "Margaret River Visitor Centre"
         : "Self-drive (no transport required)";
 
     saveExploreTourSummary({

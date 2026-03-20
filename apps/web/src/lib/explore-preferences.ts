@@ -16,6 +16,7 @@ export type ExplorePreferences = {
   email: string;
   groupSize: number;
   needTransport: ExploreYesNo;
+  pickupAddress?: string;
   tripLength: ExploreTripLength;
   includeLunch: ExploreYesNo;
   prefOrganic: boolean;

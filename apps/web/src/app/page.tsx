@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -38,6 +38,10 @@ function groupErrorMessage(groupSize: number) {
   return null;
 }
 
+type AddressSuggestion = {
+  display_name: string;
+};
+
 export default function Home() {
   const router = useRouter();
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
@@ -45,6 +49,10 @@ export default function Home() {
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
   const [tripLength, setTripLength] = useState<ExploreTripLength>(initialPreferences?.tripLength ?? "full-day");
   const [needTransport, setNeedTransport] = useState<ExploreYesNo>(initialPreferences?.needTransport ?? "yes");
+  const [pickupAddress, setPickupAddress] = useState(initialPreferences?.pickupAddress ?? "");
+  const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
+  const [addressLookupLoading, setAddressLookupLoading] = useState(false);
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const todayIso = toIsoDate(0);
@@ -55,6 +63,67 @@ export default function Home() {
     ? "Those dates have passed — please pick an upcoming trip."
     : null;
   const groupError = submitAttempted ? groupErrorMessage(groupSize) : null;
+  const pickupAddressError = submitAttempted && needTransport === "yes" && !pickupAddress.trim()
+    ? "Please enter your pickup address so we can arrange transport."
+    : null;
+
+  useEffect(() => {
+    if (needTransport !== "yes") {
+      setAddressSuggestions([]);
+      setAddressLookupLoading(false);
+      return;
+    }
+    const query = pickupAddress.trim();
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      setAddressLookupLoading(false);
+      return;
+    }
+
+    let active = true;
+    const controller = new AbortController();
+    setAddressLookupLoading(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=au&addressdetails=1&limit=6&q=${encodeURIComponent(query)}`,
+          {
+            signal: controller.signal,
+            headers: {
+              Accept: "application/json",
+            },
+          },
+        );
+        if (!response.ok) {
+          throw new Error("Address lookup failed");
+        }
+        const payload = (await response.json()) as AddressSuggestion[];
+        if (!active) {
+          return;
+        }
+        const nextSuggestions = payload
+          .map((entry) => entry.display_name?.trim())
+          .filter((entry): entry is string => Boolean(entry))
+          .slice(0, 6);
+        setAddressSuggestions(nextSuggestions);
+      } catch {
+        if (!active) {
+          return;
+        }
+        setAddressSuggestions([]);
+      } finally {
+        if (active) {
+          setAddressLookupLoading(false);
+        }
+      }
+    }, 280);
+
+    return () => {
+      active = false;
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [needTransport, pickupAddress]);
 
   function handleGroupStep(delta: number) {
     setGroupSize((current) => Math.max(0, current + delta));
@@ -65,7 +134,8 @@ export default function Home() {
     const hasNoDate = !visitDate;
     const hasPastDate = isPastDate(visitDate, todayIso);
     const groupValidationMessage = groupErrorMessage(groupSize);
-    if (hasNoDate || hasPastDate || groupValidationMessage) {
+    const hasNoPickupAddress = needTransport === "yes" && !pickupAddress.trim();
+    if (hasNoDate || hasPastDate || groupValidationMessage || hasNoPickupAddress) {
       return;
     }
 
@@ -83,6 +153,7 @@ export default function Home() {
       groupSize,
       tripLength,
       needTransport,
+      pickupAddress: pickupAddress.trim() || undefined,
     };
     saveExplorePreferences(next);
     router.push("/explore");
@@ -172,9 +243,9 @@ export default function Home() {
 
               <div className="field">
                 <label>Will you need transport?</label>
-                <div className="choiceRow">
-                  <label className="choicePill">
-                    <input type="radio" checked={needTransport === "yes"} onChange={() => setNeedTransport("yes")} />
+              <div className="choiceRow">
+                <label className="choicePill">
+                  <input type="radio" checked={needTransport === "yes"} onChange={() => setNeedTransport("yes")} />
                     Yes
                   </label>
                   <label className="choicePill">
@@ -182,12 +253,65 @@ export default function Home() {
                     No
                   </label>
                 </div>
-                <p className="subtle">
-                  {needTransport === "yes"
-                    ? "We'll match you with a luxury private vehicle for the day."
-                    : "You're arranging your own way there - no problem."}
-                </p>
-              </div>
+              <p className="subtle">
+                {needTransport === "yes"
+                  ? "We'll match you with a luxury private vehicle for the day."
+                  : "You're arranging your own way there - no problem."}
+              </p>
+              {needTransport === "yes" ? (
+                <div className="field" style={{ position: "relative", marginTop: 8 }}>
+                  <label htmlFor="pickupAddress">Pickup address</label>
+                  <input
+                    id="pickupAddress"
+                    className="inputLike inputField"
+                    value={pickupAddress}
+                    placeholder="Start typing your address"
+                    onFocus={() => setShowAddressSuggestions(true)}
+                    onBlur={() => window.setTimeout(() => setShowAddressSuggestions(false), 120)}
+                    onChange={(event) => {
+                      setPickupAddress(event.target.value);
+                      setShowAddressSuggestions(true);
+                    }}
+                  />
+                  {addressLookupLoading ? <p className="subtle">Finding addresses...</p> : null}
+                  {showAddressSuggestions && addressSuggestions.length > 0 ? (
+                    <div
+                      className="sectionCard"
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        zIndex: 20,
+                        padding: 8,
+                        marginTop: 6,
+                        borderRadius: 12,
+                        maxHeight: 220,
+                        overflowY: "auto",
+                      }}
+                    >
+                      <div className="selectorList">
+                        {addressSuggestions.map((suggestion) => (
+                          <button
+                            key={suggestion}
+                            type="button"
+                            className="selectorCard"
+                            onMouseDown={(event) => {
+                              event.preventDefault();
+                              setPickupAddress(suggestion);
+                              setShowAddressSuggestions(false);
+                            }}
+                          >
+                            <p className="subtle">{suggestion}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  {pickupAddressError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{pickupAddressError}</p> : null}
+                </div>
+              ) : null}
+            </div>
 
               <button type="button" className="buttonPrimary fullWidthButton" onClick={handleBegin}>
                 Let's begin
