@@ -57,6 +57,8 @@ export function createLocalRepository(): AppRepository {
 
 export function createRemoteRepository(apiBaseUrl: string): AppRepository {
   const endpoint = `${apiBaseUrl}/api/v1/workbench-state`;
+  const localRepository = createLocalRepository();
+  let endpointUnavailable = false;
 
   return {
     info: {
@@ -64,6 +66,10 @@ export function createRemoteRepository(apiBaseUrl: string): AppRepository {
       label: "Azure workflow API",
     },
     async loadState() {
+      if (endpointUnavailable) {
+        return localRepository.loadState();
+      }
+
       const response = await fetch(endpoint, {
         method: "GET",
         headers: {
@@ -72,7 +78,8 @@ export function createRemoteRepository(apiBaseUrl: string): AppRepository {
       });
 
       if (response.status === 404) {
-        return createDefaultAppState();
+        endpointUnavailable = true;
+        return localRepository.loadState();
       }
 
       if (!response.ok) {
@@ -82,6 +89,10 @@ export function createRemoteRepository(apiBaseUrl: string): AppRepository {
       return (await response.json()) as AppStoreState;
     },
     async saveState(state) {
+      if (endpointUnavailable) {
+        return localRepository.saveState(state);
+      }
+
       const response = await fetch(endpoint, {
         method: "PUT",
         headers: {
@@ -91,6 +102,8 @@ export function createRemoteRepository(apiBaseUrl: string): AppRepository {
       });
 
       if (response.status === 404) {
+        endpointUnavailable = true;
+        await localRepository.saveState(state);
         return;
       }
 

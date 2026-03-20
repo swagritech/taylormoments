@@ -393,10 +393,11 @@ function pickNearestRoute(
   wineries: WineryCatalogItem[],
   maxStops: number,
   profilesById: Record<string, WineryListResponse["wineries"][number]>,
+  startPoint?: { latitude: number; longitude: number },
 ) {
   const selected: WineryCatalogItem[] = [];
   const pool = [...wineries];
-  let current = { latitude: -33.952, longitude: 115.075 };
+  let current = startPoint ?? { latitude: -33.952, longitude: 115.075 };
 
   while (pool.length > 0 && selected.length < maxStops) {
     let bestIndex = 0;
@@ -762,18 +763,35 @@ export default function ExplorePage() {
         return true;
       });
 
+      const routeStartPoint =
+        needTransport === "yes" &&
+        requestPickupLatitude !== undefined &&
+        requestPickupLongitude !== undefined
+          ? { latitude: requestPickupLatitude, longitude: requestPickupLongitude }
+          : undefined;
+
       let candidatePool = filterByPreferences(true);
       let apiPreferredPool = candidatePool
         .sort((a, b) => b.rating - a.rating)
         .slice(0, 10);
-      let routeOptimized = pickNearestRoute(apiPreferredPool, timeWindow.stops, profilesById);
+      let routeOptimized = pickNearestRoute(
+        apiPreferredPool,
+        Math.min(10, apiPreferredPool.length),
+        profilesById,
+        routeStartPoint,
+      );
 
       if (routeOptimized.length < 2 && vibe) {
         candidatePool = filterByPreferences(false);
         apiPreferredPool = candidatePool
           .sort((a, b) => b.rating - a.rating)
           .slice(0, 10);
-        routeOptimized = pickNearestRoute(apiPreferredPool, timeWindow.stops, profilesById);
+        routeOptimized = pickNearestRoute(
+          apiPreferredPool,
+          Math.min(10, apiPreferredPool.length),
+          profilesById,
+          routeStartPoint,
+        );
       }
 
       if (prefCheeseBoard) {
@@ -794,19 +812,25 @@ export default function ExplorePage() {
           if (requiredCheese) {
             const seeded = [...routeOptimized, requiredCheese];
             const dedupedSeed = Array.from(new Map(seeded.map((entry) => [entry.id, entry])).values());
-            routeOptimized = pickNearestRoute(dedupedSeed, timeWindow.stops, profilesById);
+            routeOptimized = pickNearestRoute(
+              dedupedSeed,
+              Math.min(10, dedupedSeed.length),
+              profilesById,
+              routeStartPoint,
+            );
 
             if (!routeOptimized.some(hasCheeseBoardMatch)) {
-              const withoutLast = routeOptimized.slice(0, Math.max(0, timeWindow.stops - 1));
+              const withoutLast = routeOptimized.slice(0, Math.max(0, 9));
               routeOptimized = [...withoutLast, requiredCheese];
             }
           }
         }
       }
 
-      setMatchedWineries(apiPreferredPool);
+      const preferredRoutePool = routeOptimized.length > 0 ? routeOptimized : apiPreferredPool;
+      setMatchedWineries(preferredRoutePool);
 
-      if (routeOptimized.length < 2) {
+      if (preferredRoutePool.length < 2) {
         setError("Not enough winery matches for this preference set yet. Try relaxing one filter.");
         return;
       }
@@ -829,7 +853,7 @@ export default function ExplorePage() {
           party_size: groupSize,
           preferred_start_time: timeWindow.start,
           preferred_end_time: timeWindow.end,
-          preferred_wineries: apiPreferredPool.map((winery) => slugToWineryUuid(winery.id)),
+          preferred_wineries: preferredRoutePool.map((winery) => slugToWineryUuid(winery.id)),
         });
 
         if (response.itineraries.length > 0) {
@@ -839,7 +863,7 @@ export default function ExplorePage() {
 
           if (foundOptions.length === 1) {
             const primaryStopIds = new Set(foundOptions[0]?.stops.map((stop) => stop.winery_id) ?? []);
-            const alternatePreferredWineries = apiPreferredPool
+            const alternatePreferredWineries = preferredRoutePool
               .filter((winery) => !primaryStopIds.has(slugToWineryUuid(winery.id)))
               .map((winery) => slugToWineryUuid(winery.id));
 
