@@ -9,13 +9,55 @@ type SelectedWineriesMapProps = {
 
 export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<import("leaflet").Map | null>(null);
-  const markerLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
+  const googleRef = useRef<any>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markerInstancesRef = useRef<any[]>([]);
+  const infoWindowRef = useRef<any>(null);
 
   const stableWineries = useMemo(
     () => wineries.map((entry) => ({ ...entry })),
     [wineries],
   );
+
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+
+  function buildInfoContent(winery: WineryCatalogItem) {
+    const safeName = winery.name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const safeAddress = winery.address.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return `<strong>${safeName}</strong><br/>${safeAddress}`;
+  }
+
+  async function loadGoogleMaps() {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    const anyWindow = window as Window & { google?: any; __tmGoogleMapsLoaderPromise?: Promise<any> };
+    if (anyWindow.google?.maps) {
+      return anyWindow.google;
+    }
+    if (!apiKey) {
+      return null;
+    }
+
+    if (!anyWindow.__tmGoogleMapsLoaderPromise) {
+      anyWindow.__tmGoogleMapsLoaderPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly&loading=async`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          if (anyWindow.google?.maps) {
+            resolve(anyWindow.google);
+            return;
+          }
+          reject(new Error("Google Maps API loaded without maps namespace."));
+        };
+        script.onerror = () => reject(new Error("Failed to load Google Maps API."));
+        document.head.appendChild(script);
+      });
+    }
+    return anyWindow.__tmGoogleMapsLoaderPromise ?? null;
+  }
 
   useEffect(() => {
     let active = true;
@@ -25,29 +67,21 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
         return;
       }
 
-      const L = await import("leaflet");
-      if (!active || !mapRef.current) {
+      const google = await loadGoogleMaps();
+      if (!active || !mapRef.current || !google?.maps) {
         return;
       }
 
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      googleRef.current = google;
+      mapInstanceRef.current = new google.maps.Map(mapRef.current, {
+        center: { lat: -33.95, lng: 115.07 },
+        zoom: 10,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        clickableIcons: false,
       });
-
-      const map = L.map(mapRef.current, {
-        zoomControl: true,
-        scrollWheelZoom: true,
-      }).setView([-33.95, 115.07], 10);
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap contributors",
-      }).addTo(map);
-
-      const markerLayer = L.layerGroup().addTo(map);
-      mapInstanceRef.current = map;
-      markerLayerRef.current = markerLayer;
+      infoWindowRef.current = new google.maps.InfoWindow();
     }
 
     void hydrateMap();
@@ -57,43 +91,69 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
   }, []);
 
   useEffect(() => {
-    async function redrawPins() {
+    function redrawPins() {
+      const google = googleRef.current;
       const map = mapInstanceRef.current;
-      const layer = markerLayerRef.current;
-      if (!map || !layer) {
+      if (!map || !google?.maps) {
         return;
       }
 
-      const L = await import("leaflet");
-      layer.clearLayers();
+      for (const marker of markerInstancesRef.current) {
+        marker.setMap(null);
+      }
+      markerInstancesRef.current = [];
 
       if (stableWineries.length === 0) {
-        map.setView([-33.95, 115.07], 10);
+        map.setCenter({ lat: -33.95, lng: 115.07 });
+        map.setZoom(10);
         return;
       }
 
-      const markers = stableWineries.map((winery) =>
-        L.marker([winery.latitude, winery.longitude]).bindPopup(
-          `<strong>${winery.name}</strong><br/>${winery.address}`,
-        ),
-      );
+      const bounds = new google.maps.LatLngBounds();
+      const markers = stableWineries.map((winery) => {
+        const marker = new google.maps.Marker({
+          map,
+          position: { lat: winery.latitude, lng: winery.longitude },
+          title: winery.name,
+        });
+        marker.addListener("click", () => {
+          if (!infoWindowRef.current) {
+            return;
+          }
+          infoWindowRef.current.setContent(buildInfoContent(winery));
+          infoWindowRef.current.open({ anchor: marker, map });
+        });
+        bounds.extend({ lat: winery.latitude, lng: winery.longitude });
+        return marker;
+      });
 
-      markers.forEach((marker) => marker.addTo(layer));
-
-      const bounds = L.featureGroup(markers).getBounds();
-      map.fitBounds(bounds.pad(0.25), { maxZoom: 13 });
+      markerInstancesRef.current = markers;
+      map.fitBounds(bounds, 80);
+      const zoom = map.getZoom();
+      if (zoom && zoom > 13) {
+        map.setZoom(13);
+      }
     }
 
-    void redrawPins();
+    redrawPins();
   }, [stableWineries]);
 
   useEffect(() => {
     return () => {
-      mapInstanceRef.current?.remove();
+      for (const marker of markerInstancesRef.current) {
+        marker.setMap(null);
+      }
+      markerInstancesRef.current = [];
+      infoWindowRef.current?.close();
+      infoWindowRef.current = null;
       mapInstanceRef.current = null;
-      markerLayerRef.current = null;
+      googleRef.current = null;
     };
   }, []);
+
+  if (!apiKey) {
+    return <div className="selectedMapCanvas">Google Maps unavailable: API key not configured.</div>;
+  }
 
   return <div ref={mapRef} className="selectedMapCanvas" />;
 }
