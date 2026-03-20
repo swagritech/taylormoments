@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/create-rsc-page-aliases.mjs",
     "start": "next start",
     "lint": "eslint",
     "deploy:pages": "npm run build && npx wrangler pages deploy out --project-name tailormoments --branch main",

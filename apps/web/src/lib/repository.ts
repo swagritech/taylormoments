@@ -117,8 +117,9 @@ export function createRemoteRepository(apiBaseUrl: string): AppRepository {
 export function createRepository(): AppRepository {
   const mode = getDataMode();
   const apiBaseUrl = getApiBaseUrl();
+  const remoteWorkbenchEnabled = process.env.NEXT_PUBLIC_ENABLE_WORKBENCH_STATE === "true";
 
-  if (mode === "remote" && apiBaseUrl) {
+  if (remoteWorkbenchEnabled && mode === "remote" && apiBaseUrl) {
     return createRemoteRepository(apiBaseUrl);
   }
 
