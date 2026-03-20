@@ -95,97 +95,106 @@ export default function Home() {
       intro="Tell us a little about your trip and we'll find the perfect experiences for you."
       navMode="public"
       showWorkflowStatus={false}
+      showPageHeader={false}
     >
-      <div className="actionPageShell">
-        <section className="sectionCard">
-          <div className="formPreview">
-            <div className="field">
-              <label htmlFor="visitDate">When are you visiting?</label>
-              <input
-                id="visitDate"
-                type="date"
-                className="inputLike inputField"
-                value={visitDate}
-                onChange={(event) => setVisitDate(event.target.value)}
-                min={todayIso}
-                placeholder="Choose your travel dates"
-              />
-              {noDateError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{noDateError}</p> : null}
-              {pastDateError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{pastDateError}</p> : null}
-            </div>
+      <div className="exploreLayout">
+        <div className="exploreUnifiedPanel" style={{ width: "100%" }}>
+          <section className="exploreSectionBlock exploreUnifiedHero">
+            <p className="eyebrow">Explore</p>
+            <h1>Plan your Margaret River day, your way</h1>
+            <p className="heroCopy">Tell us a little about your trip and we'll find the perfect experiences for you.</p>
+          </section>
 
-            <div className="field">
-              <label htmlFor="groupSize">How many in your group?</label>
-              <div className="ctaRow" style={{ alignItems: "center" }}>
-                <button type="button" className="buttonGhost" onClick={() => handleGroupStep(-1)} aria-label="Decrease group size">-</button>
+          <section className="exploreSectionBlock">
+            <div className="formPreview">
+              <div className="field">
+                <label htmlFor="visitDate">When are you visiting?</label>
                 <input
-                  id="groupSize"
-                  type="number"
-                  min={0}
-                  max={30}
+                  id="visitDate"
+                  type="date"
                   className="inputLike inputField"
-                  style={{ maxWidth: 120 }}
-                  value={groupSize}
-                  onChange={(event) => setGroupSize(Number(event.target.value) || 0)}
+                  value={visitDate}
+                  onChange={(event) => setVisitDate(event.target.value)}
+                  min={todayIso}
+                  placeholder="Choose your travel dates"
                 />
-                <button type="button" className="buttonGhost" onClick={() => handleGroupStep(1)} aria-label="Increase group size">+</button>
+                {noDateError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{noDateError}</p> : null}
+                {pastDateError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{pastDateError}</p> : null}
               </div>
-              <p className="subtle">Including yourself</p>
-              {groupError ? (
-                <p className="subtle" style={{ color: "#8f3a2b" }}>
-                  {groupSize > 20 ? (
-                    <>
-                      For groups larger than 20, please{" "}
-                      <Link href="mailto:sean@swagritech.com.au" style={{ textDecoration: "underline" }}>get in touch</Link>
-                      {" "}— we'll arrange something special.
-                    </>
-                  ) : groupError}
+
+              <div className="field">
+                <label htmlFor="groupSize">How many in your group?</label>
+                <div className="ctaRow" style={{ alignItems: "center" }}>
+                  <button type="button" className="buttonGhost" onClick={() => handleGroupStep(-1)} aria-label="Decrease group size">-</button>
+                  <input
+                    id="groupSize"
+                    type="number"
+                    min={0}
+                    max={30}
+                    className="inputLike inputField"
+                    style={{ maxWidth: 120 }}
+                    value={groupSize}
+                    onChange={(event) => setGroupSize(Number(event.target.value) || 0)}
+                  />
+                  <button type="button" className="buttonGhost" onClick={() => handleGroupStep(1)} aria-label="Increase group size">+</button>
+                </div>
+                <p className="subtle">Including yourself</p>
+                {groupError ? (
+                  <p className="subtle" style={{ color: "#8f3a2b" }}>
+                    {groupSize > 20 ? (
+                      <>
+                        For groups larger than 20, please{" "}
+                        <Link href="mailto:sean@swagritech.com.au" style={{ textDecoration: "underline" }}>get in touch</Link>
+                        {" "}— we'll arrange something special.
+                      </>
+                    ) : groupError}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="field">
+                <label>How long would you like your winery day?</label>
+                <div className="choiceRow profileChoiceGrid">
+                  <label className="choicePill">
+                    <input type="radio" checked={tripLength === "half-day"} onChange={() => setTripLength("half-day")} />
+                    Half day - Around 3-4 hours
+                  </label>
+                  <label className="choicePill">
+                    <input type="radio" checked={tripLength === "full-day"} onChange={() => setTripLength("full-day")} />
+                    Full day - Around 6-8 hours
+                  </label>
+                  <label className="choicePill">
+                    <input type="radio" checked={tripLength === "multi-day"} onChange={() => setTripLength("multi-day")} />
+                    More than one day - We'll build a multi-day itinerary
+                  </label>
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Will you need transport?</label>
+                <div className="choiceRow">
+                  <label className="choicePill">
+                    <input type="radio" checked={needTransport === "yes"} onChange={() => setNeedTransport("yes")} />
+                    Yes
+                  </label>
+                  <label className="choicePill">
+                    <input type="radio" checked={needTransport === "no"} onChange={() => setNeedTransport("no")} />
+                    No
+                  </label>
+                </div>
+                <p className="subtle">
+                  {needTransport === "yes"
+                    ? "We'll match you with a luxury private vehicle for the day."
+                    : "You're arranging your own way there - no problem."}
                 </p>
-              ) : null}
-            </div>
-
-            <div className="field">
-              <label>How long would you like your winery day?</label>
-              <div className="choiceRow profileChoiceGrid">
-                <label className="choicePill">
-                  <input type="radio" checked={tripLength === "half-day"} onChange={() => setTripLength("half-day")} />
-                  Half day - Around 3-4 hours
-                </label>
-                <label className="choicePill">
-                  <input type="radio" checked={tripLength === "full-day"} onChange={() => setTripLength("full-day")} />
-                  Full day - Around 6-8 hours
-                </label>
-                <label className="choicePill">
-                  <input type="radio" checked={tripLength === "multi-day"} onChange={() => setTripLength("multi-day")} />
-                  More than one day - We'll build a multi-day itinerary
-                </label>
               </div>
-            </div>
 
-            <div className="field">
-              <label>Will you need transport?</label>
-              <div className="choiceRow">
-                <label className="choicePill">
-                  <input type="radio" checked={needTransport === "yes"} onChange={() => setNeedTransport("yes")} />
-                  Yes
-                </label>
-                <label className="choicePill">
-                  <input type="radio" checked={needTransport === "no"} onChange={() => setNeedTransport("no")} />
-                  No
-                </label>
-              </div>
-              <p className="subtle">
-                {needTransport === "yes"
-                  ? "We'll match you with a luxury private vehicle for the day."
-                  : "You're arranging your own way there - no problem."}
-              </p>
+              <button type="button" className="buttonPrimary fullWidthButton" onClick={handleBegin}>
+                Let's begin
+              </button>
             </div>
-
-            <button type="button" className="buttonPrimary fullWidthButton" onClick={handleBegin}>
-              Let's begin
-            </button>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </AppShell>
   );
