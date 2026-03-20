@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -11,6 +11,14 @@ import {
   type ExploreTripLength,
   type ExploreYesNo,
 } from "@/lib/explore-preferences";
+
+const GOOGLE_PLACES_SCRIPT_ID = "tm-google-places-script";
+
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
 
 function toIsoDate(dayOffset = 1) {
   const date = new Date();
@@ -38,13 +46,11 @@ function groupErrorMessage(groupSize: number) {
   return null;
 }
 
-type AddressSuggestion = {
-  display_name: string;
-};
-
 export default function Home() {
   const router = useRouter();
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
+  const autocompleteServiceRef = useRef<any | null>(null);
+
   const [visitDate, setVisitDate] = useState(initialPreferences?.previewDate ?? "");
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
   const [tripLength, setTripLength] = useState<ExploreTripLength>(initialPreferences?.tripLength ?? "full-day");
@@ -53,9 +59,12 @@ export default function Home() {
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [addressLookupLoading, setAddressLookupLoading] = useState(false);
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
+  const [googlePlacesReady, setGooglePlacesReady] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
+  const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const todayIso = toIsoDate(0);
+
   const noDateError = submitAttempted && !visitDate
     ? "Please choose your travel dates to continue."
     : null;
@@ -73,57 +82,97 @@ export default function Home() {
       setAddressLookupLoading(false);
       return;
     }
-    const query = pickupAddress.trim();
-    if (query.length < 3) {
+    if (!googleApiKey) {
+      setGooglePlacesReady(false);
+      return;
+    }
+
+    if (window.google?.maps?.places) {
+      setGooglePlacesReady(true);
+      return;
+    }
+
+    const existing = document.getElementById(GOOGLE_PLACES_SCRIPT_ID) as HTMLScriptElement | null;
+    if (existing) {
+      const onLoad = () => setGooglePlacesReady(true);
+      existing.addEventListener("load", onLoad);
+      return () => existing.removeEventListener("load", onLoad);
+    }
+
+    const script = document.createElement("script");
+    script.id = GOOGLE_PLACES_SCRIPT_ID;
+    script.async = true;
+    script.defer = true;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleApiKey)}&libraries=places&v=weekly`;
+    script.addEventListener("load", () => setGooglePlacesReady(true));
+    document.head.appendChild(script);
+  }, [googleApiKey, needTransport]);
+
+  useEffect(() => {
+    if (!googlePlacesReady || !window.google?.maps?.places) {
+      return;
+    }
+    if (!autocompleteServiceRef.current) {
+      autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
+    }
+  }, [googlePlacesReady]);
+
+  useEffect(() => {
+    if (needTransport !== "yes") {
       setAddressSuggestions([]);
       setAddressLookupLoading(false);
       return;
     }
 
+    const query = pickupAddress.trim();
+    if (!query || query.length < 3) {
+      setAddressSuggestions([]);
+      setAddressLookupLoading(false);
+      return;
+    }
+
+    if (!googlePlacesReady || !autocompleteServiceRef.current) {
+      setAddressLookupLoading(false);
+      return;
+    }
+
     let active = true;
-    const controller = new AbortController();
     setAddressLookupLoading(true);
-    const timer = window.setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=au&addressdetails=1&limit=6&q=${encodeURIComponent(query)}`,
-          {
-            signal: controller.signal,
-            headers: {
-              Accept: "application/json",
-            },
-          },
-        );
-        if (!response.ok) {
-          throw new Error("Address lookup failed");
-        }
-        const payload = (await response.json()) as AddressSuggestion[];
-        if (!active) {
-          return;
-        }
-        const nextSuggestions = payload
-          .map((entry) => entry.display_name?.trim())
-          .filter((entry): entry is string => Boolean(entry))
-          .slice(0, 6);
-        setAddressSuggestions(nextSuggestions);
-      } catch {
-        if (!active) {
-          return;
-        }
-        setAddressSuggestions([]);
-      } finally {
-        if (active) {
+    const timer = window.setTimeout(() => {
+      autocompleteServiceRef.current.getPlacePredictions(
+        {
+          input: query,
+          componentRestrictions: { country: "au" },
+          types: ["address"],
+        },
+        (predictions: Array<{ description: string }> | null, status: string) => {
+          if (!active) {
+            return;
+          }
+          const okStatus = window.google?.maps?.places?.PlacesServiceStatus?.OK;
+          const zeroStatus = window.google?.maps?.places?.PlacesServiceStatus?.ZERO_RESULTS;
+          if (status === okStatus && predictions) {
+            setAddressSuggestions(
+              predictions
+                .map((entry) => entry.description?.trim())
+                .filter((entry): entry is string => Boolean(entry))
+                .slice(0, 6),
+            );
+          } else if (status === zeroStatus) {
+            setAddressSuggestions([]);
+          } else {
+            setAddressSuggestions([]);
+          }
           setAddressLookupLoading(false);
-        }
-      }
-    }, 280);
+        },
+      );
+    }, 220);
 
     return () => {
       active = false;
-      controller.abort();
       window.clearTimeout(timer);
     };
-  }, [needTransport, pickupAddress]);
+  }, [googlePlacesReady, needTransport, pickupAddress]);
 
   function handleGroupStep(delta: number) {
     setGroupSize((current) => Math.max(0, current + delta));
@@ -243,9 +292,9 @@ export default function Home() {
 
               <div className="field">
                 <label>Will you need transport?</label>
-              <div className="choiceRow">
-                <label className="choicePill">
-                  <input type="radio" checked={needTransport === "yes"} onChange={() => setNeedTransport("yes")} />
+                <div className="choiceRow">
+                  <label className="choicePill">
+                    <input type="radio" checked={needTransport === "yes"} onChange={() => setNeedTransport("yes")} />
                     Yes
                   </label>
                   <label className="choicePill">
@@ -253,65 +302,66 @@ export default function Home() {
                     No
                   </label>
                 </div>
-              <p className="subtle">
-                {needTransport === "yes"
-                  ? "We'll match you with a luxury private vehicle for the day."
-                  : "You're arranging your own way there - no problem."}
-              </p>
-              {needTransport === "yes" ? (
-                <div className="field" style={{ position: "relative", marginTop: 8 }}>
-                  <label htmlFor="pickupAddress">Pickup address</label>
-                  <input
-                    id="pickupAddress"
-                    className="inputLike inputField"
-                    value={pickupAddress}
-                    placeholder="Start typing your address"
-                    onFocus={() => setShowAddressSuggestions(true)}
-                    onBlur={() => window.setTimeout(() => setShowAddressSuggestions(false), 120)}
-                    onChange={(event) => {
-                      setPickupAddress(event.target.value);
-                      setShowAddressSuggestions(true);
-                    }}
-                  />
-                  {addressLookupLoading ? <p className="subtle">Finding addresses...</p> : null}
-                  {showAddressSuggestions && addressSuggestions.length > 0 ? (
-                    <div
-                      className="sectionCard"
-                      style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
-                        right: 0,
-                        zIndex: 20,
-                        padding: 8,
-                        marginTop: 6,
-                        borderRadius: 12,
-                        maxHeight: 220,
-                        overflowY: "auto",
+                <p className="subtle">
+                  {needTransport === "yes"
+                    ? "We'll match you with a luxury private vehicle for the day."
+                    : "You're arranging your own way there - no problem."}
+                </p>
+                {needTransport === "yes" ? (
+                  <div className="field" style={{ position: "relative", marginTop: 8 }}>
+                    <label htmlFor="pickupAddress">Pickup address</label>
+                    <input
+                      id="pickupAddress"
+                      className="inputLike inputField"
+                      value={pickupAddress}
+                      placeholder="Start typing your address"
+                      onFocus={() => setShowAddressSuggestions(true)}
+                      onBlur={() => window.setTimeout(() => setShowAddressSuggestions(false), 120)}
+                      onChange={(event) => {
+                        setPickupAddress(event.target.value);
+                        setShowAddressSuggestions(true);
                       }}
-                    >
-                      <div className="selectorList">
-                        {addressSuggestions.map((suggestion) => (
-                          <button
-                            key={suggestion}
-                            type="button"
-                            className="selectorCard"
-                            onMouseDown={(event) => {
-                              event.preventDefault();
-                              setPickupAddress(suggestion);
-                              setShowAddressSuggestions(false);
-                            }}
-                          >
-                            <p className="subtle">{suggestion}</p>
-                          </button>
-                        ))}
+                    />
+                    {!googleApiKey ? <p className="subtle">Address autocomplete unavailable right now.</p> : null}
+                    {addressLookupLoading ? <p className="subtle">Finding addresses...</p> : null}
+                    {showAddressSuggestions && addressSuggestions.length > 0 ? (
+                      <div
+                        className="sectionCard"
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: 0,
+                          right: 0,
+                          zIndex: 20,
+                          padding: 8,
+                          marginTop: 6,
+                          borderRadius: 12,
+                          maxHeight: 220,
+                          overflowY: "auto",
+                        }}
+                      >
+                        <div className="selectorList">
+                          {addressSuggestions.map((suggestion) => (
+                            <button
+                              key={suggestion}
+                              type="button"
+                              className="selectorCard"
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                setPickupAddress(suggestion);
+                                setShowAddressSuggestions(false);
+                              }}
+                            >
+                              <p className="subtle">{suggestion}</p>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ) : null}
-                  {pickupAddressError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{pickupAddressError}</p> : null}
-                </div>
-              ) : null}
-            </div>
+                    ) : null}
+                    {pickupAddressError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{pickupAddressError}</p> : null}
+                  </div>
+                ) : null}
+              </div>
 
               <button type="button" className="buttonPrimary fullWidthButton" onClick={handleBegin}>
                 Let's begin
