@@ -19,6 +19,15 @@ function toIsoDate(dayOffset = 1) {
   return date.toISOString().slice(0, 10);
 }
 
+function isPastDate(isoDate: string, todayIso: string) {
+  if (!isoDate) {
+    return false;
+  }
+  const selected = new Date(`${isoDate}T00:00:00`);
+  const today = new Date(`${todayIso}T00:00:00`);
+  return selected.getTime() < today.getTime();
+}
+
 function groupErrorMessage(groupSize: number) {
   if (groupSize <= 0) {
     return "Your group needs at least one person.";
@@ -42,7 +51,7 @@ export default function Home() {
   const noDateError = submitAttempted && !visitDate
     ? "Please choose your travel dates to continue."
     : null;
-  const pastDateError = submitAttempted && visitDate && visitDate < todayIso
+  const pastDateError = submitAttempted && isPastDate(visitDate, todayIso)
     ? "Those dates have passed — please pick an upcoming trip."
     : null;
   const groupError = submitAttempted ? groupErrorMessage(groupSize) : null;
@@ -53,7 +62,10 @@ export default function Home() {
 
   function handleBegin() {
     setSubmitAttempted(true);
-    if (noDateError || pastDateError || groupError) {
+    const hasNoDate = !visitDate;
+    const hasPastDate = isPastDate(visitDate, todayIso);
+    const groupValidationMessage = groupErrorMessage(groupSize);
+    if (hasNoDate || hasPastDate || groupValidationMessage) {
       return;
     }
 
