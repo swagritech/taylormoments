@@ -40,6 +40,27 @@ function buildAliasFromPageFile(pageFilePath) {
   return path.join(baseDir, flatName);
 }
 
+function buildAliasFromNestedTxtFile(filePath) {
+  const relative = path.relative(outDir, filePath);
+  const parts = relative.split(path.sep);
+  const nextIndex = parts.findIndex((part) => part.startsWith("__next."));
+  if (nextIndex < 0 || nextIndex >= parts.length - 1) {
+    return null;
+  }
+
+  const baseDir = path.join(outDir, ...parts.slice(0, nextIndex));
+  const nextMarker = parts[nextIndex];
+  const nestedParts = parts.slice(nextIndex + 1);
+  if (nestedParts.length < 1) {
+    return null;
+  }
+  if (!nestedParts[nestedParts.length - 1]?.endsWith(".txt")) {
+    return null;
+  }
+
+  return path.join(baseDir, `${nextMarker}.${nestedParts.join(".")}`);
+}
+
 async function createAliases() {
   const files = await walkFiles(outDir);
   const pageFiles = files.filter((filePath) => filePath.endsWith(`${path.sep}__PAGE__.txt`));
@@ -51,6 +72,15 @@ async function createAliases() {
       continue;
     }
     aliasMap.set(aliasPath, pageFile);
+  }
+
+  const txtFiles = files.filter((filePath) => filePath.endsWith(".txt"));
+  for (const txtFile of txtFiles) {
+    const aliasPath = buildAliasFromNestedTxtFile(txtFile);
+    if (!aliasPath) {
+      continue;
+    }
+    aliasMap.set(aliasPath, txtFile);
   }
 
   for (const [aliasPath, sourcePath] of aliasMap) {

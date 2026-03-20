@@ -430,6 +430,43 @@ function pickNearestRoute(
   return selected;
 }
 
+const ACCEPTABLE_PICKUP_DRIVE_MINUTES = 30;
+const AVERAGE_LOCAL_DRIVE_SPEED_KMH = 50;
+const ACCEPTABLE_PICKUP_RADIUS_KM =
+  (AVERAGE_LOCAL_DRIVE_SPEED_KMH * ACCEPTABLE_PICKUP_DRIVE_MINUTES) / 60;
+
+function buildPreferredPoolFromPickup(params: {
+  wineries: WineryCatalogItem[];
+  profilesById: Record<string, WineryListResponse["wineries"][number]>;
+  pickupPoint?: { latitude: number; longitude: number };
+  maxCount: number;
+}) {
+  const { wineries, profilesById, pickupPoint, maxCount } = params;
+  if (!pickupPoint) {
+    return [...wineries].sort((a, b) => b.rating - a.rating).slice(0, maxCount);
+  }
+
+  const withDistance = wineries
+    .map((winery) => {
+      const point = resolveCatalogOrRemotePoint(
+        winery,
+        profilesById[slugToWineryUuid(winery.id)],
+      );
+      const distanceKm = haversineKm(pickupPoint, point);
+      return { winery, distanceKm };
+    })
+    .sort((left, right) => {
+      if (left.distanceKm !== right.distanceKm) {
+        return left.distanceKm - right.distanceKm;
+      }
+      return right.winery.rating - left.winery.rating;
+    });
+
+  const nearby = withDistance.filter((entry) => entry.distanceKm <= ACCEPTABLE_PICKUP_RADIUS_KM);
+  const source = nearby.length >= 4 ? nearby : withDistance;
+  return source.slice(0, maxCount).map((entry) => entry.winery);
+}
+
 function toggleMultiSelect<T extends string>(values: T[], value: T) {
   if (values.includes(value)) {
     return values.filter((entry) => entry !== value);
@@ -771,9 +808,12 @@ export default function ExplorePage() {
           : undefined;
 
       let candidatePool = filterByPreferences(true);
-      let apiPreferredPool = candidatePool
-        .sort((a, b) => b.rating - a.rating)
-        .slice(0, 10);
+      let apiPreferredPool = buildPreferredPoolFromPickup({
+        wineries: candidatePool,
+        profilesById,
+        pickupPoint: routeStartPoint,
+        maxCount: 10,
+      });
       let routeOptimized = pickNearestRoute(
         apiPreferredPool,
         Math.min(10, apiPreferredPool.length),
@@ -783,9 +823,12 @@ export default function ExplorePage() {
 
       if (routeOptimized.length < 2 && vibe) {
         candidatePool = filterByPreferences(false);
-        apiPreferredPool = candidatePool
-          .sort((a, b) => b.rating - a.rating)
-          .slice(0, 10);
+        apiPreferredPool = buildPreferredPoolFromPickup({
+          wineries: candidatePool,
+          profilesById,
+          pickupPoint: routeStartPoint,
+          maxCount: 10,
+        });
         routeOptimized = pickNearestRoute(
           apiPreferredPool,
           Math.min(10, apiPreferredPool.length),
