@@ -51,6 +51,62 @@ type AnimatedWordsProps = {
   className?: string;
 };
 
+const WINE_STYLE_OPTIONS = [
+  { id: "organic_biodynamic", label: "Organic & biodynamic", description: "Made with nature in mind" },
+  { id: "well_known_names", label: "Well-known names", description: "Iconic Margaret River labels" },
+  { id: "hidden_gems", label: "Hidden gems", description: "Boutique producers you won't find in shops" },
+  { id: "family_estates", label: "Family estates", description: "Intimate, story-rich cellar doors" },
+  { id: "award_winning", label: "Award-winning", description: "Internationally recognised excellence" },
+  { id: "surprise_me", label: "Surprise me", description: "We'll curate based on what's exceptional right now" },
+] as const;
+
+const EXPERIENCE_OPTIONS = [
+  { id: "winery_lunch", label: "Winery lunch" },
+  { id: "cheese_wine", label: "Cheese & wine" },
+  { id: "wine_chocolate", label: "Wine & chocolate" },
+  { id: "cellar_tour", label: "Cellar tour" },
+  { id: "blending_experience", label: "Blending experience" },
+  { id: "private_tasting_room", label: "Private tasting room" },
+  { id: "sunset_tasting", label: "Sunset tasting" },
+  { id: "vineyard_walk", label: "Vineyard walk" },
+] as const;
+
+const OCCASION_OPTIONS = [
+  { id: "great_day_out", label: "Just a great day out" },
+  { id: "celebration", label: "Celebration" },
+  { id: "birthday", label: "Birthday" },
+  { id: "anniversary", label: "Anniversary" },
+  { id: "honeymoon", label: "Honeymoon" },
+  { id: "corporate", label: "Corporate" },
+] as const;
+
+const BUDGET_OPTIONS = [
+  { id: "great-value", label: "Great value", description: "Under $100 pp" },
+  { id: "premium", label: "Premium", description: "$100-$200 pp" },
+  { id: "indulgent", label: "Indulgent", description: "$200+ pp" },
+] as const;
+
+const DIETARY_OPTIONS = [
+  { id: "vegetarian", label: "Vegetarian" },
+  { id: "vegan", label: "Vegan" },
+  { id: "gluten_free", label: "Gluten-free" },
+  { id: "halal", label: "Halal" },
+  { id: "nut_allergy", label: "Nut allergy" },
+  { id: "none", label: "None" },
+] as const;
+
+const ACCESSIBILITY_OPTIONS = [
+  { id: "wheelchair_access", label: "Wheelchair access" },
+  { id: "hearing_assistance", label: "Hearing assistance" },
+] as const;
+
+type WineStyleId = (typeof WINE_STYLE_OPTIONS)[number]["id"];
+type ExperienceId = (typeof EXPERIENCE_OPTIONS)[number]["id"];
+type OccasionId = (typeof OCCASION_OPTIONS)[number]["id"];
+type BudgetId = (typeof BUDGET_OPTIONS)[number]["id"];
+type DietaryId = (typeof DIETARY_OPTIONS)[number]["id"];
+type AccessibilityId = (typeof ACCESSIBILITY_OPTIONS)[number]["id"];
+
 function toTimeWindow(length: TripLength) {
   if (length === "half-day") {
     return { start: "09:00", end: "13:30", stops: 2 };
@@ -373,6 +429,13 @@ function pickNearestRoute(
   return selected;
 }
 
+function toggleMultiSelect<T extends string>(values: T[], value: T) {
+  if (values.includes(value)) {
+    return values.filter((entry) => entry !== value);
+  }
+  return [...values, value];
+}
+
 export default function ExplorePage() {
   const router = useRouter();
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
@@ -383,11 +446,65 @@ export default function ExplorePage() {
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
   const [needTransport, setNeedTransport] = useState<YesNo>(initialPreferences?.needTransport ?? "yes");
   const [tripLength, setTripLength] = useState<TripLength>(initialPreferences?.tripLength ?? "full-day");
-  const [includeLunch, setIncludeLunch] = useState<YesNo>(initialPreferences?.includeLunch ?? "yes");
-  const [prefOrganic, setPrefOrganic] = useState(initialPreferences?.prefOrganic ?? false);
-  const [prefSpecialExperience, setPrefSpecialExperience] = useState(initialPreferences?.prefSpecialExperience ?? false);
-  const [prefCheeseBoard, setPrefCheeseBoard] = useState(initialPreferences?.prefCheeseBoard ?? false);
-  const [vibe, setVibe] = useState<Vibe>(initialPreferences?.vibe ?? "");
+  const [selectedWineStyles, setSelectedWineStyles] = useState<WineStyleId[]>(() => {
+    if (initialPreferences?.wineStyles?.length) {
+      return initialPreferences.wineStyles.filter((value): value is WineStyleId =>
+        WINE_STYLE_OPTIONS.some((option) => option.id === value),
+      );
+    }
+    const fallback: WineStyleId[] = [];
+    if (initialPreferences?.prefOrganic) {
+      fallback.push("organic_biodynamic");
+    }
+    if (initialPreferences?.vibe === "popular") {
+      fallback.push("well_known_names");
+    }
+    if (initialPreferences?.vibe === "lesser-known") {
+      fallback.push("hidden_gems");
+    }
+    if (initialPreferences?.prefSpecialExperience) {
+      fallback.push("family_estates");
+    }
+    return fallback;
+  });
+  const [selectedExperiences, setSelectedExperiences] = useState<ExperienceId[]>(() => {
+    if (initialPreferences?.experiences?.length) {
+      return initialPreferences.experiences.filter((value): value is ExperienceId =>
+        EXPERIENCE_OPTIONS.some((option) => option.id === value),
+      );
+    }
+    const fallback: ExperienceId[] = [];
+    if (initialPreferences?.prefCheeseBoard) {
+      fallback.push("cheese_wine");
+    }
+    if (initialPreferences?.includeLunch === "yes") {
+      fallback.push("winery_lunch");
+    }
+    if (initialPreferences?.prefSpecialExperience) {
+      fallback.push("cellar_tour");
+    }
+    return fallback;
+  });
+  const [occasion, setOccasion] = useState<OccasionId | "">(
+    (initialPreferences?.occasion as OccasionId | "") ?? "",
+  );
+  const [budgetBand, setBudgetBand] = useState<BudgetId | "">(
+    (initialPreferences?.budgetBand as BudgetId | "") ?? "",
+  );
+  const [selectedDietaryNeeds, setSelectedDietaryNeeds] = useState<DietaryId[]>(
+    (initialPreferences?.dietaryNeeds ?? []).filter((value): value is DietaryId =>
+      DIETARY_OPTIONS.some((option) => option.id === value),
+    ),
+  );
+  const [selectedAccessibilityNeeds, setSelectedAccessibilityNeeds] = useState<AccessibilityId[]>(
+    (initialPreferences?.accessibilityNeeds ?? []).filter((value): value is AccessibilityId =>
+      ACCESSIBILITY_OPTIONS.some((option) => option.id === value),
+    ),
+  );
+  const [accessibilityOther, setAccessibilityOther] = useState(initialPreferences?.accessibilityOther ?? "");
+  const [showDietary, setShowDietary] = useState(false);
+  const [showAccessibility, setShowAccessibility] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [matchedWineries, setMatchedWineries] = useState<WineryCatalogItem[]>(
     () =>
@@ -404,6 +521,29 @@ export default function ExplorePage() {
   const [selectedPreviewWinery, setSelectedPreviewWinery] = useState<WineryCatalogItem | null>(null);
   const [profilesById, setProfilesById] = useState<Record<string, WineryListResponse["wineries"][number]>>({});
   const [itineraryReplaySeed, setItineraryReplaySeed] = useState(0);
+  const wineStyleValidationError = submitAttempted && selectedWineStyles.length === 0
+    ? "Pick at least one wine style — even 'Surprise me' works perfectly."
+    : null;
+  const experienceInfoMessage = submitAttempted && selectedExperiences.length === 0
+    ? "No preference is fine — we'll curate based on your other choices."
+    : null;
+  const includeLunch: YesNo = selectedExperiences.some((entry) =>
+    ["winery_lunch", "cheese_wine", "wine_chocolate"].includes(entry),
+  )
+    ? "yes"
+    : "no";
+  const prefOrganic = selectedWineStyles.includes("organic_biodynamic");
+  const prefSpecialExperience =
+    selectedWineStyles.some((entry) => ["family_estates", "award_winning"].includes(entry)) ||
+    selectedExperiences.some((entry) =>
+      ["cellar_tour", "blending_experience", "private_tasting_room", "sunset_tasting", "vineyard_walk"].includes(entry),
+    );
+  const prefCheeseBoard = selectedExperiences.includes("cheese_wine");
+  const vibe: Vibe = selectedWineStyles.includes("well_known_names")
+    ? "popular"
+    : selectedWineStyles.includes("hidden_gems")
+      ? "lesser-known"
+      : "";
 
   const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
   const recommendation = recommendationOptions[selectedRecommendationIndex] ?? null;
@@ -430,6 +570,13 @@ export default function ExplorePage() {
       prefSpecialExperience,
       prefCheeseBoard,
       vibe,
+      wineStyles: selectedWineStyles,
+      experiences: selectedExperiences,
+      budgetBand,
+      occasion,
+      dietaryNeeds: selectedDietaryNeeds,
+      accessibilityNeeds: selectedAccessibilityNeeds,
+      accessibilityOther,
       matchedWineryIds: matchedWineries.map((entry) => entry.id),
       previewDate: previewDate || undefined,
     };
@@ -440,11 +587,13 @@ export default function ExplorePage() {
     groupSize,
     needTransport,
     tripLength,
-    includeLunch,
-    prefOrganic,
-    prefSpecialExperience,
-    prefCheeseBoard,
-    vibe,
+    selectedWineStyles,
+    selectedExperiences,
+    budgetBand,
+    occasion,
+    selectedDietaryNeeds,
+    selectedAccessibilityNeeds,
+    accessibilityOther,
     matchedWineries,
     previewDate,
   ]);
@@ -502,6 +651,11 @@ export default function ExplorePage() {
   }, [hasPlanned, recommendation, itineraryReplaySeed]);
 
   async function handlePlanTrip() {
+    setSubmitAttempted(true);
+    if (selectedWineStyles.length === 0) {
+      setError(null);
+      return;
+    }
     setHasPlanned(true);
     setIsPreferencesCollapsed(true);
     setError(null);
@@ -733,8 +887,8 @@ export default function ExplorePage() {
   return (
     <AppShell
       eyebrow="Explore"
-      title="Find your ideal winery day"
-      intro="Answer a few quick preferences and we will build an efficient schedule with minimal travel between matching wineries."
+      title="What makes a great day out for you?"
+      intro="No right answers — the more you tell us, the better we can tailor your experience."
       showWorkflowStatus={false}
       showPageHeader={false}
       navMode="public"
@@ -743,18 +897,18 @@ export default function ExplorePage() {
         <div className="exploreUnifiedPanel" style={{ width: "100%" }}>
         <section className="exploreSectionBlock exploreUnifiedHero">
           <p className="eyebrow">Explore</p>
-          <h1>Find your ideal winery day</h1>
-          <p className="heroCopy">Answer a few quick preferences and we will build an efficient schedule with minimal travel between matching wineries.</p>
+          <h1>What makes a great day out for you?</h1>
+          <p className="heroCopy">No right answers — the more you tell us, the better we can tailor your experience.</p>
         </section>
         <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`} style={{ width: "100%", maxWidth: "100%", margin: 0 }}>
           <section className="exploreSectionBlock">
             <div className="sectionHeader">
               <div>
-                <h2>Trip preferences</h2>
+                <h2>What makes a great day out for you?</h2>
                 <p>
                   {isPreferencesCollapsed
                     ? "Preferences minimized. Expand to edit and run a new plan."
-                    : "Public explore form for guests before account creation/login."}
+                    : "No right answers — the more you tell us, the better we can tailor your experience."}
                 </p>
               </div>
             </div>
@@ -768,101 +922,129 @@ export default function ExplorePage() {
             {isPreferencesCollapsed ? (
               <div className="explorePreferenceSummary">
                 <p>
-                  <strong>{name || "Guest"}</strong> · {groupSize} guests · {tripLength} · transport {needTransport} · {formatPreviewDate(previewDate)}
+                  <strong>{name || "Guest"}</strong> · {groupSize} guests · {tripLength} · transport {needTransport} · {selectedWineStyles.length} wine styles · {selectedExperiences.length} experiences · {formatPreviewDate(previewDate)}
                 </p>
               </div>
             ) : (
             <div className="formPreview">
-            <div className="fieldRow">
-              <div className="field">
-                <label htmlFor="exploreName">Name</label>
-                <input
-                  id="exploreName"
-                  className="inputLike inputField"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Jane Smith"
-                />
+            <div className="field">
+              <label>What kind of wines interest you?</label>
+              <div className="selectorList preferenceCardGrid">
+                {WINE_STYLE_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`selectorCard ${selectedWineStyles.includes(option.id) ? "selected" : ""}`}
+                    onClick={() => setSelectedWineStyles((current) => toggleMultiSelect(current, option.id))}
+                  >
+                    <strong>{option.label}</strong>
+                    <p className="subtle">{option.description}</p>
+                  </button>
+                ))}
               </div>
-              <div className="field">
-                <label htmlFor="exploreEmail">Email</label>
-                <input
-                  id="exploreEmail"
-                  type="email"
-                  className="inputLike inputField"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="jane@example.com"
-                />
+              {wineStyleValidationError ? (
+                <p className="subtle" style={{ color: "#8f3a2b" }}>{wineStyleValidationError}</p>
+              ) : null}
+            </div>
+
+            <div className="field">
+              <label>Are there any experiences you'd love?</label>
+              <div className="selectorList preferenceCardGrid">
+                {EXPERIENCE_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`selectorCard ${selectedExperiences.includes(option.id) ? "selected" : ""}`}
+                    onClick={() => setSelectedExperiences((current) => toggleMultiSelect(current, option.id))}
+                  >
+                    <strong>{option.label}</strong>
+                  </button>
+                ))}
               </div>
+              {experienceInfoMessage ? <p className="subtle">{experienceInfoMessage}</p> : null}
             </div>
 
             <div className="field">
-              <label htmlFor="exploreDate">Preferred date</label>
-              <input
-                id="exploreDate"
-                type="date"
-                min={toIsoDate(1)}
-                className="inputLike inputField"
-                value={previewDate}
-                onChange={(event) => setPreviewDate(event.target.value)}
-              />
-            </div>
-
-            <div className="field">
-              <label htmlFor="exploreGroup">Group size</label>
-              <input
-                id="exploreGroup"
-                type="number"
-                min={1}
-                max={30}
-                className="inputLike inputField"
-                value={groupSize}
-                onChange={(event) => setGroupSize(Math.max(1, Number(event.target.value) || 1))}
-              />
-            </div>
-
-            <div className="field">
-              <label>Need transport?</label>
+              <label>What's the occasion?</label>
               <div className="choiceRow">
-                <label className="choicePill"><input type="radio" checked={needTransport === "yes"} onChange={() => setNeedTransport("yes")} /> Yes</label>
-                <label className="choicePill"><input type="radio" checked={needTransport === "no"} onChange={() => setNeedTransport("no")} /> No</label>
+                {OCCASION_OPTIONS.map((option) => (
+                  <label key={option.id} className="choicePill">
+                    <input type="radio" name="occasion" checked={occasion === option.id} onChange={() => setOccasion(option.id)} />
+                    {option.label}
+                  </label>
+                ))}
+                <label className="choicePill">
+                  <input type="radio" name="occasion" checked={occasion === ""} onChange={() => setOccasion("")} />
+                  No preference
+                </label>
               </div>
             </div>
 
             <div className="field">
-              <label>Experience length</label>
-              <div className="choiceRow">
-                <label className="choicePill"><input type="radio" checked={tripLength === "half-day"} onChange={() => setTripLength("half-day")} /> Half day</label>
-                <label className="choicePill"><input type="radio" checked={tripLength === "full-day"} onChange={() => setTripLength("full-day")} /> Full day</label>
-                <label className="choicePill"><input type="radio" checked={tripLength === "multi-day"} onChange={() => setTripLength("multi-day")} /> Multi-day</label>
+              <label>What's your rough budget per person?</label>
+              <div className="selectorList preferenceCardGrid">
+                {BUDGET_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`selectorCard ${budgetBand === option.id ? "selected" : ""}`}
+                    onClick={() => setBudgetBand(option.id)}
+                  >
+                    <strong>{option.label}</strong>
+                    <p className="subtle">{option.description}</p>
+                  </button>
+                ))}
               </div>
             </div>
 
             <div className="field">
-              <label>Include wineries with lunch?</label>
-              <div className="choiceRow">
-                <label className="choicePill"><input type="radio" checked={includeLunch === "yes"} onChange={() => setIncludeLunch("yes")} /> Yes</label>
-                <label className="choicePill"><input type="radio" checked={includeLunch === "no"} onChange={() => setIncludeLunch("no")} /> No</label>
-              </div>
+              <label>Any dietary requirements we should know about?</label>
+              <button type="button" className="buttonGhost" onClick={() => setShowDietary((value) => !value)}>
+                {showDietary ? "Hide dietary options" : "Add dietary preferences"}
+              </button>
+              {showDietary ? (
+                <div className="choiceRow">
+                  {DIETARY_OPTIONS.map((option) => (
+                    <label key={option.id} className="choicePill">
+                      <input
+                        type="checkbox"
+                        checked={selectedDietaryNeeds.includes(option.id)}
+                        onChange={() => setSelectedDietaryNeeds((current) => toggleMultiSelect(current, option.id))}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             <div className="field">
-              <label>Special requests (multi-select)</label>
-              <div className="choiceRow">
-                <label className="choicePill"><input type="checkbox" checked={prefOrganic} onChange={(event) => setPrefOrganic(event.target.checked)} /> Organic wine</label>
-                <label className="choicePill"><input type="checkbox" checked={prefSpecialExperience} onChange={(event) => setPrefSpecialExperience(event.target.checked)} /> Special winery experience</label>
-                <label className="choicePill"><input type="checkbox" checked={prefCheeseBoard} onChange={(event) => setPrefCheeseBoard(event.target.checked)} /> Cheese board</label>
-              </div>
-            </div>
-
-            <div className="field">
-              <label>Vibe preference</label>
-              <div className="choiceRow">
-                <label className="choicePill"><input type="radio" checked={vibe === ""} onChange={() => setVibe("")} /> No preference</label>
-                <label className="choicePill"><input type="radio" checked={vibe === "popular"} onChange={() => setVibe("popular")} /> Popular choice</label>
-                <label className="choicePill"><input type="radio" checked={vibe === "lesser-known"} onChange={() => setVibe("lesser-known")} /> Lesser known</label>
-              </div>
+              <label>Any accessibility needs?</label>
+              <button type="button" className="buttonGhost" onClick={() => setShowAccessibility((value) => !value)}>
+                {showAccessibility ? "Hide accessibility options" : "Add accessibility preferences"}
+              </button>
+              {showAccessibility ? (
+                <div className="formPreview">
+                  <div className="choiceRow">
+                    {ACCESSIBILITY_OPTIONS.map((option) => (
+                      <label key={option.id} className="choicePill">
+                        <input
+                          type="checkbox"
+                          checked={selectedAccessibilityNeeds.includes(option.id)}
+                          onChange={() => setSelectedAccessibilityNeeds((current) => toggleMultiSelect(current, option.id))}
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                  <input
+                    className="inputLike inputField"
+                    value={accessibilityOther}
+                    onChange={(event) => setAccessibilityOther(event.target.value)}
+                    placeholder="Other accessibility notes (optional)"
+                  />
+                </div>
+              ) : null}
             </div>
 
               <button type="button" className="buttonPrimary fullWidthButton" onClick={handlePlanTrip} disabled={requesting}>

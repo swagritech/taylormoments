@@ -1,6 +1,15 @@
 export type ExploreTripLength = "half-day" | "full-day" | "multi-day";
 export type ExploreYesNo = "yes" | "no";
 export type ExploreVibe = "popular" | "lesser-known" | "";
+export type ExploreBudgetBand = "great-value" | "premium" | "indulgent" | "";
+export type ExploreOccasion =
+  | ""
+  | "great_day_out"
+  | "celebration"
+  | "birthday"
+  | "anniversary"
+  | "honeymoon"
+  | "corporate";
 
 export type ExplorePreferences = {
   name: string;
@@ -13,6 +22,13 @@ export type ExplorePreferences = {
   prefSpecialExperience: boolean;
   prefCheeseBoard: boolean;
   vibe: ExploreVibe;
+  wineStyles?: string[];
+  experiences?: string[];
+  budgetBand?: ExploreBudgetBand;
+  occasion?: ExploreOccasion;
+  dietaryNeeds?: string[];
+  accessibilityNeeds?: string[];
+  accessibilityOther?: string;
   matchedWineryIds?: string[];
   previewDate?: string;
 };
@@ -53,4 +69,3 @@ export function getSuggestedWindowFromTripLength(length: ExploreTripLength) {
   }
   return { start: "09:00", end: "17:00" };
 }
-

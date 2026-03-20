@@ -1030,6 +1030,10 @@ button {
   gap: 8px;
 }
 
+.preferenceCardGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .fieldRow {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1555,6 +1559,10 @@ button {
   }
 
   .profileChoiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .preferenceCardGrid {
     grid-template-columns: 1fr;
   }
 
