@@ -263,6 +263,9 @@ export type RecommendItineraryRequest = {
   booking_date: string;
   party_size: number;
   pickup_location: string;
+  pickup_place_id?: string;
+  pickup_latitude?: number;
+  pickup_longitude?: number;
   preferred_wineries?: string[];
   preferred_region?: string;
   preferred_start_time?: string;

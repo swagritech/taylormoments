@@ -14,6 +14,11 @@ import {
 
 const GOOGLE_PLACES_SCRIPT_ID = "tm-google-places-script";
 
+type AddressSuggestion = {
+  label: string;
+  placeId: string;
+};
+
 declare global {
   interface Window {
     google?: any;
@@ -41,7 +46,7 @@ function groupErrorMessage(groupSize: number) {
     return "Your group needs at least one person.";
   }
   if (groupSize > 20) {
-    return "For groups larger than 20, please get in touch — we'll arrange something special.";
+    return "For groups larger than 20, please get in touch - we'll arrange something special.";
   }
   return null;
 }
@@ -50,13 +55,17 @@ export default function Home() {
   const router = useRouter();
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
   const autocompleteServiceRef = useRef<any | null>(null);
+  const geocoderRef = useRef<any | null>(null);
 
   const [visitDate, setVisitDate] = useState(initialPreferences?.previewDate ?? "");
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
   const [tripLength, setTripLength] = useState<ExploreTripLength>(initialPreferences?.tripLength ?? "full-day");
   const [needTransport, setNeedTransport] = useState<ExploreYesNo>(initialPreferences?.needTransport ?? "yes");
   const [pickupAddress, setPickupAddress] = useState(initialPreferences?.pickupAddress ?? "");
-  const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
+  const [pickupPlaceId, setPickupPlaceId] = useState(initialPreferences?.pickupPlaceId ?? "");
+  const [pickupLatitude, setPickupLatitude] = useState<number | undefined>(initialPreferences?.pickupLatitude);
+  const [pickupLongitude, setPickupLongitude] = useState<number | undefined>(initialPreferences?.pickupLongitude);
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
   const [addressLookupLoading, setAddressLookupLoading] = useState(false);
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
   const [googlePlacesReady, setGooglePlacesReady] = useState(false);
@@ -69,7 +78,7 @@ export default function Home() {
     ? "Please choose your travel dates to continue."
     : null;
   const pastDateError = submitAttempted && isPastDate(visitDate, todayIso)
-    ? "Those dates have passed — please pick an upcoming trip."
+    ? "Those dates have passed - please pick an upcoming trip."
     : null;
   const groupError = submitAttempted ? groupErrorMessage(groupSize) : null;
   const pickupAddressError = submitAttempted && needTransport === "yes" && !pickupAddress.trim()
@@ -115,6 +124,9 @@ export default function Home() {
     if (!autocompleteServiceRef.current) {
       autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
     }
+    if (!geocoderRef.current) {
+      geocoderRef.current = new window.google.maps.Geocoder();
+    }
   }, [googlePlacesReady]);
 
   useEffect(() => {
@@ -145,7 +157,7 @@ export default function Home() {
           componentRestrictions: { country: "au" },
           types: ["address"],
         },
-        (predictions: Array<{ description: string }> | null, status: string) => {
+        (predictions: Array<{ description: string; place_id: string }> | null, status: string) => {
           if (!active) {
             return;
           }
@@ -154,8 +166,11 @@ export default function Home() {
           if (status === okStatus && predictions) {
             setAddressSuggestions(
               predictions
-                .map((entry) => entry.description?.trim())
-                .filter((entry): entry is string => Boolean(entry))
+                .map((entry) => ({
+                  label: entry.description?.trim() ?? "",
+                  placeId: entry.place_id?.trim() ?? "",
+                }))
+                .filter((entry) => entry.label && entry.placeId)
                 .slice(0, 6),
             );
           } else if (status === zeroStatus) {
@@ -176,6 +191,38 @@ export default function Home() {
 
   function handleGroupStep(delta: number) {
     setGroupSize((current) => Math.max(0, current + delta));
+  }
+
+  function resolvePlaceCoordinates(placeId: string) {
+    if (!geocoderRef.current || !placeId) {
+      return;
+    }
+
+    geocoderRef.current.geocode({ placeId }, (results: any[] | null, status: string) => {
+      const okStatus = window.google?.maps?.GeocoderStatus?.OK;
+      if (status !== okStatus || !results || results.length === 0) {
+        setPickupLatitude(undefined);
+        setPickupLongitude(undefined);
+        return;
+      }
+
+      const location = results[0]?.geometry?.location;
+      if (!location) {
+        setPickupLatitude(undefined);
+        setPickupLongitude(undefined);
+        return;
+      }
+
+      const lat = typeof location.lat === "function" ? location.lat() : undefined;
+      const lng = typeof location.lng === "function" ? location.lng() : undefined;
+      if (typeof lat === "number" && Number.isFinite(lat) && typeof lng === "number" && Number.isFinite(lng)) {
+        setPickupLatitude(lat);
+        setPickupLongitude(lng);
+      } else {
+        setPickupLatitude(undefined);
+        setPickupLongitude(undefined);
+      }
+    });
   }
 
   function handleBegin() {
@@ -203,6 +250,9 @@ export default function Home() {
       tripLength,
       needTransport,
       pickupAddress: pickupAddress.trim() || undefined,
+      pickupPlaceId: pickupPlaceId || undefined,
+      pickupLatitude,
+      pickupLongitude,
     };
     saveExplorePreferences(next);
     router.push("/explore");
@@ -265,7 +315,7 @@ export default function Home() {
                       <>
                         For groups larger than 20, please{" "}
                         <Link href="mailto:sean@swagritech.com.au" style={{ textDecoration: "underline" }}>get in touch</Link>
-                        {" "}— we'll arrange something special.
+                        {" "}- we'll arrange something special.
                       </>
                     ) : groupError}
                   </p>
@@ -319,6 +369,9 @@ export default function Home() {
                       onBlur={() => window.setTimeout(() => setShowAddressSuggestions(false), 120)}
                       onChange={(event) => {
                         setPickupAddress(event.target.value);
+                        setPickupPlaceId("");
+                        setPickupLatitude(undefined);
+                        setPickupLongitude(undefined);
                         setShowAddressSuggestions(true);
                       }}
                     />
@@ -343,16 +396,18 @@ export default function Home() {
                         <div className="selectorList">
                           {addressSuggestions.map((suggestion) => (
                             <button
-                              key={suggestion}
+                              key={suggestion.placeId}
                               type="button"
                               className="selectorCard"
                               onMouseDown={(event) => {
                                 event.preventDefault();
-                                setPickupAddress(suggestion);
+                                setPickupAddress(suggestion.label);
+                                setPickupPlaceId(suggestion.placeId);
+                                resolvePlaceCoordinates(suggestion.placeId);
                                 setShowAddressSuggestions(false);
                               }}
                             >
-                              <p className="subtle">{suggestion}</p>
+                              <p className="subtle">{suggestion.label}</p>
                             </button>
                           ))}
                         </div>

@@ -120,6 +120,7 @@ export function getTravelTimeCacheTtlSeconds() {
 export function normalizeRequest(input: RecommendItineraryRequest): RecommendItineraryRequest {
   return {
     ...input,
+    pickup_place_id: input.pickup_place_id?.trim() || undefined,
     preferred_wineries: input.preferred_wineries ?? [],
     preferred_region: input.preferred_region?.trim() || undefined,
   };

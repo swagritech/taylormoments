@@ -17,6 +17,9 @@ export type ExplorePreferences = {
   groupSize: number;
   needTransport: ExploreYesNo;
   pickupAddress?: string;
+  pickupPlaceId?: string;
+  pickupLatitude?: number;
+  pickupLongitude?: number;
   tripLength: ExploreTripLength;
   includeLunch: ExploreYesNo;
   prefOrganic: boolean;

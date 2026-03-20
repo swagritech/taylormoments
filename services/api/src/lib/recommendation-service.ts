@@ -134,7 +134,17 @@ function resolveTastingDurationMinutes(winery: Winery, slot?: WineryAvailability
   return DEFAULT_TASTING_DURATION_MINUTES;
 }
 
-function resolvePickupPoint(pickupLocation: string) {
+function resolvePickupPoint(request: RecommendItineraryRequest) {
+  if (
+    typeof request.pickup_latitude === "number" &&
+    Number.isFinite(request.pickup_latitude) &&
+    typeof request.pickup_longitude === "number" &&
+    Number.isFinite(request.pickup_longitude)
+  ) {
+    return { lat: request.pickup_latitude, lon: request.pickup_longitude };
+  }
+
+  const pickupLocation = request.pickup_location;
   const lowered = pickupLocation.toLowerCase();
   const match = pickupPoints.find((entry) => lowered.includes(entry.key));
   return match?.point;
@@ -155,7 +165,7 @@ function pointForWinery(winery: Winery): Point | undefined {
 
 function buildTravelPointsById(request: RecommendItineraryRequest, wineries: Winery[]) {
   const pointsById: Record<string, Point | undefined> = {
-    pickup: resolvePickupPoint(request.pickup_location),
+    pickup: resolvePickupPoint(request),
   };
 
   for (const winery of wineries) {

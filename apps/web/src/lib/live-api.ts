@@ -72,6 +72,9 @@ export type CreateBookingRequest = {
   preferred_start_time?: string;
   preferred_end_time?: string;
   pickup_location: string;
+  pickup_place_id?: string;
+  pickup_latitude?: number;
+  pickup_longitude?: number;
   party_size: number;
   preferred_region?: string;
   preferred_wineries: string[];
@@ -327,6 +330,9 @@ async function parseJson<T>(response: Response): Promise<T> {
 export async function recommendItineraries(payload: {
   booking_date: string;
   pickup_location: string;
+  pickup_place_id?: string;
+  pickup_latitude?: number;
+  pickup_longitude?: number;
   party_size: number;
   preferred_region?: string;
   preferred_wineries: string[];

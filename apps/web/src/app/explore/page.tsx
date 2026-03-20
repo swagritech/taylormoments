@@ -446,6 +446,9 @@ export default function ExplorePage() {
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
   const [needTransport, setNeedTransport] = useState<YesNo>(initialPreferences?.needTransport ?? "yes");
   const [pickupAddress] = useState(initialPreferences?.pickupAddress ?? "");
+  const [pickupPlaceId] = useState(initialPreferences?.pickupPlaceId ?? "");
+  const [pickupLatitude] = useState<number | undefined>(initialPreferences?.pickupLatitude);
+  const [pickupLongitude] = useState<number | undefined>(initialPreferences?.pickupLongitude);
   const [tripLength, setTripLength] = useState<TripLength>(initialPreferences?.tripLength ?? "full-day");
   const [selectedWineStyles, setSelectedWineStyles] = useState<WineStyleId[]>(() => {
     if (initialPreferences?.wineStyles?.length) {
@@ -566,6 +569,9 @@ export default function ExplorePage() {
       groupSize,
       needTransport,
       pickupAddress,
+      pickupPlaceId: pickupPlaceId || undefined,
+      pickupLatitude,
+      pickupLongitude,
       tripLength,
       includeLunch,
       prefOrganic,
@@ -589,6 +595,9 @@ export default function ExplorePage() {
     groupSize,
     needTransport,
     pickupAddress,
+    pickupPlaceId,
+    pickupLatitude,
+    pickupLongitude,
     tripLength,
     selectedWineStyles,
     selectedExperiences,
@@ -775,6 +784,9 @@ export default function ExplorePage() {
             needTransport === "yes"
               ? pickupAddress.trim() || "Margaret River Visitor Centre"
               : "Self-drive (no transport required)",
+          pickup_place_id: needTransport === "yes" ? pickupPlaceId || undefined : undefined,
+          pickup_latitude: needTransport === "yes" ? pickupLatitude : undefined,
+          pickup_longitude: needTransport === "yes" ? pickupLongitude : undefined,
           party_size: groupSize,
           preferred_start_time: timeWindow.start,
           preferred_end_time: timeWindow.end,
@@ -799,6 +811,9 @@ export default function ExplorePage() {
                   needTransport === "yes"
                     ? pickupAddress.trim() || "Margaret River Visitor Centre"
                     : "Self-drive (no transport required)",
+                pickup_place_id: needTransport === "yes" ? pickupPlaceId || undefined : undefined,
+                pickup_latitude: needTransport === "yes" ? pickupLatitude : undefined,
+                pickup_longitude: needTransport === "yes" ? pickupLongitude : undefined,
                 party_size: groupSize,
                 preferred_start_time: timeWindow.start,
                 preferred_end_time: timeWindow.end,
