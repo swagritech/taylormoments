@@ -439,6 +439,7 @@ function toggleMultiSelect<T extends string>(values: T[], value: T) {
 export default function ExplorePage() {
   const router = useRouter();
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
+  const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const previewRef = useRef<HTMLDivElement | null>(null);
   const itineraryCardRef = useRef<HTMLDivElement | null>(null);
   const [name, setName] = useState(initialPreferences?.name ?? "");
@@ -677,6 +678,44 @@ export default function ExplorePage() {
     setItineraryReplaySeed(0);
 
     try {
+      let requestPickupLatitude = pickupLatitude;
+      let requestPickupLongitude = pickupLongitude;
+      if (
+        needTransport === "yes" &&
+        pickupPlaceId &&
+        (requestPickupLatitude === undefined || requestPickupLongitude === undefined) &&
+        googleApiKey
+      ) {
+        try {
+          const detailsResponse = await fetch(
+            `https://places.googleapis.com/v1/places/${encodeURIComponent(pickupPlaceId)}`,
+            {
+              method: "GET",
+              headers: {
+                "X-Goog-Api-Key": googleApiKey,
+                "X-Goog-FieldMask": "location",
+              },
+            },
+          );
+          if (detailsResponse.ok) {
+            const details = (await detailsResponse.json()) as {
+              location?: { latitude?: number; longitude?: number };
+            };
+            if (
+              typeof details.location?.latitude === "number" &&
+              Number.isFinite(details.location.latitude) &&
+              typeof details.location?.longitude === "number" &&
+              Number.isFinite(details.location.longitude)
+            ) {
+              requestPickupLatitude = details.location.latitude;
+              requestPickupLongitude = details.location.longitude;
+            }
+          }
+        } catch {
+          // keep fallback behavior
+        }
+      }
+
       const hasCheeseBoardMatch = (winery: WineryCatalogItem) =>
         toSearchProfile(winery, profilesById[slugToWineryUuid(winery.id)]).hasCheeseBoard;
       const requestDate = new Date(`${(previewDate || toIsoDate(7))}T00:00:00`);
@@ -785,8 +824,8 @@ export default function ExplorePage() {
               ? pickupAddress.trim() || "Margaret River Visitor Centre"
               : "Self-drive (no transport required)",
           pickup_place_id: needTransport === "yes" ? pickupPlaceId || undefined : undefined,
-          pickup_latitude: needTransport === "yes" ? pickupLatitude : undefined,
-          pickup_longitude: needTransport === "yes" ? pickupLongitude : undefined,
+          pickup_latitude: needTransport === "yes" ? requestPickupLatitude : undefined,
+          pickup_longitude: needTransport === "yes" ? requestPickupLongitude : undefined,
           party_size: groupSize,
           preferred_start_time: timeWindow.start,
           preferred_end_time: timeWindow.end,
@@ -812,8 +851,8 @@ export default function ExplorePage() {
                     ? pickupAddress.trim() || "Margaret River Visitor Centre"
                     : "Self-drive (no transport required)",
                 pickup_place_id: needTransport === "yes" ? pickupPlaceId || undefined : undefined,
-                pickup_latitude: needTransport === "yes" ? pickupLatitude : undefined,
-                pickup_longitude: needTransport === "yes" ? pickupLongitude : undefined,
+                pickup_latitude: needTransport === "yes" ? requestPickupLatitude : undefined,
+                pickup_longitude: needTransport === "yes" ? requestPickupLongitude : undefined,
                 party_size: groupSize,
                 preferred_start_time: timeWindow.start,
                 preferred_end_time: timeWindow.end,

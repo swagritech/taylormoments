@@ -71,6 +71,10 @@ export function createRemoteRepository(apiBaseUrl: string): AppRepository {
         },
       });
 
+      if (response.status === 404) {
+        return createDefaultAppState();
+      }
+
       if (!response.ok) {
         throw new Error(`Unable to load workbench state (${response.status})`);
       }
@@ -85,6 +89,10 @@ export function createRemoteRepository(apiBaseUrl: string): AppRepository {
         },
         body: JSON.stringify(state),
       });
+
+      if (response.status === 404) {
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`Unable to save workbench state (${response.status})`);

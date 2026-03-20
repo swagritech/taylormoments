@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -12,18 +12,10 @@ import {
   type ExploreYesNo,
 } from "@/lib/explore-preferences";
 
-const GOOGLE_PLACES_SCRIPT_ID = "tm-google-places-script";
-
 type AddressSuggestion = {
   label: string;
   placeId: string;
 };
-
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
 
 function toIsoDate(dayOffset = 1) {
   const date = new Date();
@@ -54,9 +46,8 @@ function groupErrorMessage(groupSize: number) {
 export default function Home() {
   const router = useRouter();
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
-  const autocompleteServiceRef = useRef<any | null>(null);
-  const geocoderRef = useRef<any | null>(null);
 
+  const [name, setName] = useState(initialPreferences?.name ?? "");
   const [visitDate, setVisitDate] = useState(initialPreferences?.previewDate ?? "");
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
   const [tripLength, setTripLength] = useState<ExploreTripLength>(initialPreferences?.tripLength ?? "full-day");
@@ -68,7 +59,6 @@ export default function Home() {
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
   const [addressLookupLoading, setAddressLookupLoading] = useState(false);
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
-  const [googlePlacesReady, setGooglePlacesReady] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
@@ -91,50 +81,6 @@ export default function Home() {
       setAddressLookupLoading(false);
       return;
     }
-    if (!googleApiKey) {
-      setGooglePlacesReady(false);
-      return;
-    }
-
-    if (window.google?.maps?.places) {
-      setGooglePlacesReady(true);
-      return;
-    }
-
-    const existing = document.getElementById(GOOGLE_PLACES_SCRIPT_ID) as HTMLScriptElement | null;
-    if (existing) {
-      const onLoad = () => setGooglePlacesReady(true);
-      existing.addEventListener("load", onLoad);
-      return () => existing.removeEventListener("load", onLoad);
-    }
-
-    const script = document.createElement("script");
-    script.id = GOOGLE_PLACES_SCRIPT_ID;
-    script.async = true;
-    script.defer = true;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleApiKey)}&libraries=places&v=weekly`;
-    script.addEventListener("load", () => setGooglePlacesReady(true));
-    document.head.appendChild(script);
-  }, [googleApiKey, needTransport]);
-
-  useEffect(() => {
-    if (!googlePlacesReady || !window.google?.maps?.places) {
-      return;
-    }
-    if (!autocompleteServiceRef.current) {
-      autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
-    }
-    if (!geocoderRef.current) {
-      geocoderRef.current = new window.google.maps.Geocoder();
-    }
-  }, [googlePlacesReady]);
-
-  useEffect(() => {
-    if (needTransport !== "yes") {
-      setAddressSuggestions([]);
-      setAddressLookupLoading(false);
-      return;
-    }
 
     const query = pickupAddress.trim();
     if (!query || query.length < 3) {
@@ -143,78 +89,95 @@ export default function Home() {
       return;
     }
 
-    if (!googlePlacesReady || !autocompleteServiceRef.current) {
+    if (!googleApiKey) {
       setAddressLookupLoading(false);
       return;
     }
 
     let active = true;
+    const controller = new AbortController();
     setAddressLookupLoading(true);
-    const timer = window.setTimeout(() => {
-      autocompleteServiceRef.current.getPlacePredictions(
-        {
-          input: query,
-          componentRestrictions: { country: "au" },
-          types: ["address"],
-        },
-        (predictions: Array<{ description: string; place_id: string }> | null, status: string) => {
-          if (!active) {
-            return;
-          }
-          const okStatus = window.google?.maps?.places?.PlacesServiceStatus?.OK;
-          const zeroStatus = window.google?.maps?.places?.PlacesServiceStatus?.ZERO_RESULTS;
-          if (status === okStatus && predictions) {
-            setAddressSuggestions(
-              predictions
-                .map((entry) => ({
-                  label: entry.description?.trim() ?? "",
-                  placeId: entry.place_id?.trim() ?? "",
-                }))
-                .filter((entry) => entry.label && entry.placeId)
-                .slice(0, 6),
-            );
-          } else if (status === zeroStatus) {
-            setAddressSuggestions([]);
-          } else {
-            setAddressSuggestions([]);
-          }
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": googleApiKey,
+            "X-Goog-FieldMask": "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text",
+          },
+          body: JSON.stringify({
+            input: query,
+            includedRegionCodes: ["AU"],
+            languageCode: "en",
+          }),
+        });
+        if (!response.ok) {
+          throw new Error("Places autocomplete failed");
+        }
+        const payload = (await response.json()) as {
+          suggestions?: Array<{
+            placePrediction?: {
+              placeId?: string;
+              text?: { text?: string };
+            };
+          }>;
+        };
+        if (!active) {
+          return;
+        }
+        const nextSuggestions = (payload.suggestions ?? [])
+          .map((entry) => ({
+            label: entry.placePrediction?.text?.text?.trim() ?? "",
+            placeId: entry.placePrediction?.placeId?.trim() ?? "",
+          }))
+          .filter((entry) => entry.label && entry.placeId)
+          .slice(0, 6);
+        setAddressSuggestions(nextSuggestions);
+      } catch {
+        if (active) {
+          setAddressSuggestions([]);
+        }
+      } finally {
+        if (active) {
           setAddressLookupLoading(false);
-        },
-      );
+        }
+      }
     }, 220);
 
     return () => {
       active = false;
+      controller.abort();
       window.clearTimeout(timer);
     };
-  }, [googlePlacesReady, needTransport, pickupAddress]);
+  }, [googleApiKey, needTransport, pickupAddress]);
 
   function handleGroupStep(delta: number) {
     setGroupSize((current) => Math.max(0, current + delta));
   }
 
-  function resolvePlaceCoordinates(placeId: string) {
-    if (!geocoderRef.current || !placeId) {
+  async function resolvePlaceCoordinates(placeId: string) {
+    if (!googleApiKey || !placeId) {
       return;
     }
-
-    geocoderRef.current.geocode({ placeId }, (results: any[] | null, status: string) => {
-      const okStatus = window.google?.maps?.GeocoderStatus?.OK;
-      if (status !== okStatus || !results || results.length === 0) {
-        setPickupLatitude(undefined);
-        setPickupLongitude(undefined);
-        return;
+    try {
+      const response = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
+        method: "GET",
+        headers: {
+          "X-Goog-Api-Key": googleApiKey,
+          "X-Goog-FieldMask": "formattedAddress,location",
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Place details failed");
       }
-
-      const location = results[0]?.geometry?.location;
-      if (!location) {
-        setPickupLatitude(undefined);
-        setPickupLongitude(undefined);
-        return;
-      }
-
-      const lat = typeof location.lat === "function" ? location.lat() : undefined;
-      const lng = typeof location.lng === "function" ? location.lng() : undefined;
+      const payload = (await response.json()) as {
+        formattedAddress?: string;
+        location?: { latitude?: number; longitude?: number };
+      };
+      const lat = payload.location?.latitude;
+      const lng = payload.location?.longitude;
       if (typeof lat === "number" && Number.isFinite(lat) && typeof lng === "number" && Number.isFinite(lng)) {
         setPickupLatitude(lat);
         setPickupLongitude(lng);
@@ -222,7 +185,13 @@ export default function Home() {
         setPickupLatitude(undefined);
         setPickupLongitude(undefined);
       }
-    });
+      if (payload.formattedAddress?.trim()) {
+        setPickupAddress(payload.formattedAddress.trim());
+      }
+    } catch {
+      setPickupLatitude(undefined);
+      setPickupLongitude(undefined);
+    }
   }
 
   function handleBegin() {
@@ -237,7 +206,7 @@ export default function Home() {
 
     const current = loadExplorePreferences();
     const next: ExplorePreferences = {
-      name: current?.name ?? "",
+      name: name.trim() || current?.name || "",
       email: current?.email ?? "",
       includeLunch: current?.includeLunch ?? "yes",
       prefOrganic: current?.prefOrganic ?? false,
@@ -277,6 +246,17 @@ export default function Home() {
 
           <section className="exploreSectionBlock">
             <div className="formPreview">
+              <div className="field">
+                <label htmlFor="guestName">Your name</label>
+                <input
+                  id="guestName"
+                  className="inputLike inputField"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Sean"
+                />
+              </div>
+
               <div className="field">
                 <label htmlFor="visitDate">When are you visiting?</label>
                 <input
@@ -403,7 +383,7 @@ export default function Home() {
                                 event.preventDefault();
                                 setPickupAddress(suggestion.label);
                                 setPickupPlaceId(suggestion.placeId);
-                                resolvePlaceCoordinates(suggestion.placeId);
+                                void resolvePlaceCoordinates(suggestion.placeId);
                                 setShowAddressSuggestions(false);
                               }}
                             >
