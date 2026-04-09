@@ -1,7 +1,25 @@
 #!/usr/bin/env node
 
 const apiBaseUrl = (process.env.TM_API_BASE_URL ?? "https://swagri-tailormoments-api-01.azurewebsites.net/api").replace(/\/+$/, "");
-const bookingDate = process.env.TM_REGRESSION_BOOKING_DATE ?? "2026-03-20";
+
+function toIsoDate(value) {
+  return value.toISOString().slice(0, 10);
+}
+
+function defaultBookingDate() {
+  const now = new Date();
+  const anchor = new Date(now);
+  anchor.setUTCDate(anchor.getUTCDate() + 10);
+
+  // Keep regression checks on Fridays to mirror historical baseline scenarios.
+  // JS getUTCDay(): Sun=0 ... Fri=5
+  const day = anchor.getUTCDay();
+  const daysUntilFriday = (5 - day + 7) % 7;
+  anchor.setUTCDate(anchor.getUTCDate() + daysUntilFriday);
+  return toIsoDate(anchor);
+}
+
+const bookingDate = process.env.TM_REGRESSION_BOOKING_DATE ?? defaultBookingDate();
 const maxSelectedFallbackPercent = Number(process.env.TM_QUALITY_MAX_SELECTED_FALLBACK_PCT ?? 20);
 const maxGlobalFallbackPercent = Number(process.env.TM_QUALITY_MAX_GLOBAL_FALLBACK_PCT ?? 35);
 const minSelectedConfidence = Number(process.env.TM_QUALITY_MIN_SELECTED_CONFIDENCE ?? 0.65);
