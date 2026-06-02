@@ -14,6 +14,7 @@ import type {
 
 export interface WorkflowRepository {
   getWineries(): Promise<Winery[]>;
+  remapWineryIdsToCanonical(wineryIds: string[]): Promise<string[]>;
   getWineryById(wineryId: string): Promise<Winery | null>;
   updateWineryProfile(request: {
     wineryId: string;
@@ -38,6 +39,7 @@ export interface WorkflowRepository {
       | "Red Wine Specialist"
       | "White Wine Specialist"
       | "Sparkling & Method traditionnelle Specialist"
+      | "Fortified & Dessert Wines"
       | "Fortfied & Desert Wines"
       | "Internationally awarded"
       | "Wines only available at cellar door"
@@ -130,13 +132,16 @@ export interface WorkflowRepository {
   getAvailabilityForDate(serviceDate: string): Promise<WineryAvailability[]>;
   createBooking(request: CreateBookingRequest): Promise<Booking>;
   getBooking(bookingId: string): Promise<Booking | null>;
+  getBookingsByIds(bookingIds: string[]): Promise<Booking[]>;
   listBookingsByLeadEmail(email: string): Promise<Booking[]>;
+  listBookingsByUserId(userId: string): Promise<Booking[]>;
   getWineryContact(wineryId: string): Promise<WineryContact | null>;
   createWineryBookingRequest(request: Omit<WineryBookingRequest, "createdAt" | "updatedAt">): Promise<WineryBookingRequest>;
   listWineryBookingRequests(wineryId: string): Promise<WineryBookingRequest[]>;
   markWineryBookingRequestAccepted(tokenId: string): Promise<WineryBookingRequest | null>;
   createWineryMediaAsset(request: Omit<WineryMediaAsset, "createdAt" | "updatedAt">): Promise<WineryMediaAsset>;
   listWineryMediaAssets(wineryId: string): Promise<WineryMediaAsset[]>;
+  getWineryMediaAssetById(wineryId: string, mediaId: string): Promise<WineryMediaAsset | null>;
   markWineryMediaAssetUploaded(mediaId: string, wineryId: string, fileSizeBytes?: number): Promise<WineryMediaAsset | null>;
   archiveWineryMediaAsset(mediaId: string, wineryId: string): Promise<WineryMediaAsset | null>;
   createUserAccount(request: RegisterUserRequest & { password_hash: string }): Promise<UserAccount>;

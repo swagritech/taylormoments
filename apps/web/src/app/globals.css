@@ -10,6 +10,7 @@
   --paper: #fcfbf8;
   --ink: #25302b;
   --muted: #64706b;
+  --danger: #8f3a2b;
   --line: #d6ddd8;
   --line-soft: #e6ece8;
   --panel: #ffffff;
@@ -121,6 +122,10 @@ button {
   color: var(--muted);
 }
 
+.errorText {
+  color: var(--danger);
+}
+
 .brandBadge {
   width: 70px;
   height: 42px;
@@ -177,12 +182,59 @@ button {
   line-height: 1;
 }
 
+.ctaRowAlignCenter {
+  align-items: center;
+}
+
+.ctaRowMt10 {
+  margin-top: 10px;
+}
+
+.ctaRowMt12 {
+  margin-top: 12px;
+}
+
+.formMt8 {
+  margin-top: 8px;
+}
+
+.calloutMt10 {
+  margin-top: 10px;
+}
+
+.inlineLinkButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--teal);
+  text-decoration: underline;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .exploreLayout {
   display: grid;
   gap: 16px;
   max-width: none;
   margin: 0;
   padding: 0 18px;
+}
+
+.exploreRouteFade {
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+.exploreRouteFade.routeEntering {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: tmRouteFadeIn 240ms ease forwards;
+}
+
+.exploreRouteFade.routeExiting {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 .exploreUnifiedPanel {
@@ -195,6 +247,20 @@ button {
   padding: 18px;
   display: grid;
   gap: 18px;
+}
+
+.exploreUnifiedPanel.exploreStepFadeOut {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.exploreUnifiedPanel.exploreStepFadeIn {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: tmStepFadeIn 260ms ease forwards;
 }
 
 .exploreUnifiedPanel .sectionCard {
@@ -294,6 +360,32 @@ button {
 .navLink:hover {
   background: #eaf2ee;
   color: var(--teal);
+}
+
+@keyframes tmRouteFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tmStepFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobileMenuToggle {
+  display: none !important;
 }
 
 .pageHeader {
@@ -874,6 +966,76 @@ button {
   white-space: nowrap;
 }
 
+.summaryPageSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.summaryPageLeft,
+.summaryPageRight {
+  display: grid;
+  gap: 12px;
+}
+
+.summaryMapCard {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.summaryMapCard h3 {
+  color: var(--sage);
+  font-size: 1.02rem;
+}
+
+.summaryMapCanvas {
+  width: 100%;
+  min-height: min(68vh, 560px);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mapCanvasRoot {
+  position: relative;
+}
+
+.mapCanvasInner320,
+.mapCanvasInner360 {
+  width: 100%;
+}
+
+.mapCanvasInner320 {
+  min-height: 320px;
+}
+
+.mapCanvasInner360 {
+  min-height: 360px;
+}
+
+.summaryMapOverlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.88);
+  color: #4f6258;
+  font-weight: 600;
+  text-align: center;
+  padding: 16px;
+}
+
+.summaryMapOverlayError {
+  background: rgba(255, 255, 255, 0.92);
+  color: #6f4b2f;
+}
+
 .scheduleStopTitle {
   margin: 0;
 }
@@ -991,6 +1153,32 @@ button {
 .inputField:focus {
   outline: 2px solid rgba(47, 122, 116, 0.2);
   outline-offset: 2px;
+}
+
+.groupSizeInput {
+  max-width: 120px;
+}
+
+.textLinkUnderline {
+  text-decoration: underline;
+}
+
+.pickupAddressField {
+  position: relative;
+  margin-top: 8px;
+}
+
+.autocompleteSuggestionPanel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 8px;
+  margin-top: 6px;
+  border-radius: 12px;
+  max-height: 220px;
+  overflow-y: auto;
 }
 
 .statusSelect {
@@ -1168,17 +1356,145 @@ button {
 
 .catalogShell {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
-  gap: 12px;
+  grid-template-columns: minmax(0, 1.55fr) minmax(360px, 0.95fr);
+  gap: 16px;
   align-items: start;
+}
+
+.catalogShell.singleColumn {
+  grid-template-columns: 1fr;
 }
 
 .catalogList {
   display: grid;
-  gap: 10px;
-  max-height: 72vh;
-  overflow: auto;
+  gap: 12px;
+  max-height: none;
+  overflow: visible;
   padding-right: 4px;
+}
+
+.catalogGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.catalogCard {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: grid;
+  gap: 0;
+}
+
+.catalogCard.active {
+  border-color: #9eb8ad;
+  box-shadow: 0 12px 28px rgba(50, 88, 71, 0.14);
+}
+
+.catalogCardMedia {
+  position: relative;
+  min-height: 220px;
+  background: linear-gradient(140deg, #9fc3bf 0%, #d5d9ca 52%, #ecdfbe 100%);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.catalogCardBadgeRow {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1;
+}
+
+.catalogCardBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(18, 35, 29, 0.08);
+  background: rgba(255, 255, 255, 0.95);
+  color: #2d3934;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.catalogCardSave {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  background: rgba(28, 40, 35, 0.45);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.84rem;
+}
+
+.catalogCardInitials {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.88);
+  font-family: var(--font-display), serif;
+  font-size: clamp(2.3rem, 5vw, 3.6rem);
+  letter-spacing: 0.08em;
+  text-shadow: 0 2px 16px rgba(20, 35, 29, 0.35);
+}
+
+.catalogCardBody {
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.catalogCardTitleRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.catalogCardTitleRow h3 {
+  color: #2f3a34;
+  font-size: 1.02rem;
+}
+
+.catalogCardRating {
+  color: #2f3a34;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.catalogCardHeadline {
+  color: #3e4d46;
+  line-height: 1.45;
+}
+
+.catalogCardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.catalogCardFooter {
+  margin-top: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.catalogCardPrice {
+  color: #2f3a34;
+  font-weight: 700;
 }
 
 .catalogRow {
@@ -1252,11 +1568,32 @@ button {
 .catalogMap {
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow);
-  padding: 12px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  align-self: start;
+  position: static;
+}
+
+.catalogMapTop {
+  margin-bottom: 14px;
+}
+
+.catalogMapTop .catalogMapSticky {
+  position: static;
+  top: auto;
+}
+
+.catalogMapSticky {
   position: sticky;
   top: 12px;
+  display: grid;
+  gap: 12px;
+  align-self: stretch;
+  height: auto;
+  z-index: 3;
 }
 
 .catalogMap iframe {
@@ -1268,7 +1605,7 @@ button {
 
 .selectedMapCanvas {
   width: 100%;
-  min-height: 320px;
+  min-height: min(70vh, 560px);
   border: 1px solid var(--line-soft);
   border-radius: 12px;
   overflow: hidden;
@@ -1280,6 +1617,55 @@ button {
   max-height: 150px;
   overflow: auto;
   padding-right: 4px;
+}
+
+.cartListItem {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: #ffffff;
+  cursor: grab;
+}
+
+.cartListItem.dragging {
+  opacity: 0.65;
+}
+
+.cartListItem.dragOver {
+  border-color: #9db9ad;
+  background: #f1f7f4;
+}
+
+.cartDragHandle {
+  color: #93a69e;
+  font-size: 0.92rem;
+  line-height: 1.1;
+  user-select: none;
+  padding-top: 2px;
+}
+
+.cartRemoveButton {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid #cfdad4;
+  background: #ffffff;
+  color: #6b7b74;
+  font-size: 1.05rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cartRemoveButton:hover {
+  background: #f8fbfa;
+  border-color: #b8c9c1;
+  color: #2f3d36;
 }
 
 .mediaGrid {
@@ -1484,7 +1870,8 @@ button {
   .grid.three,
   .statsGrid,
   .splitPanel,
-  .summaryRibbon {
+  .summaryRibbon,
+  .summaryPageSplit {
     grid-template-columns: 1fr;
   }
 
@@ -1496,8 +1883,8 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .catalogMap {
-    position: static;
+  .catalogGrid {
+    grid-template-columns: 1fr;
   }
 
   .tableRow {
@@ -1526,6 +1913,20 @@ button {
     padding: 10px;
   }
 
+  .pageFrame {
+    gap: 12px;
+  }
+
+  .exploreLayout {
+    padding: 0;
+    gap: 12px;
+  }
+
+  .exploreUnifiedPanel {
+    padding: 14px;
+    gap: 14px;
+  }
+
   .topbar,
   .pageHeader,
   .sectionCard,
@@ -1544,10 +1945,95 @@ button {
     align-items: stretch;
   }
 
+  .topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .brand {
+    width: auto;
+    justify-content: flex-start;
+    gap: 10px;
+    min-width: 0;
+    grid-column: 1;
+  }
+
+  .mobileMenuToggle {
+    display: inline-flex !important;
+    grid-column: 2;
+    justify-self: end;
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+
+  .brandBadge {
+    width: 64px;
+    height: 38px;
+  }
+
+  .brand span {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .brand strong {
+    font-size: 1rem;
+  }
+
+  .brand small {
+    font-size: 0.9rem;
+  }
+
+  .topnav {
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    grid-column: 1 / -1;
+  }
+
+  .topnav.mobileOpen {
+    display: grid;
+  }
+
+  .navLink {
+    text-align: center;
+    padding: 10px 8px;
+  }
+
+  .authRow {
+    display: none;
+    grid-column: 1 / -1;
+  }
+
+  .authRow.mobileOpen {
+    display: flex;
+  }
+
+  .authRow.mobileOpen .buttonGhost,
+  .authRow.mobileOpen .buttonPrimary {
+    width: 100%;
+  }
+
+  .heroCopy {
+    font-size: 1rem;
+    line-height: 1.45;
+  }
+
+  .sectionHeader h2 {
+    font-size: 1.12rem;
+  }
+
   .timelineItem,
   .tableRow,
   .fieldRow,
-  .catalogRow,
   .catalogMedia,
   .scheduleStopRow,
   .experienceRow {
@@ -1566,6 +2052,73 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .catalogFilters {
+    grid-template-columns: 1fr;
+  }
+
+  .catalogShell {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .catalogGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .catalogCard {
+    border-radius: 14px;
+  }
+
+  .catalogCardMedia {
+    min-height: 168px;
+  }
+
+  .catalogCardBody {
+    padding: 10px;
+    gap: 7px;
+  }
+
+  .catalogCardTitleRow h3 {
+    font-size: 0.98rem;
+  }
+
+  .catalogCardHeadline {
+    font-size: 0.95rem;
+  }
+
+  .catalogCardFooter {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .catalogCardFooter .buttonPrimary {
+    width: 100%;
+  }
+
+  .catalogCardPrice {
+    font-size: 0.94rem;
+  }
+
+  .catalogPinList {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .cartSummary {
+    gap: 10px;
+  }
+
+  .cartListItem {
+    padding: 8px;
+  }
+
+  .cartRemoveButton {
+    width: 28px;
+    height: 28px;
+    font-size: 1.2rem;
+  }
+
   .catalogSummary {
     border-left: 0;
     border-top: 1px solid var(--line-soft);
@@ -1574,21 +2127,125 @@ button {
   }
 
   .brand {
+    width: auto;
+    justify-content: flex-start;
+  }
+
+  .catalogMap {
+    position: static;
+    top: auto;
+    height: auto;
+  }
+
+  .catalogMapSticky {
+    position: static;
+    top: auto;
+    height: auto;
+    width: auto;
+  }
+
+  .selectedMapCanvas,
+  .summaryMapCanvas {
+    min-height: 300px;
+  }
+
+  .summaryMapCard {
+    padding: 10px;
+  }
+
+  .schedulePreviewCard {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .tourSummaryRow {
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .tourSummaryRow h3 {
+    font-size: 1rem;
+  }
+
+  .tourSummaryPrice {
+    font-size: 0.95rem;
+  }
+
+  .buttonPrimary,
+  .buttonGhost,
+  .buttonClear {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  .fullWidthButton {
     width: 100%;
-    justify-content: space-between;
   }
 
   .bespokeItineraryCard {
     width: 100%;
     padding: 22px 18px 18px;
   }
+
+  .bespokeItineraryHeader h3 {
+    font-size: clamp(2.1rem, 12vw, 2.9rem);
+  }
+
+  .bespokeDateLine {
+    font-size: 0.92rem;
+  }
+
+  .bespokeMetaRow {
+    gap: 6px;
+  }
+
+  .bespokeMetaRow span {
+    font-size: 0.82rem;
+  }
+
+  .bespokeChapterHeading h4 {
+    font-size: clamp(1.5rem, 9vw, 2.2rem);
+  }
+
+  .bespokeStop h5 {
+    font-size: clamp(1.5rem, 8vw, 2rem);
+  }
+
+  .bespokeStopBody,
+  .bespokeTravelNote {
+    font-size: 0.98rem;
+    line-height: 1.45;
+  }
+
+  .modalCard {
+    width: 100%;
+    max-height: calc(100vh - 20px);
+    border-radius: 12px;
+    padding: 12px;
+  }
 }
 
-/* Explore page: render preferences + schedule as one continuous panel. */
-.exploreUnifiedPanel .sectionCard {
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  padding: 0 !important;
+@media (max-width: 520px) {
+  .topnav {
+    grid-template-columns: 1fr;
+  }
+
+  .pageHeader h1 {
+    font-size: clamp(1.35rem, 9vw, 1.9rem);
+  }
+
+  .tableRow {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .choicePill {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .selectedMapCanvas,
+  .summaryMapCanvas {
+    min-height: 260px;
+  }
 }

@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "clean": "node ./scripts/clean.mjs",
     "db:bootstrap": "node ./scripts/apply-sql.mjs",
+    "db:cleanup:wineries": "node ./scripts/winery-duplicate-cleanup.mjs",
     "deploy:azure": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-azure.ps1",
     "lint": "tsc -p tsconfig.json --noEmit",
     "quality:travel": "node ./scripts/travel-quality-check.mjs",
@@ -21,6 +22,7 @@
     "@azure/functions": "^4.11.2",
     "@types/pg": "^8.18.0",
     "pg": "^8.20.0",
+    "redis": "^5.8.2",
     "zod": "^3.24.2"
   },
   "devDependencies": {

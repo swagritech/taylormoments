@@ -57,7 +57,7 @@ function selectedCountForSlug(slug: string) {
 }
 
 const knownCoordinates: Record<string, { latitude: number; longitude: number }> = {
-  "vasse-felix": { latitude: -33.682, longitude: 115.052 },
+  "vasse-felix": { latitude: -33.824264, longitude: 115.046991 },
   "cullen-wines": { latitude: -33.712, longitude: 115.041 },
   "fraser-gallop": { latitude: -33.723, longitude: 115.114 },
   woodlands: { latitude: -33.698, longitude: 115.035 },

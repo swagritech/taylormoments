@@ -19,6 +19,7 @@ import {
   getPasswordResetTokenSecret,
 } from "../lib/config.js";
 import { notifyPasswordResetRequested } from "../lib/notifications.js";
+import { invalidateWineryListCache } from "../lib/winery-list-cache.js";
 
 function toUserView(user: {
   userId: string;
@@ -103,6 +104,7 @@ export async function registerHandler(
         address: payload.winery_address?.trim() || undefined,
         website: payload.winery_website?.trim() || undefined,
       });
+      invalidateWineryListCache();
     }
 
     const authToken = issueAuthToken({

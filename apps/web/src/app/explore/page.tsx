@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -17,12 +17,15 @@ import {
   loadExplorePreferences,
   saveExplorePreferences,
   type ExplorePreferences,
+  type ExploreTripLength,
+  type ExploreVibe,
+  type ExploreYesNo,
 } from "@/lib/explore-preferences";
 import { saveExploreTourSummary } from "@/lib/explore-tour-summary";
 
-type TripLength = "half-day" | "full-day" | "multi-day";
-type YesNo = "yes" | "no";
-type Vibe = "popular" | "lesser-known" | "";
+type TripLength = ExploreTripLength;
+type YesNo = ExploreYesNo;
+type Vibe = ExploreVibe;
 
 type SearchProfile = {
   hasLunchExperience: boolean;
@@ -182,22 +185,26 @@ function AnimatedWords({
 
   useEffect(() => {
     if (words.length === 0) {
-      setVisibleCount(0);
       return;
     }
 
     if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setVisibleCount(words.length);
       return;
     }
 
-    setVisibleCount(0);
     let count = 0;
+    const resetId = window.setTimeout(() => {
+      startTransition(() => {
+        setVisibleCount(0);
+      });
+    }, 0);
     let intervalId: number | undefined;
     const timeoutId = window.setTimeout(() => {
       intervalId = window.setInterval(() => {
         count += 1;
-        setVisibleCount(count);
+        startTransition(() => {
+          setVisibleCount(count);
+        });
         if (count >= words.length && intervalId !== undefined) {
           window.clearInterval(intervalId);
         }
@@ -205,6 +212,7 @@ function AnimatedWords({
     }, delayMs);
 
     return () => {
+      window.clearTimeout(resetId);
       window.clearTimeout(timeoutId);
       if (intervalId !== undefined) {
         window.clearInterval(intervalId);
@@ -549,6 +557,9 @@ export default function ExplorePage() {
   const [showAccessibility, setShowAccessibility] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [isRouteEntering, setIsRouteEntering] = useState(false);
+  const [isPanelExiting, setIsPanelExiting] = useState(false);
+  const [isPanelEntering, setIsPanelEntering] = useState(false);
   const [matchedWineries, setMatchedWineries] = useState<WineryCatalogItem[]>(
     () =>
       (initialPreferences?.matchedWineryIds ?? [])
@@ -565,10 +576,10 @@ export default function ExplorePage() {
   const [profilesById, setProfilesById] = useState<Record<string, WineryListResponse["wineries"][number]>>({});
   const [itineraryReplaySeed, setItineraryReplaySeed] = useState(0);
   const wineStyleValidationError = submitAttempted && selectedWineStyles.length === 0
-    ? "Pick at least one wine style — even 'Surprise me' works perfectly."
+    ? "Pick at least one wine style â€” even 'Surprise me' works perfectly."
     : null;
   const experienceInfoMessage = submitAttempted && selectedExperiences.length === 0
-    ? "No preference is fine — we'll curate based on your other choices."
+    ? "No preference is fine â€” we'll curate based on your other choices."
     : null;
   const includeLunch: YesNo = selectedExperiences.some((entry) =>
     ["winery_lunch", "cheese_wine", "wine_chocolate"].includes(entry),
@@ -593,6 +604,20 @@ export default function ExplorePage() {
   const itineraryChapters = recommendation ? buildItineraryChapters(recommendation.stops) : [];
   const itineraryAnimationKey = recommendation ? `${recommendation.itinerary_id}-${itineraryReplaySeed}` : "idle";
   let itineraryAnimationCursor = 90;
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const transitionFlag = window.sessionStorage.getItem("tm_explore_route_fade_in");
+    if (transitionFlag !== "1") {
+      return;
+    }
+    window.sessionStorage.removeItem("tm_explore_route_fade_in");
+    setIsRouteEntering(true);
+    const timer = window.setTimeout(() => setIsRouteEntering(false), 260);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   function reserveItineraryDelay(text: string, intervalMs = 32, pauseMs = 180) {
     const delay = itineraryAnimationCursor;
@@ -706,6 +731,14 @@ export default function ExplorePage() {
     if (selectedWineStyles.length === 0) {
       setError(null);
       return;
+    }
+    const runStepTransition = !hasPlanned;
+    if (runStepTransition) {
+      setIsPanelExiting(true);
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 180));
+      setIsPanelExiting(false);
+      setIsPanelEntering(true);
+      window.setTimeout(() => setIsPanelEntering(false), 260);
     }
     setHasPlanned(true);
     setIsPreferencesCollapsed(true);
@@ -964,6 +997,13 @@ export default function ExplorePage() {
         ? pickupAddress.trim() || "Margaret River Visitor Centre"
         : "Self-drive (no transport required)";
 
+    const uuidToSlug = new Map(
+      wineryCatalog.map((winery) => [slugToWineryUuid(winery.id), winery.id] as const),
+    );
+    const itinerarySlugs = recommendation.stops
+      .map((stop) => uuidToSlug.get(stop.winery_id))
+      .filter((value): value is string => Boolean(value));
+
     saveExploreTourSummary({
       lead_name: name.trim(),
       lead_email: email.trim(),
@@ -973,7 +1013,10 @@ export default function ExplorePage() {
       preview_date: previewDate,
       preferred_start_time: timeWindow.start,
       preferred_end_time: timeWindow.end,
-      matched_winery_ids: matchedWineries.map((entry) => entry.id),
+      matched_winery_ids:
+        itinerarySlugs.length > 0
+          ? itinerarySlugs
+          : matchedWineries.slice(0, recommendation.stops.length).map((entry) => entry.id),
       stops: recommendation.stops.map((stop) => {
         const remoteProfile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
         return {
@@ -1012,19 +1055,22 @@ export default function ExplorePage() {
     <AppShell
       eyebrow="Explore"
       title="What makes a great day out for you?"
-      intro="No right answers — the more you tell us, the better we can tailor your experience."
+      intro="No right answers - the more you tell us, the better we can tailor your experience."
       showWorkflowStatus={false}
       showPageHeader={false}
       navMode="public"
     >
-      <div className="exploreLayout">
-        <div className="exploreUnifiedPanel" style={{ width: "100%" }}>
+      <div className={`exploreLayout exploreRouteFade ${isRouteEntering ? "routeEntering" : ""}`}>
+        <div
+          className={`exploreUnifiedPanel ${isPanelExiting ? "exploreStepFadeOut" : ""} ${isPanelEntering ? "exploreStepFadeIn" : ""}`}
+          
+        >
         <section className="exploreSectionBlock exploreUnifiedHero">
           <p className="eyebrow">Explore</p>
           <h1>What makes a great day out for you?</h1>
-          <p className="heroCopy">No right answers — the more you tell us, the better we can tailor your experience.</p>
+          <p className="heroCopy">No right answers - the more you tell us, the better we can tailor your experience.</p>
         </section>
-        <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`} style={{ width: "100%", maxWidth: "100%", margin: 0 }}>
+        <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`} >
           <section className="exploreSectionBlock">
             <div className="sectionHeader">
               <div>
@@ -1032,7 +1078,7 @@ export default function ExplorePage() {
                 <p>
                   {isPreferencesCollapsed
                     ? "Preferences minimized. Expand to edit and run a new plan."
-                    : "No right answers — the more you tell us, the better we can tailor your experience."}
+                    : "No right answers - the more you tell us, the better we can tailor your experience."}
                 </p>
               </div>
             </div>
@@ -1046,7 +1092,7 @@ export default function ExplorePage() {
             {isPreferencesCollapsed ? (
               <div className="explorePreferenceSummary">
                 <p>
-                  <strong>{name || "Guest"}</strong> · {groupSize} guests · {tripLength} · transport {needTransport} · {selectedWineStyles.length} wine styles · {selectedExperiences.length} experiences · {formatPreviewDate(previewDate)}
+                  <strong>{name || "Guest"}</strong> - {groupSize} guests - {tripLength} - transport {needTransport} - {selectedWineStyles.length} wine styles - {selectedExperiences.length} experiences - {formatPreviewDate(previewDate)}
                 </p>
               </div>
             ) : (
@@ -1067,12 +1113,12 @@ export default function ExplorePage() {
                 ))}
               </div>
               {wineStyleValidationError ? (
-                <p className="subtle" style={{ color: "#8f3a2b" }}>{wineStyleValidationError}</p>
+                    <p className="subtle errorText">{wineStyleValidationError}</p>
               ) : null}
             </div>
 
             <div className="field">
-              <label>Are there any experiences you'd love?</label>
+              <label>Are there any experiences you&rsquo;d love?</label>
               <div className="selectorList preferenceCardGrid">
                 {EXPERIENCE_OPTIONS.map((option) => (
                   <button
@@ -1089,7 +1135,7 @@ export default function ExplorePage() {
             </div>
 
             <div className="field">
-              <label>What's the occasion?</label>
+              <label>What&rsquo;s the occasion?</label>
               <div className="choiceRow">
                 {OCCASION_OPTIONS.map((option) => (
                   <label key={option.id} className="choicePill">
@@ -1105,7 +1151,7 @@ export default function ExplorePage() {
             </div>
 
             <div className="field">
-              <label>What's your rough budget per person?</label>
+              <label>What&rsquo;s your rough budget per person?</label>
               <div className="selectorList preferenceCardGrid">
                 {BUDGET_OPTIONS.map((option) => (
                   <button
@@ -1180,7 +1226,7 @@ export default function ExplorePage() {
         </div>
 
         {hasPlanned ? (
-          <div ref={previewRef} className="explorePreviewWrap" style={{ width: "100%", maxWidth: "100%", margin: 0 }}>
+          <div ref={previewRef} className="explorePreviewWrap" >
             <section className="exploreSectionBlock">
               <div className="sectionHeader">
                 <div>
@@ -1220,7 +1266,7 @@ export default function ExplorePage() {
                       <h3>{name || "Your Group"}</h3>
                       <p className="bespokeDateLine">
                         {formatPreviewDate(previewDate)}
-                        {tripLength === "multi-day" ? " · day one preview" : ""}
+                        {tripLength === "multi-day" ? " Â· day one preview" : ""}
                       </p>
                     </div>
                     <div className="bespokeIntro">
@@ -1397,7 +1443,7 @@ export default function ExplorePage() {
                   <h3>{selectedPreviewWinery.name}</h3>
                   {displayAddress ? <p className="subtle">{displayAddress}</p> : null}
                   <p className="ratingLine">
-                    <strong>{selectedPreviewWinery.rating.toFixed(1)} stars</strong> · {selectedPreviewWinery.selectedByCount} guests shortlisted
+                    <strong>{selectedPreviewWinery.rating.toFixed(1)} stars</strong> Â· {selectedPreviewWinery.selectedByCount} guests shortlisted
                   </p>
                   <p className="subtle">
                     Organic: <strong>{selectedPreviewWinery.organicStatus}</strong>
@@ -1440,3 +1486,4 @@ export default function ExplorePage() {
     </AppShell>
   );
 }
+

@@ -153,7 +153,7 @@ export default function CustomerDashboardPage() {
 
           <SectionCard
             title="Create a new schedule"
-            description="Start from the winery catalog, add preferred venues to cart, then generate your tailored day."
+            description="Start from the winery catalogue, add preferred venues to cart, then generate your tailored day."
           >
             <div className="ctaRow">
               <Link href="/plan" className="buttonPrimary">Create new schedule</Link>

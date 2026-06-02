@@ -87,6 +87,25 @@ New REST endpoints:
 - `POST /api/v1/wineries/{wineryId}/media/{mediaId}/complete`
 - `GET /api/v1/wineries/{wineryId}/profile`
 - `PUT /api/v1/wineries/{wineryId}/profile`
+- `POST /api/v1/warmup` (optional token header: `x-tm-warmup-token`)
+
+## Travel-time performance settings
+
+To reduce itinerary latency spikes in production:
+
+- `TM_TRAVEL_TIME_PROVIDER=osrm`
+- `TM_TRAVEL_TIME_OSRM_BASE_URL=https://<your-dedicated-osrm-host>`
+- `TM_TRAVEL_TIME_CACHE_TTL_SECONDS=21600`
+- `TM_TRAVEL_TIME_CACHE_BACKEND=redis`
+- `TM_TRAVEL_TIME_REDIS_URL=rediss://...`
+- `TM_TRAVEL_TIME_REDIS_KEY_PREFIX=tm:travel:matrix:v1`
+- `TM_WARMUP_TOKEN=<optional-shared-secret>`
+
+Notes:
+
+- `TM_TRAVEL_TIME_OSRM_BASE_URL` no longer defaults to the public OSRM host.
+- If OSRM is unavailable, the engine gracefully falls back to haversine estimates.
+- Warmup timer runs every 5 minutes and now pre-builds matrix cache entries.
 
 ## Azure deployment packaging
 

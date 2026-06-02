@@ -1,11 +1,12 @@
 ﻿import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { createBookingRequestSchema } from "../domain/schemas.js";
 import { workflowRepository } from "../lib/repository-factory.js";
-import { badRequest, created, forbidden, notFound, ok, unauthorized } from "../lib/http.js";
+import { badRequest, created, forbidden, internalServerError, notFound, ok, unauthorized } from "../lib/http.js";
 import { normalizeRequest } from "../lib/config.js";
 import { verifyTurnstileToken } from "../lib/turnstile.js";
 import { dispatchWineryApprovalRequests } from "../lib/winery-workflow.js";
 import { hasRole, requireSession } from "../lib/auth-guard.js";
+import { ZodError } from "zod";
 
 export async function createBookingHandler(
   request: HttpRequest,
@@ -35,7 +36,21 @@ export async function createBookingHandler(
     });
   } catch (error) {
     context.error(error);
-    return badRequest(error instanceof Error ? error.message : "Unable to create booking.");
+    if (error instanceof ZodError) {
+      return badRequest(error.issues[0]?.message ?? "Unable to create booking.");
+    }
+    if (
+      error instanceof Error &&
+      (
+        error.message.includes("Security check") ||
+        error.message.includes("turnstile") ||
+        error.message.includes("hostname mismatch") ||
+        error.message.includes("action mismatch")
+      )
+    ) {
+      return badRequest(error.message);
+    }
+    return internalServerError("Unable to create booking right now.");
   }
 }
 
@@ -57,7 +72,10 @@ export async function getBookingHandler(
     return ok(booking);
   } catch (error) {
     context.error(error);
-    return badRequest(error instanceof Error ? error.message : "Unable to fetch booking.");
+    if (error instanceof ZodError) {
+      return badRequest(error.issues[0]?.message ?? "Unable to fetch booking.");
+    }
+    return internalServerError("Unable to fetch booking right now.");
   }
 }
 
@@ -75,16 +93,14 @@ export async function listMyBookingsHandler(
       return forbidden("Customer account required.");
     }
 
-    const user = await workflowRepository.getUserById(session.userId);
-    if (!user) {
-      return unauthorized("Session is no longer valid.");
-    }
-
-    const bookings = await workflowRepository.listBookingsByLeadEmail(user.email);
+    const bookings = await workflowRepository.listBookingsByUserId(session.userId);
     return ok({ bookings });
   } catch (error) {
     context.error(error);
-    return badRequest(error instanceof Error ? error.message : "Unable to fetch bookings.");
+    if (error instanceof ZodError) {
+      return badRequest(error.issues[0]?.message ?? "Unable to fetch bookings.");
+    }
+    return internalServerError("Unable to fetch bookings right now.");
   }
 }
 

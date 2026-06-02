@@ -409,14 +409,6 @@ export async function listWineries() {
   return parseJson<WineryListResponse>(response);
 }
 
-export async function getWineryPortalRequests(wineryId: string) {
-  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries/${wineryId}/requests`, {
-    method: "GET",
-  });
-
-  return parseJson<WineryPortalResponse>(response);
-}
-
 export async function getWineryPortalRequestsAuthed(wineryId: string, token: string) {
   const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries/${wineryId}/requests`, {
     method: "GET",

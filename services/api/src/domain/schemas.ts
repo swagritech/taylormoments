@@ -11,6 +11,7 @@ const wineStyleValues = [
   "Red Wine Specialist",
   "White Wine Specialist",
   "Sparkling & Method traditionnelle Specialist",
+  "Fortified & Dessert Wines",
   "Fortfied & Desert Wines",
   "Internationally awarded",
   "Wines only available at cellar door",
@@ -100,9 +101,28 @@ const winerySignalValues = [
 
 const winerySignalEnum = z.enum(winerySignalValues);
 
+function isValidIsoDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    return false;
+  }
+  return parsed.toISOString().slice(0, 10) === value;
+}
+
+function isPastServiceDate(value: string) {
+  if (!isValidIsoDate(value)) {
+    return false;
+  }
+  const todayUtc = new Date().toISOString().slice(0, 10);
+  return value < todayUtc;
+}
+
 const baseItineraryRequestSchema = z.object({
   booking_date: z.string().min(1),
-  party_size: z.number().int().positive(),
+  party_size: z.number().int().positive().max(20),
   pickup_location: z.string().min(1),
   pickup_place_id: z.string().min(1).optional(),
   pickup_latitude: z.number().min(-90).max(90).optional(),
@@ -112,6 +132,15 @@ const baseItineraryRequestSchema = z.object({
   preferred_start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   preferred_end_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
 });
+
+function hasCoordinatePair(value: {
+  pickup_latitude?: number;
+  pickup_longitude?: number;
+}) {
+  const hasLat = value.pickup_latitude !== undefined;
+  const hasLon = value.pickup_longitude !== undefined;
+  return hasLat === hasLon;
+}
 
 function hasValidTimeWindow(value: {
   preferred_start_time?: string;
@@ -125,6 +154,12 @@ function hasValidTimeWindow(value: {
 }
 
 export const recommendItineraryRequestSchema = baseItineraryRequestSchema.refine(
+  (value) => hasCoordinatePair(value),
+  {
+    message: "pickup_latitude and pickup_longitude must be provided together.",
+    path: ["pickup_latitude"],
+  },
+).refine(
   (value) =>
     hasValidTimeWindow({
       preferred_start_time: value.preferred_start_time,
@@ -134,6 +169,18 @@ export const recommendItineraryRequestSchema = baseItineraryRequestSchema.refine
     message: "preferred_start_time must be earlier than preferred_end_time.",
     path: ["preferred_end_time"],
   },
+).refine(
+  (value) => isValidIsoDate(value.booking_date),
+  {
+    message: "booking_date must be in YYYY-MM-DD format.",
+    path: ["booking_date"],
+  },
+).refine(
+  (value) => !isPastServiceDate(value.booking_date),
+  {
+    message: "Those dates have passed. Please pick an upcoming trip.",
+    path: ["booking_date"],
+  },
 );
 
 export const createBookingRequestSchema = baseItineraryRequestSchema.extend({
@@ -142,6 +189,12 @@ export const createBookingRequestSchema = baseItineraryRequestSchema.extend({
   lead_phone: z.string().min(5).optional(),
   turnstile_token: z.string().min(1).optional(),
 }).refine(
+  (value) => hasCoordinatePair(value),
+  {
+    message: "pickup_latitude and pickup_longitude must be provided together.",
+    path: ["pickup_latitude"],
+  },
+).refine(
   (value) =>
     hasValidTimeWindow({
       preferred_start_time: value.preferred_start_time,
@@ -150,6 +203,18 @@ export const createBookingRequestSchema = baseItineraryRequestSchema.extend({
   {
     message: "preferred_start_time must be earlier than preferred_end_time.",
     path: ["preferred_end_time"],
+  },
+).refine(
+  (value) => isValidIsoDate(value.booking_date),
+  {
+    message: "booking_date must be in YYYY-MM-DD format.",
+    path: ["booking_date"],
+  },
+).refine(
+  (value) => !isPastServiceDate(value.booking_date),
+  {
+    message: "Those dates have passed. Please pick an upcoming trip.",
+    path: ["booking_date"],
   },
 );
 

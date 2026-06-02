@@ -100,25 +100,17 @@ export default function PartnerLoginPage() {
               {loading ? "Signing in..." : "Log in"}
             </button>
           </form>
-          <div className="ctaRow" style={{ marginTop: 12, alignItems: "center" }}>
+          <div className="ctaRow ctaRowAlignCenter ctaRowMt12">
             <button
               type="button"
+              className="inlineLinkButton"
               onClick={() => setShowForgotPassword((current) => !current)}
-              style={{
-                padding: 0,
-                border: 0,
-                background: "transparent",
-                color: "var(--teal)",
-                textDecoration: "underline",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
             >
               Forgot Password?
             </button>
           </div>
           {showForgotPassword ? (
-            <form className="formPreview" onSubmit={handleForgotPassword} style={{ marginTop: 8 }}>
+            <form className="formPreview formMt8" onSubmit={handleForgotPassword}>
               <p className="miniLabel">Forgot password</p>
               <div className="field">
                 <label htmlFor="forgotEmail">Account email</label>
@@ -141,8 +133,8 @@ export default function PartnerLoginPage() {
               </div>
             </form>
           ) : null}
-          {message ? <div className="callout successCallout" style={{ marginTop: 10 }}>{message}</div> : null}
-          <div className="ctaRow" style={{ marginTop: 10 }}>
+          {message ? <div className="callout successCallout calloutMt10">{message}</div> : null}
+          <div className="ctaRow ctaRowMt10">
             <span className="subtle">Need a new partner account?</span>
             <Link href="/partner/register" className="buttonGhost">Create account</Link>
           </div>

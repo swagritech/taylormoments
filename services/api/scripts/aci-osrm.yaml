@@ -1,0 +1,68 @@
+location: australiaeast
+name: tm-osrm-aci
+type: Microsoft.ContainerInstance/containerGroups
+apiVersion: 2021-10-01
+properties:
+  osType: Linux
+  restartPolicy: Always
+  ipAddress:
+    type: Public
+    dnsNameLabel: tm-osrm-swagri
+    ports:
+      - protocol: tcp
+        port: 5000
+  initContainers:
+    - name: download-pbf
+      properties:
+        image: curlimages/curl:8.8.0
+        command:
+          - sh
+          - -c
+          - >
+            set -e;
+            mkdir -p /data;
+            if [ ! -f /data/western-australia.osm.pbf ]; then
+              curl -fsSL -o /data/western-australia.osm.pbf https://download.geofabrik.de/australia-oceania/australia/western-australia-latest.osm.pbf;
+            fi
+        volumeMounts:
+          - name: osrmdata
+            mountPath: /data
+    - name: build-osrm
+      properties:
+        image: osrm/osrm-backend:latest
+        command:
+          - sh
+          - -c
+          - >
+            set -e;
+            if [ ! -f /data/western-australia.osrm.partition ] || [ ! -f /data/western-australia.osrm.cells ] || [ ! -f /data/western-australia.osrm.mldgr ]; then
+              osrm-extract -p /opt/car.lua /data/western-australia.osm.pbf;
+              osrm-partition /data/western-australia.osrm;
+              osrm-customize /data/western-australia.osrm;
+            fi
+        volumeMounts:
+          - name: osrmdata
+            mountPath: /data
+  containers:
+    - name: tm-osrm
+      properties:
+        image: osrm/osrm-backend:latest
+        command:
+          - osrm-routed
+          - --algorithm
+          - mld
+          - --port
+          - "5000"
+          - /data/western-australia.osrm
+        ports:
+          - port: 5000
+        resources:
+          requests:
+            cpu: 2
+            memoryInGB: 4
+        volumeMounts:
+          - name: osrmdata
+            mountPath: /data
+  volumes:
+    - name: osrmdata
+      emptyDir: {}

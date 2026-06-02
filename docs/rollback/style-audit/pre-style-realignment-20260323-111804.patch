@@ -1,0 +1,1414 @@
+﻿diff --git a/apps/web/src/app/explore/page.tsx b/apps/web/src/app/explore/page.tsx
+index 85c5596..f160d33 100644
+--- a/apps/web/src/app/explore/page.tsx
++++ b/apps/web/src/app/explore/page.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ 
+-import { useEffect, useMemo, useRef, useState } from "react";
++import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import { AppShell } from "@/components/app-shell";
+ import {
+@@ -17,12 +17,15 @@ import {
+   loadExplorePreferences,
+   saveExplorePreferences,
+   type ExplorePreferences,
++  type ExploreTripLength,
++  type ExploreVibe,
++  type ExploreYesNo,
+ } from "@/lib/explore-preferences";
+ import { saveExploreTourSummary } from "@/lib/explore-tour-summary";
+ 
+-type TripLength = "half-day" | "full-day" | "multi-day";
+-type YesNo = "yes" | "no";
+-type Vibe = "popular" | "lesser-known" | "";
++type TripLength = ExploreTripLength;
++type YesNo = ExploreYesNo;
++type Vibe = ExploreVibe;
+ 
+ type SearchProfile = {
+   hasLunchExperience: boolean;
+@@ -182,22 +185,26 @@ function AnimatedWords({
+ 
+   useEffect(() => {
+     if (words.length === 0) {
+-      setVisibleCount(0);
+       return;
+     }
+ 
+     if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+-      setVisibleCount(words.length);
+       return;
+     }
+ 
+-    setVisibleCount(0);
+     let count = 0;
++    const resetId = window.setTimeout(() => {
++      startTransition(() => {
++        setVisibleCount(0);
++      });
++    }, 0);
+     let intervalId: number | undefined;
+     const timeoutId = window.setTimeout(() => {
+       intervalId = window.setInterval(() => {
+         count += 1;
+-        setVisibleCount(count);
++        startTransition(() => {
++          setVisibleCount(count);
++        });
+         if (count >= words.length && intervalId !== undefined) {
+           window.clearInterval(intervalId);
+         }
+@@ -205,6 +212,7 @@ function AnimatedWords({
+     }, delayMs);
+ 
+     return () => {
++      window.clearTimeout(resetId);
+       window.clearTimeout(timeoutId);
+       if (intervalId !== undefined) {
+         window.clearInterval(intervalId);
+@@ -549,6 +557,9 @@ export default function ExplorePage() {
+   const [showAccessibility, setShowAccessibility] = useState(false);
+   const [submitAttempted, setSubmitAttempted] = useState(false);
+   const [requesting, setRequesting] = useState(false);
++  const [isRouteEntering, setIsRouteEntering] = useState(false);
++  const [isPanelExiting, setIsPanelExiting] = useState(false);
++  const [isPanelEntering, setIsPanelEntering] = useState(false);
+   const [matchedWineries, setMatchedWineries] = useState<WineryCatalogItem[]>(
+     () =>
+       (initialPreferences?.matchedWineryIds ?? [])
+@@ -594,6 +605,20 @@ export default function ExplorePage() {
+   const itineraryAnimationKey = recommendation ? `${recommendation.itinerary_id}-${itineraryReplaySeed}` : "idle";
+   let itineraryAnimationCursor = 90;
+ 
++  useEffect(() => {
++    if (typeof window === "undefined") {
++      return;
++    }
++    const transitionFlag = window.sessionStorage.getItem("tm_explore_route_fade_in");
++    if (transitionFlag !== "1") {
++      return;
++    }
++    window.sessionStorage.removeItem("tm_explore_route_fade_in");
++    setIsRouteEntering(true);
++    const timer = window.setTimeout(() => setIsRouteEntering(false), 260);
++    return () => window.clearTimeout(timer);
++  }, []);
++
+   function reserveItineraryDelay(text: string, intervalMs = 32, pauseMs = 180) {
+     const delay = itineraryAnimationCursor;
+     const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+@@ -707,6 +732,14 @@ export default function ExplorePage() {
+       setError(null);
+       return;
+     }
++    const runStepTransition = !hasPlanned;
++    if (runStepTransition) {
++      setIsPanelExiting(true);
++      await new Promise<void>((resolve) => window.setTimeout(resolve, 180));
++      setIsPanelExiting(false);
++      setIsPanelEntering(true);
++      window.setTimeout(() => setIsPanelEntering(false), 260);
++    }
+     setHasPlanned(true);
+     setIsPreferencesCollapsed(true);
+     setError(null);
+@@ -964,6 +997,13 @@ export default function ExplorePage() {
+         ? pickupAddress.trim() || "Margaret River Visitor Centre"
+         : "Self-drive (no transport required)";
+ 
++    const uuidToSlug = new Map(
++      wineryCatalog.map((winery) => [slugToWineryUuid(winery.id), winery.id] as const),
++    );
++    const itinerarySlugs = recommendation.stops
++      .map((stop) => uuidToSlug.get(stop.winery_id))
++      .filter((value): value is string => Boolean(value));
++
+     saveExploreTourSummary({
+       lead_name: name.trim(),
+       lead_email: email.trim(),
+@@ -973,7 +1013,10 @@ export default function ExplorePage() {
+       preview_date: previewDate,
+       preferred_start_time: timeWindow.start,
+       preferred_end_time: timeWindow.end,
+-      matched_winery_ids: matchedWineries.map((entry) => entry.id),
++      matched_winery_ids:
++        itinerarySlugs.length > 0
++          ? itinerarySlugs
++          : matchedWineries.slice(0, recommendation.stops.length).map((entry) => entry.id),
+       stops: recommendation.stops.map((stop) => {
+         const remoteProfile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
+         return {
+@@ -1017,8 +1060,11 @@ export default function ExplorePage() {
+       showPageHeader={false}
+       navMode="public"
+     >
+-      <div className="exploreLayout">
+-        <div className="exploreUnifiedPanel" style={{ width: "100%" }}>
++      <div className={`exploreLayout exploreRouteFade ${isRouteEntering ? "routeEntering" : ""}`}>
++        <div
++          className={`exploreUnifiedPanel ${isPanelExiting ? "exploreStepFadeOut" : ""} ${isPanelEntering ? "exploreStepFadeIn" : ""}`}
++          style={{ width: "100%" }}
++        >
+         <section className="exploreSectionBlock exploreUnifiedHero">
+           <p className="eyebrow">Explore</p>
+           <h1>What makes a great day out for you?</h1>
+@@ -1067,12 +1113,12 @@ export default function ExplorePage() {
+                 ))}
+               </div>
+               {wineStyleValidationError ? (
+-                <p className="subtle" style={{ color: "#8f3a2b" }}>{wineStyleValidationError}</p>
++                    <p className="subtle errorText">{wineStyleValidationError}</p>
+               ) : null}
+             </div>
+ 
+             <div className="field">
+-              <label>Are there any experiences you'd love?</label>
++              <label>Are there any experiences you&rsquo;d love?</label>
+               <div className="selectorList preferenceCardGrid">
+                 {EXPERIENCE_OPTIONS.map((option) => (
+                   <button
+@@ -1089,7 +1135,7 @@ export default function ExplorePage() {
+             </div>
+ 
+             <div className="field">
+-              <label>What's the occasion?</label>
++              <label>What&rsquo;s the occasion?</label>
+               <div className="choiceRow">
+                 {OCCASION_OPTIONS.map((option) => (
+                   <label key={option.id} className="choicePill">
+@@ -1105,7 +1151,7 @@ export default function ExplorePage() {
+             </div>
+ 
+             <div className="field">
+-              <label>What's your rough budget per person?</label>
++              <label>What&rsquo;s your rough budget per person?</label>
+               <div className="selectorList preferenceCardGrid">
+                 {BUDGET_OPTIONS.map((option) => (
+                   <button
+diff --git a/apps/web/src/app/globals.css b/apps/web/src/app/globals.css
+index 1cbd83d..f77a497 100644
+--- a/apps/web/src/app/globals.css
++++ b/apps/web/src/app/globals.css
+@@ -10,6 +10,7 @@
+   --paper: #fcfbf8;
+   --ink: #25302b;
+   --muted: #64706b;
++  --danger: #8f3a2b;
+   --line: #d6ddd8;
+   --line-soft: #e6ece8;
+   --panel: #ffffff;
+@@ -121,6 +122,10 @@ button {
+   color: var(--muted);
+ }
+ 
++.errorText {
++  color: var(--danger);
++}
++
+ .brandBadge {
+   width: 70px;
+   height: 42px;
+@@ -185,6 +190,23 @@ button {
+   padding: 0 18px;
+ }
+ 
++.exploreRouteFade {
++  transition:
++    opacity 220ms ease,
++    transform 220ms ease;
++}
++
++.exploreRouteFade.routeEntering {
++  opacity: 0;
++  transform: translateY(8px);
++  animation: tmRouteFadeIn 240ms ease forwards;
++}
++
++.exploreRouteFade.routeExiting {
++  opacity: 0;
++  transform: translateY(-6px);
++}
++
+ .exploreUnifiedPanel {
+   width: 100%;
+   max-width: none;
+@@ -197,6 +219,20 @@ button {
+   gap: 18px;
+ }
+ 
++.exploreUnifiedPanel.exploreStepFadeOut {
++  opacity: 0;
++  transform: translateY(-6px);
++  transition:
++    opacity 180ms ease,
++    transform 180ms ease;
++}
++
++.exploreUnifiedPanel.exploreStepFadeIn {
++  opacity: 0;
++  transform: translateY(8px);
++  animation: tmStepFadeIn 260ms ease forwards;
++}
++
+ .exploreUnifiedPanel .sectionCard {
+   border: 0;
+   border-radius: 0;
+@@ -296,6 +332,32 @@ button {
+   color: var(--teal);
+ }
+ 
++@keyframes tmRouteFadeIn {
++  from {
++    opacity: 0;
++    transform: translateY(8px);
++  }
++  to {
++    opacity: 1;
++    transform: translateY(0);
++  }
++}
++
++@keyframes tmStepFadeIn {
++  from {
++    opacity: 0;
++    transform: translateY(8px);
++  }
++  to {
++    opacity: 1;
++    transform: translateY(0);
++  }
++}
++
++.mobileMenuToggle {
++  display: none !important;
++}
++
+ .pageHeader {
+   border: 1px solid var(--line);
+   border-radius: 16px;
+@@ -874,6 +936,59 @@ button {
+   white-space: nowrap;
+ }
+ 
++.summaryPageSplit {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
++  gap: 14px;
++  align-items: start;
++}
++
++.summaryPageLeft,
++.summaryPageRight {
++  display: grid;
++  gap: 12px;
++}
++
++.summaryMapCard {
++  border: 1px solid var(--line);
++  border-radius: 14px;
++  background: #ffffff;
++  box-shadow: var(--shadow);
++  padding: 12px;
++  display: grid;
++  gap: 10px;
++}
++
++.summaryMapCard h3 {
++  color: var(--sage);
++  font-size: 1.02rem;
++}
++
++.summaryMapCanvas {
++  width: 100%;
++  min-height: min(68vh, 560px);
++  border: 1px solid var(--line-soft);
++  border-radius: 12px;
++  overflow: hidden;
++}
++
++.summaryMapOverlay {
++  position: absolute;
++  inset: 0;
++  display: grid;
++  place-items: center;
++  background: rgba(255, 255, 255, 0.88);
++  color: #4f6258;
++  font-weight: 600;
++  text-align: center;
++  padding: 16px;
++}
++
++.summaryMapOverlayError {
++  background: rgba(255, 255, 255, 0.92);
++  color: #6f4b2f;
++}
++
+ .scheduleStopTitle {
+   margin: 0;
+ }
+@@ -1168,19 +1283,147 @@ button {
+ 
+ .catalogShell {
+   display: grid;
+-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
+-  gap: 12px;
++  grid-template-columns: minmax(0, 1.55fr) minmax(360px, 0.95fr);
++  gap: 16px;
+   align-items: start;
+ }
+ 
++.catalogShell.singleColumn {
++  grid-template-columns: 1fr;
++}
++
+ .catalogList {
+   display: grid;
+-  gap: 10px;
+-  max-height: 72vh;
+-  overflow: auto;
++  gap: 12px;
++  max-height: none;
++  overflow: visible;
+   padding-right: 4px;
+ }
+ 
++.catalogGrid {
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++}
++
++.catalogCard {
++  border: 1px solid var(--line);
++  border-radius: 16px;
++  background: #fff;
++  box-shadow: var(--shadow);
++  overflow: hidden;
++  display: grid;
++  gap: 0;
++}
++
++.catalogCard.active {
++  border-color: #9eb8ad;
++  box-shadow: 0 12px 28px rgba(50, 88, 71, 0.14);
++}
++
++.catalogCardMedia {
++  position: relative;
++  min-height: 220px;
++  background: linear-gradient(140deg, #9fc3bf 0%, #d5d9ca 52%, #ecdfbe 100%);
++  border-bottom: 1px solid var(--line-soft);
++}
++
++.catalogCardBadgeRow {
++  position: absolute;
++  top: 10px;
++  left: 10px;
++  right: 10px;
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  z-index: 1;
++}
++
++.catalogCardBadge {
++  display: inline-flex;
++  align-items: center;
++  min-height: 30px;
++  padding: 6px 12px;
++  border-radius: 999px;
++  border: 1px solid rgba(18, 35, 29, 0.08);
++  background: rgba(255, 255, 255, 0.95);
++  color: #2d3934;
++  font-weight: 700;
++  font-size: 0.86rem;
++}
++
++.catalogCardSave {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  min-height: 30px;
++  padding: 6px 12px;
++  border-radius: 999px;
++  border: 1px solid rgba(255, 255, 255, 0.56);
++  background: rgba(28, 40, 35, 0.45);
++  color: #fff;
++  font-weight: 700;
++  font-size: 0.84rem;
++}
++
++.catalogCardInitials {
++  position: absolute;
++  inset: 0;
++  display: grid;
++  place-items: center;
++  color: rgba(255, 255, 255, 0.88);
++  font-family: var(--font-display), serif;
++  font-size: clamp(2.3rem, 5vw, 3.6rem);
++  letter-spacing: 0.08em;
++  text-shadow: 0 2px 16px rgba(20, 35, 29, 0.35);
++}
++
++.catalogCardBody {
++  padding: 12px;
++  display: grid;
++  gap: 8px;
++}
++
++.catalogCardTitleRow {
++  display: flex;
++  justify-content: space-between;
++  gap: 10px;
++  align-items: baseline;
++}
++
++.catalogCardTitleRow h3 {
++  color: #2f3a34;
++  font-size: 1.02rem;
++}
++
++.catalogCardRating {
++  color: #2f3a34;
++  font-size: 0.95rem;
++  white-space: nowrap;
++}
++
++.catalogCardHeadline {
++  color: #3e4d46;
++  line-height: 1.45;
++}
++
++.catalogCardTags {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 6px;
++}
++
++.catalogCardFooter {
++  margin-top: 4px;
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  gap: 10px;
++}
++
++.catalogCardPrice {
++  color: #2f3a34;
++  font-weight: 700;
++}
++
+ .catalogRow {
+   border: 1px solid var(--line);
+   border-radius: 14px;
+@@ -1252,11 +1495,32 @@ button {
+ .catalogMap {
+   border: 1px solid var(--line);
+   border-radius: 14px;
+-  background: #fff;
++  background: rgba(255, 255, 255, 0.92);
+   box-shadow: var(--shadow);
+-  padding: 12px;
++  padding: 14px;
++  display: grid;
++  gap: 12px;
++  align-self: start;
++  position: static;
++}
++
++.catalogMapTop {
++  margin-bottom: 14px;
++}
++
++.catalogMapTop .catalogMapSticky {
++  position: static;
++  top: auto;
++}
++
++.catalogMapSticky {
+   position: sticky;
+   top: 12px;
++  display: grid;
++  gap: 12px;
++  align-self: stretch;
++  height: auto;
++  z-index: 3;
+ }
+ 
+ .catalogMap iframe {
+@@ -1268,7 +1532,7 @@ button {
+ 
+ .selectedMapCanvas {
+   width: 100%;
+-  min-height: 320px;
++  min-height: min(70vh, 560px);
+   border: 1px solid var(--line-soft);
+   border-radius: 12px;
+   overflow: hidden;
+@@ -1282,6 +1546,55 @@ button {
+   padding-right: 4px;
+ }
+ 
++.cartListItem {
++  display: grid;
++  grid-template-columns: auto 1fr auto;
++  align-items: start;
++  gap: 8px;
++  padding: 6px 8px;
++  border: 1px solid transparent;
++  border-radius: 9px;
++  background: #ffffff;
++  cursor: grab;
++}
++
++.cartListItem.dragging {
++  opacity: 0.65;
++}
++
++.cartListItem.dragOver {
++  border-color: #9db9ad;
++  background: #f1f7f4;
++}
++
++.cartDragHandle {
++  color: #93a69e;
++  font-size: 0.92rem;
++  line-height: 1.1;
++  user-select: none;
++  padding-top: 2px;
++}
++
++.cartRemoveButton {
++  width: 24px;
++  height: 24px;
++  border-radius: 999px;
++  border: 1px solid #cfdad4;
++  background: #ffffff;
++  color: #6b7b74;
++  font-size: 1.05rem;
++  line-height: 1;
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++}
++
++.cartRemoveButton:hover {
++  background: #f8fbfa;
++  border-color: #b8c9c1;
++  color: #2f3d36;
++}
++
+ .mediaGrid {
+   margin-top: 12px;
+   display: grid;
+@@ -1484,7 +1797,8 @@ button {
+   .grid.three,
+   .statsGrid,
+   .splitPanel,
+-  .summaryRibbon {
++  .summaryRibbon,
++  .summaryPageSplit {
+     grid-template-columns: 1fr;
+   }
+ 
+@@ -1496,8 +1810,8 @@ button {
+     grid-template-columns: 1fr;
+   }
+ 
+-  .catalogMap {
+-    position: static;
++  .catalogGrid {
++    grid-template-columns: 1fr;
+   }
+ 
+   .tableRow {
+@@ -1526,6 +1840,20 @@ button {
+     padding: 10px;
+   }
+ 
++  .pageFrame {
++    gap: 12px;
++  }
++
++  .exploreLayout {
++    padding: 0;
++    gap: 12px;
++  }
++
++  .exploreUnifiedPanel {
++    padding: 14px;
++    gap: 14px;
++  }
++
+   .topbar,
+   .pageHeader,
+   .sectionCard,
+@@ -1544,10 +1872,95 @@ button {
+     align-items: stretch;
+   }
+ 
++  .topbar {
++    display: grid;
++    grid-template-columns: minmax(0, 1fr) auto;
++    align-items: center;
++    gap: 10px;
++    padding: 10px 12px;
++  }
++
++  .brand {
++    width: auto;
++    justify-content: flex-start;
++    gap: 10px;
++    min-width: 0;
++    grid-column: 1;
++  }
++
++  .mobileMenuToggle {
++    display: inline-flex !important;
++    grid-column: 2;
++    justify-self: end;
++    min-height: 38px;
++    padding: 8px 12px;
++    font-size: 0.85rem;
++    line-height: 1;
++  }
++
++  .brandBadge {
++    width: 64px;
++    height: 38px;
++  }
++
++  .brand span {
++    display: flex;
++    align-items: baseline;
++    gap: 4px;
++    flex-wrap: wrap;
++    min-width: 0;
++  }
++
++  .brand strong {
++    font-size: 1rem;
++  }
++
++  .brand small {
++    font-size: 0.9rem;
++  }
++
++  .topnav {
++    display: none;
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++    width: 100%;
++    grid-column: 1 / -1;
++  }
++
++  .topnav.mobileOpen {
++    display: grid;
++  }
++
++  .navLink {
++    text-align: center;
++    padding: 10px 8px;
++  }
++
++  .authRow {
++    display: none;
++    grid-column: 1 / -1;
++  }
++
++  .authRow.mobileOpen {
++    display: flex;
++  }
++
++  .authRow.mobileOpen .buttonGhost,
++  .authRow.mobileOpen .buttonPrimary {
++    width: 100%;
++  }
++
++  .heroCopy {
++    font-size: 1rem;
++    line-height: 1.45;
++  }
++
++  .sectionHeader h2 {
++    font-size: 1.12rem;
++  }
++
+   .timelineItem,
+   .tableRow,
+   .fieldRow,
+-  .catalogRow,
+   .catalogMedia,
+   .scheduleStopRow,
+   .experienceRow {
+@@ -1566,6 +1979,73 @@ button {
+     grid-template-columns: 1fr;
+   }
+ 
++  .catalogFilters {
++    grid-template-columns: 1fr;
++  }
++
++  .catalogShell {
++    grid-template-columns: 1fr;
++    gap: 12px;
++  }
++
++  .catalogGrid {
++    grid-template-columns: 1fr;
++  }
++
++  .catalogCard {
++    border-radius: 14px;
++  }
++
++  .catalogCardMedia {
++    min-height: 168px;
++  }
++
++  .catalogCardBody {
++    padding: 10px;
++    gap: 7px;
++  }
++
++  .catalogCardTitleRow h3 {
++    font-size: 0.98rem;
++  }
++
++  .catalogCardHeadline {
++    font-size: 0.95rem;
++  }
++
++  .catalogCardFooter {
++    align-items: stretch;
++    flex-direction: column;
++  }
++
++  .catalogCardFooter .buttonPrimary {
++    width: 100%;
++  }
++
++  .catalogCardPrice {
++    font-size: 0.94rem;
++  }
++
++  .catalogPinList {
++    max-height: none;
++    overflow: visible;
++    padding-right: 0;
++  }
++
++  .cartSummary {
++    gap: 10px;
++  }
++
++  .cartListItem {
++    padding: 8px;
++  }
++
++  .cartRemoveButton {
++    width: 28px;
++    height: 28px;
++    font-size: 1.2rem;
++  }
++
+   .catalogSummary {
+     border-left: 0;
+     border-top: 1px solid var(--line-soft);
+@@ -1574,14 +2054,127 @@ button {
+   }
+ 
+   .brand {
++    width: auto;
++    justify-content: flex-start;
++  }
++
++  .catalogMap {
++    position: static;
++    top: auto;
++    height: auto;
++  }
++
++  .catalogMapSticky {
++    position: static;
++    top: auto;
++    height: auto;
++    width: auto;
++  }
++
++  .selectedMapCanvas,
++  .summaryMapCanvas {
++    min-height: 300px;
++  }
++
++  .summaryMapCard {
++    padding: 10px;
++  }
++
++  .schedulePreviewCard {
++    padding: 10px;
++    gap: 8px;
++  }
++
++  .tourSummaryRow {
++    align-items: flex-start;
++    gap: 8px;
++  }
++
++  .tourSummaryRow h3 {
++    font-size: 1rem;
++  }
++
++  .tourSummaryPrice {
++    font-size: 0.95rem;
++  }
++
++  .buttonPrimary,
++  .buttonGhost,
++  .buttonClear {
++    min-height: 44px;
++    padding: 10px 14px;
++  }
++
++  .fullWidthButton {
+     width: 100%;
+-    justify-content: space-between;
+   }
+ 
+   .bespokeItineraryCard {
+     width: 100%;
+     padding: 22px 18px 18px;
+   }
++
++  .bespokeItineraryHeader h3 {
++    font-size: clamp(2.1rem, 12vw, 2.9rem);
++  }
++
++  .bespokeDateLine {
++    font-size: 0.92rem;
++  }
++
++  .bespokeMetaRow {
++    gap: 6px;
++  }
++
++  .bespokeMetaRow span {
++    font-size: 0.82rem;
++  }
++
++  .bespokeChapterHeading h4 {
++    font-size: clamp(1.5rem, 9vw, 2.2rem);
++  }
++
++  .bespokeStop h5 {
++    font-size: clamp(1.5rem, 8vw, 2rem);
++  }
++
++  .bespokeStopBody,
++  .bespokeTravelNote {
++    font-size: 0.98rem;
++    line-height: 1.45;
++  }
++
++  .modalCard {
++    width: 100%;
++    max-height: calc(100vh - 20px);
++    border-radius: 12px;
++    padding: 12px;
++  }
++}
++
++@media (max-width: 520px) {
++  .topnav {
++    grid-template-columns: 1fr;
++  }
++
++  .pageHeader h1 {
++    font-size: clamp(1.35rem, 9vw, 1.9rem);
++  }
++
++  .tableRow {
++    grid-template-columns: 1fr;
++    gap: 6px;
++  }
++
++  .choicePill {
++    width: 100%;
++    justify-content: flex-start;
++  }
++
++  .selectedMapCanvas,
++  .summaryMapCanvas {
++    min-height: 260px;
++  }
+ }
+ 
+ /* Explore page: render preferences + schedule as one continuous panel. */
+diff --git a/apps/web/src/app/page.tsx b/apps/web/src/app/page.tsx
+index ceb4434..040f9a1 100644
+--- a/apps/web/src/app/page.tsx
++++ b/apps/web/src/app/page.tsx
+@@ -46,6 +46,8 @@ function groupErrorMessage(groupSize: number) {
+ export default function Home() {
+   const router = useRouter();
+   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
++  const [isRouteEntering, setIsRouteEntering] = useState(false);
++  const [isRouteExiting, setIsRouteExiting] = useState(false);
+ 
+   const [name, setName] = useState(initialPreferences?.name ?? "");
+   const [visitDate, setVisitDate] = useState(initialPreferences?.previewDate ?? "");
+@@ -75,6 +77,20 @@ export default function Home() {
+     ? "Please enter your pickup address so we can arrange transport."
+     : null;
+ 
++  useEffect(() => {
++    if (typeof window === "undefined") {
++      return;
++    }
++    const transitionFlag = window.sessionStorage.getItem("tm_explore_route_fade_in");
++    if (transitionFlag !== "1") {
++      return;
++    }
++    window.sessionStorage.removeItem("tm_explore_route_fade_in");
++    setIsRouteEntering(true);
++    const timer = window.setTimeout(() => setIsRouteEntering(false), 260);
++    return () => window.clearTimeout(timer);
++  }, []);
++
+   useEffect(() => {
+     if (needTransport !== "yes") {
+       setAddressSuggestions([]);
+@@ -111,6 +127,12 @@ export default function Home() {
+             input: query,
+             includedRegionCodes: ["AU"],
+             languageCode: "en",
++            locationRestriction: {
++              rectangle: {
++                low: { latitude: -35.2, longitude: 112.9 },
++                high: { latitude: -13.5, longitude: 129.0 },
++              },
++            },
+           }),
+         });
+         if (!response.ok) {
+@@ -132,6 +154,7 @@ export default function Home() {
+             label: entry.placePrediction?.text?.text?.trim() ?? "",
+             placeId: entry.placePrediction?.placeId?.trim() ?? "",
+           }))
++          .filter((entry) => /(?:\bWA\b|Western Australia)/i.test(entry.label))
+           .filter((entry) => entry.label && entry.placeId)
+           .slice(0, 6);
+         setAddressSuggestions(nextSuggestions);
+@@ -224,24 +247,30 @@ export default function Home() {
+       pickupLongitude,
+     };
+     saveExplorePreferences(next);
+-    router.push("/explore");
++    setIsRouteExiting(true);
++    window.setTimeout(() => {
++      window.sessionStorage.setItem("tm_explore_route_fade_in", "1");
++      router.push("/explore");
++    }, 180);
+   }
+ 
+   return (
+     <AppShell
+       eyebrow="Explore"
+       title="Plan your Margaret River day, your way"
+-      intro="Tell us a little about your trip and we'll find the perfect experiences for you."
++      intro={"Tell us a little about your trip and we'll find the perfect experiences for you."}
+       navMode="public"
+       showWorkflowStatus={false}
+       showPageHeader={false}
+     >
+-      <div className="exploreLayout">
++      <div
++        className={`exploreLayout exploreRouteFade ${isRouteEntering ? "routeEntering" : ""} ${isRouteExiting ? "routeExiting" : ""}`}
++      >
+         <div className="exploreUnifiedPanel" style={{ width: "100%" }}>
+           <section className="exploreSectionBlock exploreUnifiedHero">
+             <p className="eyebrow">Explore</p>
+             <h1>Plan your Margaret River day, your way</h1>
+-            <p className="heroCopy">Tell us a little about your trip and we'll find the perfect experiences for you.</p>
++            <p className="heroCopy">{"Tell us a little about your trip and we'll find the perfect experiences for you."}</p>
+           </section>
+ 
+           <section className="exploreSectionBlock">
+@@ -268,8 +297,8 @@ export default function Home() {
+                   min={todayIso}
+                   placeholder="Choose your travel dates"
+                 />
+-                {noDateError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{noDateError}</p> : null}
+-                {pastDateError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{pastDateError}</p> : null}
++                  {noDateError ? <p className="subtle errorText">{noDateError}</p> : null}
++                  {pastDateError ? <p className="subtle errorText">{pastDateError}</p> : null}
+               </div>
+ 
+               <div className="field">
+@@ -290,12 +319,12 @@ export default function Home() {
+                 </div>
+                 <p className="subtle">Including yourself</p>
+                 {groupError ? (
+-                  <p className="subtle" style={{ color: "#8f3a2b" }}>
++                    <p className="subtle errorText">
+                     {groupSize > 20 ? (
+                       <>
+                         For groups larger than 20, please{" "}
+                         <Link href="mailto:sean@swagritech.com.au" style={{ textDecoration: "underline" }}>get in touch</Link>
+-                        {" "}- we'll arrange something special.
++                        {" - we'll arrange something special."}
+                       </>
+                     ) : groupError}
+                   </p>
+@@ -315,7 +344,7 @@ export default function Home() {
+                   </label>
+                   <label className="choicePill">
+                     <input type="radio" checked={tripLength === "multi-day"} onChange={() => setTripLength("multi-day")} />
+-                    More than one day - We'll build a multi-day itinerary
++                    {"More than one day - We'll build a multi-day itinerary"}
+                   </label>
+                 </div>
+               </div>
+@@ -393,13 +422,13 @@ export default function Home() {
+                         </div>
+                       </div>
+                     ) : null}
+-                    {pickupAddressError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{pickupAddressError}</p> : null}
++                    {pickupAddressError ? <p className="subtle errorText">{pickupAddressError}</p> : null}
+                   </div>
+                 ) : null}
+               </div>
+ 
+               <button type="button" className="buttonPrimary fullWidthButton" onClick={handleBegin}>
+-                Let's begin
++                {"Let's begin"}
+               </button>
+             </div>
+           </section>
+diff --git a/apps/web/src/components/app-shell.tsx b/apps/web/src/components/app-shell.tsx
+index 873535d..9fe6c6a 100644
+--- a/apps/web/src/components/app-shell.tsx
++++ b/apps/web/src/components/app-shell.tsx
+@@ -2,7 +2,7 @@
+ 
+ import Image from "next/image";
+ import Link from "next/link";
+-import type { ReactNode } from "react";
++import { useState, type ReactNode } from "react";
+ import { WorkflowStatus } from "@/components/workflow-status";
+ import { useAuth } from "@/lib/auth-state";
+ 
+@@ -54,6 +54,7 @@ export function AppShell({
+   navMode = "public",
+ }: AppShellProps) {
+   const { user, logout } = useAuth();
++  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+   const navItems = navMode === "partner"
+     ? getPartnerNavItems(user?.role)
+     : user?.role === "customer"
+@@ -67,7 +68,7 @@ export function AppShell({
+   return (
+     <div className="app-shell">
+       <header className="topbar">
+-        <Link href="/explore" className="brand">
++        <Link href="https://booking.swagritech.com.au/" className="brand">
+           <div className="brandBadge">
+             <Image
+               src="/brand/TM_logo_white-beta.png"
+@@ -84,30 +85,59 @@ export function AppShell({
+         </Link>
+         {!actionMode ? (
+           <>
+-            <nav className="topnav" aria-label="Primary navigation">
++            <button
++              type="button"
++              className="buttonGhost mobileMenuToggle"
++              aria-expanded={mobileMenuOpen}
++              aria-controls="primary-mobile-menu"
++              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
++              onClick={() => setMobileMenuOpen((current) => !current)}
++            >
++              {mobileMenuOpen ? "✕" : "☰"}
++            </button>
++            <nav
++              id="primary-mobile-menu"
++              className={`topnav ${mobileMenuOpen ? "mobileOpen" : ""}`}
++              aria-label="Primary navigation"
++            >
+               {navItems.map((item) => (
+-                <Link key={item.href} href={item.href} className="navLink">
++                <Link key={item.href} href={item.href} className="navLink" onClick={() => setMobileMenuOpen(false)}>
+                   {item.label}
+                 </Link>
+               ))}
+             </nav>
+-            <div className="ctaRow authRow">
++            <div className={`ctaRow authRow ${mobileMenuOpen ? "mobileOpen" : ""}`}>
+               {user ? (
+                 <>
+                   {user.role !== "customer" ? (
+                     <span className="status accepted">{user.role}</span>
+                   ) : null}
+                   <span className="authName">{user.display_name}</span>
+-                  <button type="button" className="buttonGhost" onClick={logout}>
++                  <button
++                    type="button"
++                    className="buttonGhost"
++                    onClick={() => {
++                      setMobileMenuOpen(false);
++                      logout();
++                    }}
++                  >
+                     Log out
+                   </button>
+                 </>
+               ) : (
+                 <>
+-                  <Link href={navMode === "partner" ? "/partner/register" : "/register"} className="buttonGhost">
++                  <Link
++                    href={navMode === "partner" ? "/partner/register" : "/register"}
++                    className="buttonGhost"
++                    onClick={() => setMobileMenuOpen(false)}
++                  >
+                     Create account
+                   </Link>
+-                  <Link href={navMode === "partner" ? "/partner/login" : "/login"} className="buttonPrimary">
++                  <Link
++                    href={navMode === "partner" ? "/partner/login" : "/login"}
++                    className="buttonPrimary"
++                    onClick={() => setMobileMenuOpen(false)}
++                  >
+                     Log in
+                   </Link>
+                 </>
+diff --git a/apps/web/src/components/selected-wineries-map.tsx b/apps/web/src/components/selected-wineries-map.tsx
+index 2fccf2a..d1c55f4 100644
+--- a/apps/web/src/components/selected-wineries-map.tsx
++++ b/apps/web/src/components/selected-wineries-map.tsx
+@@ -1,6 +1,7 @@
++/* eslint-disable @typescript-eslint/no-explicit-any */
+ "use client";
+ 
+-import { useEffect, useMemo, useRef } from "react";
++import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+ import type { WineryCatalogItem } from "@/lib/winery-catalog";
+ 
+ type SelectedWineriesMapProps = {
+@@ -13,6 +14,8 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
+   const mapInstanceRef = useRef<any>(null);
+   const markerInstancesRef = useRef<any[]>([]);
+   const infoWindowRef = useRef<any>(null);
++  const [mapStatus, setMapStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
++  const [mapError, setMapError] = useState<string>("");
+ 
+   const stableWineries = useMemo(
+     () => wineries.map((entry) => ({ ...entry })),
+@@ -31,7 +34,12 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
+     if (typeof window === "undefined") {
+       return null;
+     }
+-    const anyWindow = window as Window & { google?: any; __tmGoogleMapsLoaderPromise?: Promise<any> };
++    const anyWindow = window as Window & {
++      google?: any;
++      __tmGoogleMapsLoaderPromise?: Promise<any>;
++      __tmGoogleMapsReady?: () => void;
++      __tmGoogleMapsError?: (error: Error) => void;
++    };
+     if (anyWindow.google?.maps) {
+       return anyWindow.google;
+     }
+@@ -41,18 +49,20 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
+ 
+     if (!anyWindow.__tmGoogleMapsLoaderPromise) {
+       anyWindow.__tmGoogleMapsLoaderPromise = new Promise((resolve, reject) => {
+-        const script = document.createElement("script");
+-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly&loading=async`;
+-        script.async = true;
+-        script.defer = true;
+-        script.onload = () => {
++        anyWindow.__tmGoogleMapsReady = () => {
+           if (anyWindow.google?.maps) {
+             resolve(anyWindow.google);
+             return;
+           }
+-          reject(new Error("Google Maps API loaded without maps namespace."));
++          reject(new Error("Google Maps script loaded but maps namespace is unavailable."));
+         };
+-        script.onerror = () => reject(new Error("Failed to load Google Maps API."));
++        anyWindow.__tmGoogleMapsError = (error: Error) => reject(error);
++
++        const script = document.createElement("script");
++        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly&loading=async&callback=__tmGoogleMapsReady`;
++        script.async = true;
++        script.defer = true;
++        script.onerror = () => reject(new Error("Failed to load Google Maps API script."));
+         document.head.appendChild(script);
+       });
+     }
+@@ -61,36 +71,85 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
+ 
+   useEffect(() => {
+     let active = true;
++    if (!apiKey) {
++      return () => {
++        active = false;
++      };
++    }
+ 
+     async function hydrateMap() {
+       if (!mapRef.current || mapInstanceRef.current) {
+         return;
+       }
++      startTransition(() => {
++        setMapStatus("loading");
++      });
+ 
+-      const google = await loadGoogleMaps();
+-      if (!active || !mapRef.current || !google?.maps) {
+-        return;
+-      }
++      try {
++        const anyWindow = window as Window & { gm_authFailure?: () => void };
++        anyWindow.gm_authFailure = () => {
++          if (!active) {
++            return;
++          }
++          startTransition(() => {
++            setMapStatus("error");
++            setMapError("Google Maps authentication failed. Check API key restrictions and enabled APIs.");
++          });
++        };
+ 
+-      googleRef.current = google;
+-      mapInstanceRef.current = new google.maps.Map(mapRef.current, {
+-        center: { lat: -33.95, lng: 115.07 },
+-        zoom: 10,
+-        mapTypeControl: false,
+-        streetViewControl: false,
+-        fullscreenControl: false,
+-        clickableIcons: false,
+-      });
+-      infoWindowRef.current = new google.maps.InfoWindow();
++        const google = await loadGoogleMaps();
++        if (!active || !mapRef.current || !google?.maps) {
++          startTransition(() => {
++            setMapStatus("error");
++            setMapError("Google Maps failed to initialise.");
++          });
++          return;
++        }
++        const MapConstructor = google.maps.Map;
++        if (typeof MapConstructor !== "function") {
++          startTransition(() => {
++            setMapStatus("error");
++            setMapError(
++              "Google Maps constructor missing. Ensure Maps JavaScript API is enabled and referrer allows booking.swagritech.com.au.",
++            );
++          });
++          return;
++        }
++
++        googleRef.current = google;
++        mapInstanceRef.current = new MapConstructor(mapRef.current, {
++          center: { lat: -33.95, lng: 115.07 },
++          zoom: 10,
++          mapTypeControl: false,
++          streetViewControl: false,
++          fullscreenControl: false,
++          clickableIcons: false,
++        });
++        infoWindowRef.current = new google.maps.InfoWindow();
++        startTransition(() => {
++          setMapStatus("ready");
++        });
++      } catch (error) {
++        if (!active) {
++          return;
++        }
++        startTransition(() => {
++          setMapStatus("error");
++          setMapError(error instanceof Error ? error.message : "Google Maps failed to load.");
++        });
++      }
+     }
+ 
+     void hydrateMap();
+     return () => {
+       active = false;
+     };
+-  }, []);
++  }, [apiKey]);
+ 
+   useEffect(() => {
++    if (mapStatus !== "ready") {
++      return;
++    }
+     function redrawPins() {
+       const google = googleRef.current;
+       const map = mapInstanceRef.current;
+@@ -109,7 +168,11 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
+         return;
+       }
+ 
+-      const bounds = new google.maps.LatLngBounds();
++      const BoundsConstructor = google.maps.LatLngBounds;
++      if (!BoundsConstructor) {
++        return;
++      }
++      const bounds = new BoundsConstructor();
+       const markers = stableWineries.map((winery) => {
+         const marker = new google.maps.Marker({
+           map,
+@@ -136,7 +199,7 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
+     }
+ 
+     redrawPins();
+-  }, [stableWineries]);
++  }, [mapStatus, stableWineries]);
+ 
+   useEffect(() => {
+     return () => {
+@@ -151,9 +214,39 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
+     };
+   }, []);
+ 
+-  if (!apiKey) {
+-    return <div className="selectedMapCanvas">Google Maps unavailable: API key not configured.</div>;
+-  }
+-
+-  return <div ref={mapRef} className="selectedMapCanvas" />;
++  return (
++    <div className="selectedMapCanvas" style={{ position: "relative" }}>
++      <div ref={mapRef} style={{ width: "100%", minHeight: "320px" }} />
++      {!apiKey || (mapStatus === "loading" || mapStatus === "idle") ? (
++        <div
++          style={{
++            position: "absolute",
++            inset: 0,
++            display: "grid",
++            placeItems: "center",
++            background: "rgba(255,255,255,0.88)",
++            color: "#4f6258",
++            fontWeight: 600,
++          }}
++        >
++          {apiKey ? "Loading Google Map..." : "Map unavailable: Google Maps API key is not configured."}
++        </div>
++      ) : null}
++      {mapStatus === "error" && apiKey && (
++        <div
++          style={{
++            position: "absolute",
++            inset: 0,
++            display: "grid",
++            placeItems: "center",
++            background: "rgba(255,255,255,0.88)",
++            color: "#4f6258",
++            fontWeight: 600,
++          }}
++        >
++          Map unavailable: {mapError || "Google Maps failed to load."}
++        </div>
++      )}
++    </div>
++  );
+ }

@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import type { WineryCatalogItem } from "@/lib/winery-catalog";
 
 type SelectedWineriesMapProps = {
@@ -13,6 +14,8 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
   const mapInstanceRef = useRef<any>(null);
   const markerInstancesRef = useRef<any[]>([]);
   const infoWindowRef = useRef<any>(null);
+  const [mapStatus, setMapStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [mapError, setMapError] = useState<string>("");
 
   const stableWineries = useMemo(
     () => wineries.map((entry) => ({ ...entry })),
@@ -31,7 +34,12 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
     if (typeof window === "undefined") {
       return null;
     }
-    const anyWindow = window as Window & { google?: any; __tmGoogleMapsLoaderPromise?: Promise<any> };
+    const anyWindow = window as Window & {
+      google?: any;
+      __tmGoogleMapsLoaderPromise?: Promise<any>;
+      __tmGoogleMapsReady?: () => void;
+      __tmGoogleMapsError?: (error: Error) => void;
+    };
     if (anyWindow.google?.maps) {
       return anyWindow.google;
     }
@@ -41,18 +49,20 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
 
     if (!anyWindow.__tmGoogleMapsLoaderPromise) {
       anyWindow.__tmGoogleMapsLoaderPromise = new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly&loading=async`;
-        script.async = true;
-        script.defer = true;
-        script.onload = () => {
+        anyWindow.__tmGoogleMapsReady = () => {
           if (anyWindow.google?.maps) {
             resolve(anyWindow.google);
             return;
           }
-          reject(new Error("Google Maps API loaded without maps namespace."));
+          reject(new Error("Google Maps script loaded but maps namespace is unavailable."));
         };
-        script.onerror = () => reject(new Error("Failed to load Google Maps API."));
+        anyWindow.__tmGoogleMapsError = (error: Error) => reject(error);
+
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly&loading=async&callback=__tmGoogleMapsReady`;
+        script.async = true;
+        script.defer = true;
+        script.onerror = () => reject(new Error("Failed to load Google Maps API script."));
         document.head.appendChild(script);
       });
     }
@@ -61,36 +71,85 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
 
   useEffect(() => {
     let active = true;
+    if (!apiKey) {
+      return () => {
+        active = false;
+      };
+    }
 
     async function hydrateMap() {
       if (!mapRef.current || mapInstanceRef.current) {
         return;
       }
-
-      const google = await loadGoogleMaps();
-      if (!active || !mapRef.current || !google?.maps) {
-        return;
-      }
-
-      googleRef.current = google;
-      mapInstanceRef.current = new google.maps.Map(mapRef.current, {
-        center: { lat: -33.95, lng: 115.07 },
-        zoom: 10,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        clickableIcons: false,
+      startTransition(() => {
+        setMapStatus("loading");
       });
-      infoWindowRef.current = new google.maps.InfoWindow();
+
+      try {
+        const anyWindow = window as Window & { gm_authFailure?: () => void };
+        anyWindow.gm_authFailure = () => {
+          if (!active) {
+            return;
+          }
+          startTransition(() => {
+            setMapStatus("error");
+            setMapError("Google Maps authentication failed. Check API key restrictions and enabled APIs.");
+          });
+        };
+
+        const google = await loadGoogleMaps();
+        if (!active || !mapRef.current || !google?.maps) {
+          startTransition(() => {
+            setMapStatus("error");
+            setMapError("Google Maps failed to initialise.");
+          });
+          return;
+        }
+        const MapConstructor = google.maps.Map;
+        if (typeof MapConstructor !== "function") {
+          startTransition(() => {
+            setMapStatus("error");
+            setMapError(
+              "Google Maps constructor missing. Ensure Maps JavaScript API is enabled and referrer allows booking.swagritech.com.au.",
+            );
+          });
+          return;
+        }
+
+        googleRef.current = google;
+        mapInstanceRef.current = new MapConstructor(mapRef.current, {
+          center: { lat: -33.95, lng: 115.07 },
+          zoom: 10,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          clickableIcons: false,
+        });
+        infoWindowRef.current = new google.maps.InfoWindow();
+        startTransition(() => {
+          setMapStatus("ready");
+        });
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        startTransition(() => {
+          setMapStatus("error");
+          setMapError(error instanceof Error ? error.message : "Google Maps failed to load.");
+        });
+      }
     }
 
     void hydrateMap();
     return () => {
       active = false;
     };
-  }, []);
+  }, [apiKey]);
 
   useEffect(() => {
+    if (mapStatus !== "ready") {
+      return;
+    }
     function redrawPins() {
       const google = googleRef.current;
       const map = mapInstanceRef.current;
@@ -109,7 +168,11 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
         return;
       }
 
-      const bounds = new google.maps.LatLngBounds();
+      const BoundsConstructor = google.maps.LatLngBounds;
+      if (!BoundsConstructor) {
+        return;
+      }
+      const bounds = new BoundsConstructor();
       const markers = stableWineries.map((winery) => {
         const marker = new google.maps.Marker({
           map,
@@ -136,7 +199,7 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
     }
 
     redrawPins();
-  }, [stableWineries]);
+  }, [mapStatus, stableWineries]);
 
   useEffect(() => {
     return () => {
@@ -151,9 +214,19 @@ export function SelectedWineriesMap({ wineries }: SelectedWineriesMapProps) {
     };
   }, []);
 
-  if (!apiKey) {
-    return <div className="selectedMapCanvas">Google Maps unavailable: API key not configured.</div>;
-  }
-
-  return <div ref={mapRef} className="selectedMapCanvas" />;
+  return (
+    <div className="selectedMapCanvas mapCanvasRoot">
+      <div ref={mapRef} className="mapCanvasInner320" />
+      {!apiKey || (mapStatus === "loading" || mapStatus === "idle") ? (
+        <div className="summaryMapOverlay">
+          {apiKey ? "Loading Google Map..." : "Map unavailable: Google Maps API key is not configured."}
+        </div>
+      ) : null}
+      {mapStatus === "error" && apiKey && (
+        <div className="summaryMapOverlay summaryMapOverlayError">
+          Map unavailable: {mapError || "Google Maps failed to load."}
+        </div>
+      )}
+    </div>
+  );
 }

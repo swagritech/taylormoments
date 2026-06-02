@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { WorkflowStatus } from "@/components/workflow-status";
 import { useAuth } from "@/lib/auth-state";
 
@@ -54,6 +54,7 @@ export function AppShell({
   navMode = "public",
 }: AppShellProps) {
   const { user, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navItems = navMode === "partner"
     ? getPartnerNavItems(user?.role)
     : user?.role === "customer"
@@ -67,7 +68,7 @@ export function AppShell({
   return (
     <div className="app-shell">
       <header className="topbar">
-        <Link href="/explore" className="brand">
+        <Link href="https://booking.swagritech.com.au/" className="brand">
           <div className="brandBadge">
             <Image
               src="/brand/TM_logo_white-beta.png"
@@ -84,30 +85,59 @@ export function AppShell({
         </Link>
         {!actionMode ? (
           <>
-            <nav className="topnav" aria-label="Primary navigation">
+            <button
+              type="button"
+              className="buttonGhost mobileMenuToggle"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="primary-mobile-menu"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              onClick={() => setMobileMenuOpen((current) => !current)}
+            >
+              {mobileMenuOpen ? "\u2715" : "\u2630"}
+            </button>
+            <nav
+              id="primary-mobile-menu"
+              className={`topnav ${mobileMenuOpen ? "\u2715" : "\u2630"}`}
+              aria-label="Primary navigation"
+            >
               {navItems.map((item) => (
-                <Link key={item.href} href={item.href} className="navLink">
+                <Link key={item.href} href={item.href} className="navLink" onClick={() => setMobileMenuOpen(false)}>
                   {item.label}
                 </Link>
               ))}
             </nav>
-            <div className="ctaRow authRow">
+            <div className={`ctaRow authRow ${mobileMenuOpen ? "\u2715" : "\u2630"}`}>
               {user ? (
                 <>
                   {user.role !== "customer" ? (
                     <span className="status accepted">{user.role}</span>
                   ) : null}
                   <span className="authName">{user.display_name}</span>
-                  <button type="button" className="buttonGhost" onClick={logout}>
+                  <button
+                    type="button"
+                    className="buttonGhost"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                  >
                     Log out
                   </button>
                 </>
               ) : (
                 <>
-                  <Link href={navMode === "partner" ? "/partner/register" : "/register"} className="buttonGhost">
+                  <Link
+                    href={navMode === "partner" ? "/partner/register" : "/register"}
+                    className="buttonGhost"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     Create account
                   </Link>
-                  <Link href={navMode === "partner" ? "/partner/login" : "/login"} className="buttonPrimary">
+                  <Link
+                    href={navMode === "partner" ? "/partner/login" : "/login"}
+                    className="buttonPrimary"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     Log in
                   </Link>
                 </>
@@ -133,3 +163,4 @@ export function AppShell({
     </div>
   );
 }
+

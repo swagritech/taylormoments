@@ -12,6 +12,9 @@ export function json(status: number, body: unknown): HttpResponseInit {
     jsonBody: body,
     headers: {
       "Content-Type": "application/json",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     },
   };
 }
@@ -26,6 +29,10 @@ export function created(body: unknown): HttpResponseInit {
 
 export function badRequest(message: string): HttpResponseInit {
   return json(400, { error: message });
+}
+
+export function internalServerError(message = "An unexpected server error occurred."): HttpResponseInit {
+  return json(500, { error: message });
 }
 
 export function notFound(message: string): HttpResponseInit {

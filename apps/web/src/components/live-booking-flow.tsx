@@ -19,7 +19,12 @@ import {
 import { wineryCatalog } from "@/lib/winery-catalog";
 import { experienceSummary } from "@/lib/remote-winery-profiles";
 
-const defaultDate = "2026-04-10";
+function defaultBookingDate(daysAhead = 7) {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + daysAhead);
+  return date.toISOString().slice(0, 10);
+}
 
 type LiveBookingFlowProps = {
   selectedWineries?: string[];
@@ -40,7 +45,7 @@ export function LiveBookingFlow({
   const [leadName, setLeadName] = useState("");
   const [leadEmail, setLeadEmail] = useState("");
   const [leadPhone, setLeadPhone] = useState("");
-  const [bookingDate, setBookingDate] = useState(defaultDate);
+  const [bookingDate, setBookingDate] = useState(() => defaultBookingDate(7));
   const [preferredStartTime, setPreferredStartTime] = useState("10:00");
   const [preferredEndTime, setPreferredEndTime] = useState("17:00");
   const [pickupLocation, setPickupLocation] = useState(pickupOptions[0]?.label ?? "Margaret River Visitor Centre");
@@ -301,7 +306,7 @@ export function LiveBookingFlow({
               {onOpenCatalog ? (
                 <div className="ctaRow">
                   <button type="button" className="buttonGhost" onClick={onOpenCatalog}>
-                    Browse winery catalog
+                    Browse winery catalogue
                   </button>
                 </div>
               ) : null}
@@ -353,7 +358,7 @@ export function LiveBookingFlow({
               </div>
               {selectedCatalogWineries.length === 0 ? (
                 <div className="callout">
-                  No wineries selected yet. Open the catalog and add options to your schedule cart.
+                  No wineries selected yet. Open the catalogue and add options to your schedule cart.
                 </div>
               ) : null}
             </div>

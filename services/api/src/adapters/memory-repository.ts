@@ -13,6 +13,13 @@ import type {
 } from "../domain/models.js";
 import { makeId, nowIso } from "../lib/crypto.js";
 
+function normalizeWineStyle(style: Winery["wineStyles"][number]): Winery["wineStyles"][number] {
+  if (style === "Fortfied & Desert Wines") {
+    return "Fortified & Dessert Wines";
+  }
+  return style;
+}
+
 const wineries: Winery[] = [
   {
     wineryId: "11111111-1111-1111-1111-111111111111",
@@ -163,6 +170,18 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     return wineries;
   }
 
+  async remapWineryIdsToCanonical(wineryIds: string[]): Promise<string[]> {
+    const deduped: string[] = [];
+    const seen = new Set<string>();
+    for (const wineryId of wineryIds) {
+      if (!seen.has(wineryId)) {
+        seen.add(wineryId);
+        deduped.push(wineryId);
+      }
+    }
+    return deduped;
+  }
+
   async getWineryById(wineryId: string): Promise<Winery | null> {
     return wineries.find((item) => item.wineryId === wineryId) ?? null;
   }
@@ -200,7 +219,7 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
       famousFor: request.famousFor,
       offersCheeseBoard: request.offersCheeseBoard,
       uniqueExperienceOffers: request.uniqueExperienceOffers,
-      wineStyles: request.wineStyles ?? [],
+      wineStyles: (request.wineStyles ?? []).map((style) => normalizeWineStyle(style)),
       winerySignals: request.winerySignals ?? [],
     };
 
@@ -238,11 +257,27 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     return bookings.get(bookingId) ?? null;
   }
 
+  async getBookingsByIds(bookingIds: string[]): Promise<Booking[]> {
+    if (bookingIds.length === 0) {
+      return [];
+    }
+    const wanted = new Set(bookingIds);
+    return Array.from(bookings.values()).filter((booking) => wanted.has(booking.bookingId));
+  }
+
   async listBookingsByLeadEmail(email: string): Promise<Booking[]> {
     const normalized = email.trim().toLowerCase();
     return Array.from(bookings.values())
       .filter((booking) => (booking.leadEmail ?? "").trim().toLowerCase() === normalized)
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }
+
+  async listBookingsByUserId(userId: string): Promise<Booking[]> {
+    const user = users.get(userId);
+    if (!user) {
+      return [];
+    }
+    return this.listBookingsByLeadEmail(user.email);
   }
 
   async getWineryContact(wineryId: string): Promise<WineryContact | null> {
@@ -304,6 +339,14 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     return Array.from(wineryMediaAssets.values())
       .filter((item) => item.wineryId === wineryId && item.status !== "archived")
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }
+
+  async getWineryMediaAssetById(wineryId: string, mediaId: string): Promise<WineryMediaAsset | null> {
+    const asset = wineryMediaAssets.get(mediaId);
+    if (!asset || asset.wineryId !== wineryId || asset.status === "archived") {
+      return null;
+    }
+    return asset;
   }
 
   async markWineryMediaAssetUploaded(

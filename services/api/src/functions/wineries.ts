@@ -5,17 +5,19 @@ import {
   wineryMediaRouteSchema,
   wineryRouteSchema,
 } from "../domain/schemas.js";
-import { badRequest, created, forbidden, notFound, ok, unauthorized } from "../lib/http.js";
+import { badRequest, created, forbidden, internalServerError, notFound, ok, unauthorized } from "../lib/http.js";
 import { workflowRepository } from "../lib/repository-factory.js";
 import { hasRole, requireSession } from "../lib/auth-guard.js";
 import { makeId } from "../lib/crypto.js";
 import type { AuthSession } from "../lib/auth-token.js";
+import { invalidateWineryListCache } from "../lib/winery-list-cache.js";
 import {
   assertWineryImageExists,
   createWineryImageUploadTicket,
   deleteWineryImage,
   isMediaStorageConfigured,
 } from "../lib/media-storage.js";
+import { ZodError } from "zod";
 
 const PUBLIC_CACHE_TTL_MS = 60_000;
 
@@ -51,6 +53,9 @@ function okPublicCached(body: unknown): HttpResponseInit {
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "public, max-age=60, stale-while-revalidate=120",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     },
   };
 }
@@ -62,6 +67,11 @@ function invalidatePublicCaches(wineryId?: string) {
   } else {
     wineryMediaPublicCache.clear();
   }
+}
+
+function invalidateWineryProfileCaches(wineryId?: string) {
+  invalidatePublicCaches(wineryId);
+  invalidateWineryListCache();
 }
 
 export async function listWineriesHandler(
@@ -101,7 +111,10 @@ export async function listWineriesHandler(
     return okPublicCached(responseBody);
   } catch (error) {
     context.error(error);
-    return badRequest(error instanceof Error ? error.message : "Unable to fetch wineries.");
+    if (error instanceof ZodError) {
+      return badRequest(error.issues[0]?.message ?? "Unable to fetch wineries.");
+    }
+    return internalServerError("Unable to fetch wineries.");
   }
 }
 
@@ -123,26 +136,28 @@ export async function listWineryRequestsHandler(
       return forbidden("You can only view requests for your own winery.");
     }
 
-    const [wineries, requests] = await Promise.all([
-      workflowRepository.getWineries(),
+    const [winery, requests] = await Promise.all([
+      workflowRepository.getWineryById(wineryId),
       workflowRepository.listWineryBookingRequests(wineryId),
     ]);
 
-    const winery = wineries.find((item) => item.wineryId === wineryId);
-    const withBooking = await Promise.all(
-      requests.map(async (entry) => ({
-        request_id: entry.requestId,
-        booking_id: entry.bookingId,
-        status: entry.status,
-        action_url: entry.actionUrl,
-        sent_channel: entry.sentChannel,
-        sent_recipient: entry.sentRecipient,
-        sent_at: entry.sentAt,
-        approved_at: entry.approvedAt,
-        created_at: entry.createdAt,
-        booking: await workflowRepository.getBooking(entry.bookingId),
-      })),
+    const bookings = await workflowRepository.getBookingsByIds(
+      requests.map((entry) => entry.bookingId),
     );
+    const bookingById = new Map(bookings.map((booking) => [booking.bookingId, booking]));
+
+    const withBooking = requests.map((entry) => ({
+      request_id: entry.requestId,
+      booking_id: entry.bookingId,
+      status: entry.status,
+      action_url: entry.actionUrl,
+      sent_channel: entry.sentChannel,
+      sent_recipient: entry.sentRecipient,
+      sent_at: entry.sentAt,
+      approved_at: entry.approvedAt,
+      created_at: entry.createdAt,
+      booking: bookingById.get(entry.bookingId) ?? null,
+    }));
 
     return ok({
       winery: winery
@@ -163,7 +178,10 @@ export async function listWineryRequestsHandler(
     });
   } catch (error) {
     context.error(error);
-    return badRequest(error instanceof Error ? error.message : "Unable to fetch winery requests.");
+    if (error instanceof ZodError) {
+      return badRequest(error.issues[0]?.message ?? "Unable to fetch winery requests.");
+    }
+    return internalServerError("Unable to fetch winery requests.");
   }
 }
 
@@ -211,7 +229,10 @@ export async function listWineryMediaHandler(
     });
   } catch (error) {
     context.error(error);
-    return badRequest(error instanceof Error ? error.message : "Unable to fetch winery media.");
+    if (error instanceof ZodError) {
+      return badRequest(error.issues[0]?.message ?? "Unable to fetch winery media.");
+    }
+    return internalServerError("Unable to fetch winery media.");
   }
 }
 
@@ -221,6 +242,10 @@ export async function listWineryMediaPublicHandler(
 ): Promise<HttpResponseInit> {
   try {
     const { wineryId } = wineryRouteSchema.parse(request.params);
+    const winery = await workflowRepository.getWineryById(wineryId);
+    if (!winery) {
+      return notFound("Winery not found.");
+    }
     const cached = getCached(wineryMediaPublicCache.get(wineryId) ?? null);
     if (cached) {
       return okPublicCached(cached);
@@ -243,7 +268,10 @@ export async function listWineryMediaPublicHandler(
     return okPublicCached(responseBody);
   } catch (error) {
     context.error(error);
-    return badRequest(error instanceof Error ? error.message : "Unable to fetch winery media.");
+    if (error instanceof ZodError) {
+      return badRequest(error.issues[0]?.message ?? "Unable to fetch winery media.");
+    }
+    return internalServerError("Unable to fetch winery media.");
   }
 }
 
@@ -291,7 +319,10 @@ export async function getWineryProfileHandler(
     });
   } catch (error) {
     context.error(error);
-    return badRequest(error instanceof Error ? error.message : "Unable to fetch winery profile.");
+    if (error instanceof ZodError) {
+      return badRequest(error.issues[0]?.message ?? "Unable to fetch winery profile.");
+    }
+    return internalServerError("Unable to fetch winery profile.");
   }
 }
 
@@ -336,7 +367,7 @@ export async function updateWineryProfileHandler(
     if (!updated) {
       return notFound("Winery not found.");
     }
-    invalidatePublicCaches(wineryId);
+    invalidateWineryProfileCaches(wineryId);
 
     return ok({
       winery_id: updated.wineryId,
@@ -359,7 +390,10 @@ export async function updateWineryProfileHandler(
     });
   } catch (error) {
     context.error(error);
-    return badRequest(error instanceof Error ? error.message : "Unable to update winery profile.");
+    if (error instanceof ZodError) {
+      return badRequest(error.issues[0]?.message ?? "Unable to update winery profile.");
+    }
+    return internalServerError("Unable to update winery profile.");
   }
 }
 
@@ -421,7 +455,10 @@ export async function createWineryMediaUploadUrlHandler(
     });
   } catch (error) {
     context.error(error);
-    return badRequest(error instanceof Error ? error.message : "Unable to create upload URL.");
+    if (error instanceof ZodError) {
+      return badRequest(error.issues[0]?.message ?? "Unable to create upload URL.");
+    }
+    return internalServerError("Unable to create upload URL.");
   }
 }
 
@@ -443,8 +480,7 @@ export async function completeWineryMediaUploadHandler(
       return forbidden("You can only finalize media for your own winery.");
     }
 
-    const assets = await workflowRepository.listWineryMediaAssets(wineryId);
-    const asset = assets.find((entry) => entry.mediaId === mediaId);
+    const asset = await workflowRepository.getWineryMediaAssetById(wineryId, mediaId);
     if (!asset) {
       return notFound("Media asset not found.");
     }
@@ -476,7 +512,10 @@ export async function completeWineryMediaUploadHandler(
     });
   } catch (error) {
     context.error(error);
-    return badRequest(error instanceof Error ? error.message : "Unable to finalize upload.");
+    if (error instanceof ZodError) {
+      return badRequest(error.issues[0]?.message ?? "Unable to finalize upload.");
+    }
+    return internalServerError("Unable to finalize upload.");
   }
 }
 
@@ -498,8 +537,7 @@ export async function deleteWineryMediaHandler(
       return forbidden("You can only delete media for your own winery.");
     }
 
-    const assets = await workflowRepository.listWineryMediaAssets(wineryId);
-    const asset = assets.find((entry) => entry.mediaId === mediaId);
+    const asset = await workflowRepository.getWineryMediaAssetById(wineryId, mediaId);
     if (!asset) {
       return notFound("Media asset not found.");
     }
@@ -527,7 +565,10 @@ export async function deleteWineryMediaHandler(
     });
   } catch (error) {
     context.error(error);
-    return badRequest(error instanceof Error ? error.message : "Unable to delete media.");
+    if (error instanceof ZodError) {
+      return badRequest(error.issues[0]?.message ?? "Unable to delete media.");
+    }
+    return internalServerError("Unable to delete media.");
   }
 }
 

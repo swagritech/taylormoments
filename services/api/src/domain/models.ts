@@ -66,6 +66,7 @@ export type WineStyle =
   | "Red Wine Specialist"
   | "White Wine Specialist"
   | "Sparkling & Method traditionnelle Specialist"
+  | "Fortified & Dessert Wines"
   | "Fortfied & Desert Wines"
   | "Internationally awarded"
   | "Wines only available at cellar door";
@@ -273,6 +274,7 @@ export type RecommendItineraryRequest = {
 };
 
 export type RecommendItineraryResponse = {
+  generation_id?: string;
   generated_at: string;
   itineraries: Array<{
     itinerary_id: string;

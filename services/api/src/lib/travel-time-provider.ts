@@ -1,9 +1,13 @@
 import {
   getTravelTimeCacheTtlSeconds,
+  getTravelTimeCacheBackend,
   getTravelTimeOsrmBaseUrl,
   getTravelTimeProvider,
+  getTravelTimeRedisKeyPrefix,
+  getTravelTimeRedisUrl,
   type TravelTimeProvider,
 } from "./config.js";
+import { createClient } from "redis";
 
 export type Point = { lat: number; lon: number };
 export type TravelLegSource = "matrix" | "haversine" | "default";
@@ -17,6 +21,13 @@ type MatrixCacheEntry = {
   expiresAt: number;
   matrixByPair: Record<string, number>;
   sourceByPair: Record<string, TravelLegSource>;
+  summary: Omit<TravelTimeMatrix["summary"], "cache_hit">;
+};
+
+type PersistedMatrixCacheEntry = {
+  schema_version: number;
+  matrix_by_pair: Record<string, number>;
+  source_by_pair: Record<string, TravelLegSource>;
   summary: Omit<TravelTimeMatrix["summary"], "cache_hit">;
 };
 
@@ -39,12 +50,102 @@ export type TravelTimeMatrix = {
 
 const DEFAULT_DRIVE_MINUTES = 20;
 const USER_AGENT = "TailorMoments/1.0 (dev@swagritech.com.au)";
+const CACHE_SCHEMA_VERSION = 1;
 const osrmMatrixCache = new Map<string, MatrixCacheEntry>();
+let redisClientPromise: Promise<ReturnType<typeof createClient> | null> | null = null;
 const LEG_CONFIDENCE_BY_SOURCE: Record<TravelLegSource, number> = {
   matrix: 0.97,
   haversine: 0.68,
   default: 0.32,
 };
+
+function redisCacheKey(cacheKey: string) {
+  const prefix = getTravelTimeRedisKeyPrefix();
+  return prefix ? `${prefix}:${cacheKey}` : cacheKey;
+}
+
+async function getRedisClient() {
+  if (getTravelTimeCacheBackend() !== "redis") {
+    return null;
+  }
+
+  if (redisClientPromise) {
+    return redisClientPromise;
+  }
+
+  redisClientPromise = (async () => {
+    const redisUrl = getTravelTimeRedisUrl();
+    if (!redisUrl) {
+      return null;
+    }
+
+    try {
+      const client = createClient({
+        url: redisUrl,
+        socket: {
+          connectTimeout: 1000,
+          reconnectStrategy: () => false,
+        },
+      });
+      client.on("error", () => {
+        // Cache failures should never block itinerary generation.
+      });
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("Redis connect timeout")), 1500);
+      });
+      await Promise.race([client.connect(), timeoutPromise]);
+      return client;
+    } catch {
+      return null;
+    }
+  })();
+
+  return redisClientPromise;
+}
+
+function fromPersistedCache(raw: string): MatrixCacheEntry | null {
+  try {
+    const parsed = JSON.parse(raw) as Partial<PersistedMatrixCacheEntry>;
+    if (
+      parsed.schema_version !== CACHE_SCHEMA_VERSION ||
+      !parsed.matrix_by_pair ||
+      !parsed.source_by_pair ||
+      !parsed.summary
+    ) {
+      return null;
+    }
+
+    return {
+      // Redis key TTL handles expiry; keep a short local TTL for L1 memory cache.
+      expiresAt: Date.now() + getTravelTimeCacheTtlSeconds() * 1000,
+      matrixByPair: parsed.matrix_by_pair,
+      sourceByPair: parsed.source_by_pair,
+      summary: parsed.summary,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function toPersistedCache(entry: MatrixCacheEntry): PersistedMatrixCacheEntry {
+  return {
+    schema_version: CACHE_SCHEMA_VERSION,
+    matrix_by_pair: entry.matrixByPair,
+    source_by_pair: entry.sourceByPair,
+    summary: entry.summary,
+  };
+}
+
+function buildCacheResponse(entry: MatrixCacheEntry): TravelTimeMatrix {
+  return {
+    getMinutes: (fromId, toId) => entry.matrixByPair[pairKey(fromId, toId)] ?? DEFAULT_DRIVE_MINUTES,
+    sourceForLeg: (fromId, toId) => entry.sourceByPair[pairKey(fromId, toId)] ?? "default",
+    summary: {
+      ...entry.summary,
+      cache_hit: true,
+    },
+  };
+}
 
 function pairKey(fromId: string, toId: string) {
   return `${fromId}__${toId}`;
@@ -221,17 +322,24 @@ export async function buildTravelTimeMatrix(input: MatrixBuildInput): Promise<Tr
     const now = Date.now();
 
     if (cached && cached.expiresAt > now) {
-      cacheHit = true;
-      return {
-        getMinutes: (fromId, toId) =>
-          cached.matrixByPair[pairKey(fromId, toId)] ?? DEFAULT_DRIVE_MINUTES,
-        sourceForLeg: (fromId, toId) =>
-          cached.sourceByPair[pairKey(fromId, toId)] ?? "default",
-        summary: {
-          ...cached.summary,
-          cache_hit: true,
-        },
-      };
+      return buildCacheResponse(cached);
+    }
+
+    const redis = await getRedisClient();
+    if (redis) {
+      try {
+        const persisted = await redis.get(redisCacheKey(cacheKey));
+        if (persisted) {
+          const hydrated = fromPersistedCache(persisted);
+          if (hydrated) {
+            cacheHit = true;
+            osrmMatrixCache.set(cacheKey, hydrated);
+            return buildCacheResponse(hydrated);
+          }
+        }
+      } catch {
+        // Ignore cache read failures and continue with live computation.
+      }
     }
 
     const validPoints = ids
@@ -297,7 +405,7 @@ export async function buildTravelTimeMatrix(input: MatrixBuildInput): Promise<Tr
       cacheHit,
     });
 
-    osrmMatrixCache.set(cacheKey, {
+    const cacheEntry: MatrixCacheEntry = {
       expiresAt: now + getTravelTimeCacheTtlSeconds() * 1000,
       matrixByPair,
       sourceByPair,
@@ -312,7 +420,21 @@ export async function buildTravelTimeMatrix(input: MatrixBuildInput): Promise<Tr
         fallback_leg_percentage: summary.fallback_leg_percentage,
         average_leg_confidence: summary.average_leg_confidence,
       },
-    });
+    };
+
+    osrmMatrixCache.set(cacheKey, cacheEntry);
+
+    if (redis) {
+      try {
+        await redis.set(
+          redisCacheKey(cacheKey),
+          JSON.stringify(toPersistedCache(cacheEntry)),
+          { EX: getTravelTimeCacheTtlSeconds() },
+        );
+      } catch {
+        // Ignore cache write failures and return computed matrix.
+      }
+    }
 
     return {
       getMinutes: (fromId, toId) => matrixByPair[pairKey(fromId, toId)] ?? DEFAULT_DRIVE_MINUTES,

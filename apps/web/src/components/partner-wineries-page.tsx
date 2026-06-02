@@ -87,7 +87,7 @@ const WINE_STYLE_OPTIONS = [
   "Red Wine Specialist",
   "White Wine Specialist",
   "Sparkling & Method traditionnelle Specialist",
-  "Fortfied & Desert Wines",
+  "Fortified & Dessert Wines",
   "Internationally awarded",
   "Wines only available at cellar door",
 ] as const;

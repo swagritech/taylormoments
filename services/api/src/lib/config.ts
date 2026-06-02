@@ -106,7 +106,7 @@ export function getTravelTimeProvider(): TravelTimeProvider {
 }
 
 export function getTravelTimeOsrmBaseUrl() {
-  return getEnv("TM_TRAVEL_TIME_OSRM_BASE_URL", "https://router.project-osrm.org").trim();
+  return getEnv("TM_TRAVEL_TIME_OSRM_BASE_URL", "").trim();
 }
 
 export function getTravelTimeCacheTtlSeconds() {
@@ -115,6 +115,24 @@ export function getTravelTimeCacheTtlSeconds() {
     return 21600;
   }
   return Math.min(Math.floor(parsed), 86400);
+}
+
+export type TravelTimeCacheBackend = "memory" | "redis";
+
+export function getTravelTimeCacheBackend(): TravelTimeCacheBackend {
+  const backend = getEnv("TM_TRAVEL_TIME_CACHE_BACKEND", "memory").trim().toLowerCase();
+  if (backend === "redis") {
+    return "redis";
+  }
+  return "memory";
+}
+
+export function getTravelTimeRedisUrl() {
+  return getEnv("TM_TRAVEL_TIME_REDIS_URL", "").trim();
+}
+
+export function getTravelTimeRedisKeyPrefix() {
+  return getEnv("TM_TRAVEL_TIME_REDIS_KEY_PREFIX", "tm:travel:matrix:v1").trim();
 }
 
 export function normalizeRequest(input: RecommendItineraryRequest): RecommendItineraryRequest {

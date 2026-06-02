@@ -10,8 +10,13 @@ import { slugToWineryUuid } from "@/lib/winery-id";
 type CustomerWineryCatalogProps = {
   selectedWineries: string[];
   onToggleWinery: (wineryId: string) => void;
+  onRemoveWinery: (wineryId: string) => void;
+  onReorderWineries: (draggedWineryId: string, targetWineryId: string) => void;
   onContinue: () => void;
   onClearCart: () => void;
+  continueLabel?: string;
+  continueDisabled?: boolean;
+  mapTilePosition?: "side" | "top";
 };
 
 type SortMode = "top-rated" | "most-selected" | "established";
@@ -19,8 +24,13 @@ type SortMode = "top-rated" | "most-selected" | "established";
 export function CustomerWineryCatalog({
   selectedWineries,
   onToggleWinery,
+  onRemoveWinery,
+  onReorderWineries,
   onContinue,
   onClearCart,
+  continueLabel = "Continue to scheduling",
+  continueDisabled = false,
+  mapTilePosition = "side",
 }: CustomerWineryCatalogProps) {
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState("All regions");
@@ -28,6 +38,8 @@ export function CustomerWineryCatalog({
   const [cellarDoorOnly, setCellarDoorOnly] = useState(false);
   const [liveBookableOnly, setLiveBookableOnly] = useState(true);
   const [sortMode, setSortMode] = useState<SortMode>("top-rated");
+  const [draggingWineryId, setDraggingWineryId] = useState<string | null>(null);
+  const [dragOverWineryId, setDragOverWineryId] = useState<string | null>(null);
   const { profilesById } = useRemoteWineryProfiles();
 
   const filtered = useMemo(() => {
@@ -99,11 +111,150 @@ export function CustomerWineryCatalog({
     [profilesById, selectedWineries],
   );
 
+  const selectedWineriesWithDbCoordinates = useMemo(
+    () =>
+      selectedWineries
+        .map((wineryId) => {
+          const winery = wineryCatalog.find((entry) => entry.id === wineryId);
+          if (!winery) {
+            return null;
+          }
+          const remoteProfile = profilesById[slugToWineryUuid(winery.id)];
+          const hasRemoteCoordinates =
+            remoteProfile?.latitude !== undefined &&
+            remoteProfile?.longitude !== undefined &&
+            Number.isFinite(remoteProfile.latitude) &&
+            Number.isFinite(remoteProfile.longitude);
+          if (!hasRemoteCoordinates) {
+            return null;
+          }
+          return {
+            ...winery,
+            address: remoteProfile?.address ?? "",
+            latitude: remoteProfile.latitude,
+            longitude: remoteProfile.longitude,
+          };
+        })
+        .filter((entry): entry is (typeof wineryCatalog)[number] => Boolean(entry)),
+    [profilesById, selectedWineries],
+  );
+
+  const selectedWineriesMissingDbCoordinates = useMemo(
+    () =>
+      selectedWineryItems.filter((entry) => {
+        const remoteProfile = profilesById[slugToWineryUuid(entry.id)];
+        return !(
+          remoteProfile?.latitude !== undefined &&
+          remoteProfile?.longitude !== undefined &&
+          Number.isFinite(remoteProfile.latitude) &&
+          Number.isFinite(remoteProfile.longitude)
+        );
+      }),
+    [profilesById, selectedWineryItems],
+  );
+
+  function renderMapAndCartTile() {
+    return (
+      <>
+        <h3>Selected winery pins</h3>
+        <p className="subtle">Pins use live winery database coordinates only. Map auto-zooms to show selected venues with verified coordinates.</p>
+        <SelectedWineriesMap wineries={selectedWineriesWithDbCoordinates} />
+        {selectedWineriesMissingDbCoordinates.length > 0 ? (
+          <p className="subtle">
+            Awaiting DB coordinates for:{" "}
+            {selectedWineriesMissingDbCoordinates.map((entry) => entry.name).join(", ")}.
+          </p>
+        ) : null}
+        <div className="cartSummary">
+          <p className="miniLabel">Schedule cart</p>
+          <p>{selectedWineries.length} winery options selected</p>
+          {selectedWineryItems.length > 0 ? (
+            <div className="catalogPinList">
+              {selectedWineryItems.map((item) => (
+                <div
+                  key={item.id}
+                  className={`cartListItem ${draggingWineryId === item.id ? "dragging" : ""} ${dragOverWineryId === item.id ? "dragOver" : ""}`}
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData("text/plain", item.id);
+                    event.dataTransfer.effectAllowed = "move";
+                    setDraggingWineryId(item.id);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                    setDragOverWineryId(item.id);
+                  }}
+                  onDragEnter={(event) => {
+                    event.preventDefault();
+                    setDragOverWineryId(item.id);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const draggedId = event.dataTransfer.getData("text/plain") || draggingWineryId;
+                    if (draggedId && draggedId !== item.id) {
+                      onReorderWineries(draggedId, item.id);
+                    }
+                    setDraggingWineryId(null);
+                    setDragOverWineryId(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggingWineryId(null);
+                    setDragOverWineryId(null);
+                  }}
+                >
+                  <span className="cartDragHandle" aria-hidden="true">⋮⋮</span>
+                  <p className="subtle">
+                    <strong>{item.name}</strong>{item.address ? ` · ${item.address}` : ""}
+                  </p>
+                  <button
+                    type="button"
+                    className="cartRemoveButton"
+                    onClick={() => onRemoveWinery(item.id)}
+                    aria-label={`Remove ${item.name} from cart`}
+                    title={`Remove ${item.name}`}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="subtle">Add wineries to show pins on the map.</p>
+          )}
+          <button
+            type="button"
+            className="buttonPrimary fullWidthButton"
+            onClick={onContinue}
+            disabled={selectedWineries.length === 0 || continueDisabled}
+          >
+            {continueLabel}
+          </button>
+          <button
+            type="button"
+            className="buttonClear fullWidthButton"
+            onClick={onClearCart}
+            disabled={selectedWineries.length === 0}
+          >
+            Clear cart
+          </button>
+        </div>
+      </>
+    );
+  }
+
   return (
     <SectionCard
       title="Choose preferred wineries"
-      description="Filter the Margaret River catalog, review each winery profile, and add options to your schedule cart."
+      description="Filter the Margaret River catalogue, review each winery profile, and add options to your schedule cart."
     >
+      {mapTilePosition === "top" ? (
+        <div className="catalogMap catalogMapTop">
+          <div className="catalogMapSticky">
+            {renderMapAndCartTile()}
+          </div>
+        </div>
+      ) : null}
       <div className="catalogFilters">
         <input
           className="inputLike inputField"
@@ -149,72 +300,71 @@ export function CustomerWineryCatalog({
         </button>
       </div>
 
-      <div className="catalogShell">
-        <div className="catalogList" role="list">
+      <div className={`catalogShell ${mapTilePosition === "top" ? "singleColumn" : ""}`}>
+        <div className="catalogList catalogGrid" role="list">
           {filtered.map((winery) => {
             const selected = selectedWineries.includes(winery.id);
-            const initials = winery.name
-              .split(" ")
-              .slice(0, 2)
-              .map((entry) => entry[0])
-              .join("");
             const remoteProfile = profilesById[slugToWineryUuid(winery.id)];
             const experiencesText = experienceSummary(remoteProfile, "");
             const knownForText = remoteProfile?.famous_for ?? "";
             const summaryText = remoteProfile?.description ?? "";
             const displayAddress = remoteProfile?.address ?? "";
+            const headline = summaryText || knownForText || winery.knownFor;
+            const quickMeta = [
+              `${winery.region}`,
+              `Est. ${winery.established}`,
+              `${winery.cellarDoor ? "Cellar door" : "By appointment"}`,
+            ];
 
             return (
               <article
                 key={winery.id}
                 role="listitem"
-                className={`catalogRow ${selected ? "active" : ""}`}
+                className={`catalogCard ${selected ? "active" : ""}`}
               >
-                <div className="catalogMedia">
-                  <div className="catalogImage" aria-hidden="true">
-                    <span>{initials}</span>
+                <div className="catalogCardMedia" aria-hidden="true">
+                  <div className="catalogCardInitials">
+                    {winery.name
+                      .split(" ")
+                      .slice(0, 2)
+                      .map((entry) => entry[0])
+                      .join("")}
                   </div>
-                  <div className="catalogMeta">
+                </div>
+
+                <div className="catalogCardBody">
+                  <div className="catalogCardTitleRow">
                     <h3>{winery.name}</h3>
-                    {displayAddress ? <p className="subtle">{displayAddress}</p> : null}
-                    <p className="ratingLine">
-                      {winery.rating} stars · {winery.selectedByCount} guests shortlisted
+                    <p className="catalogCardRating">★ {winery.rating.toFixed(2)}</p>
+                  </div>
+                  <p className="catalogCardHeadline">{headline}</p>
+                  <p className="subtle">{quickMeta.join(" · ")}</p>
+                  {displayAddress ? <p className="subtle">{displayAddress}</p> : null}
+                  <div className="catalogCardTags">
+                    <span className={`status ${winery.liveBookable ? "accepted" : "review"}`}>
+                      {winery.liveBookable ? "Live booking available" : "Prospect list"}
+                    </span>
+                    <span className="status available">{winery.selectedByCount} shortlists</span>
+                    {remoteProfile?.offers_cheese_board ? <span className="status accepted">Cheese board</span> : null}
+                  </div>
+                  {experiencesText ? (
+                    <p className="subtle">
+                      <strong>Experiences:</strong> {experiencesText}
                     </p>
-                    <p className="subtle">Organic: {winery.organicStatus}</p>
-                    {remoteProfile?.tasting_price !== undefined ? (
-                      <p className="subtle">Tasting: ${remoteProfile.tasting_price}</p>
-                    ) : null}
-                    <div className="metaRow">
-                      <span className={`status ${winery.liveBookable ? "accepted" : "review"}`}>
-                        {winery.liveBookable ? "Live booking available" : "Prospect list"}
-                      </span>
-                      {remoteProfile?.offers_cheese_board ? <span className="status accepted">Cheese board</span> : null}
-                    </div>
+                  ) : null}
+                  <div className="catalogCardFooter">
+                    <p className="catalogCardPrice">
+                      {remoteProfile?.tasting_price !== undefined
+                        ? `$${remoteProfile.tasting_price} tasting`
+                        : "Tasting price on request"}
+                    </p>
                     <button
                       type="button"
                       className="buttonPrimary"
                       onClick={() => onToggleWinery(winery.id)}
                     >
-                      {selected ? "Added to schedule" : "Add to schedule"}
+                      {selected ? "Added" : "Add"}
                     </button>
-                  </div>
-                </div>
-                <div className="catalogSummary">
-                  {summaryText ? <p>{summaryText}</p> : null}
-                  <div className="catalogBullets">
-                    {experiencesText ? (
-                      <p>
-                        <strong>Experiences:</strong> {experiencesText}
-                      </p>
-                    ) : null}
-                    {knownForText ? (
-                      <p>
-                        <strong>Known for:</strong> {knownForText}
-                      </p>
-                    ) : null}
-                    <p>
-                      <strong>Established:</strong> {winery.established}
-                    </p>
                   </div>
                 </div>
               </article>
@@ -222,42 +372,13 @@ export function CustomerWineryCatalog({
           })}
         </div>
 
-        <aside className="catalogMap">
-          <h3>Selected winery pins</h3>
-          <p className="subtle">Only wineries added to schedule are pinned. Map auto-zooms to show all selected venues.</p>
-          <SelectedWineriesMap wineries={selectedWineryItems} />
-          <div className="cartSummary">
-            <p className="miniLabel">Schedule cart</p>
-            <p>{selectedWineries.length} winery options selected</p>
-            {selectedWineryItems.length > 0 ? (
-              <div className="catalogPinList">
-                {selectedWineryItems.map((item) => (
-                  <p key={item.id} className="subtle">
-                    <strong>{item.name}</strong>{item.address ? ` · ${item.address}` : ""}
-                  </p>
-                ))}
-              </div>
-            ) : (
-              <p className="subtle">Add wineries to show pins on the map.</p>
-            )}
-            <button
-              type="button"
-              className="buttonPrimary fullWidthButton"
-              onClick={onContinue}
-              disabled={selectedWineries.length === 0}
-            >
-              Continue to scheduling
-            </button>
-            <button
-              type="button"
-              className="buttonClear fullWidthButton"
-              onClick={onClearCart}
-              disabled={selectedWineries.length === 0}
-            >
-              Clear cart
-            </button>
-          </div>
-        </aside>
+        {mapTilePosition === "side" ? (
+          <aside className="catalogMap">
+            <div className="catalogMapSticky">
+              {renderMapAndCartTile()}
+            </div>
+          </aside>
+        ) : null}
       </div>
     </SectionCard>
   );

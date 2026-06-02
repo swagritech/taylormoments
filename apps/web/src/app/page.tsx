@@ -46,6 +46,8 @@ function groupErrorMessage(groupSize: number) {
 export default function Home() {
   const router = useRouter();
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
+  const [isRouteEntering, setIsRouteEntering] = useState(false);
+  const [isRouteExiting, setIsRouteExiting] = useState(false);
 
   const [name, setName] = useState(initialPreferences?.name ?? "");
   const [visitDate, setVisitDate] = useState(initialPreferences?.previewDate ?? "");
@@ -74,6 +76,20 @@ export default function Home() {
   const pickupAddressError = submitAttempted && needTransport === "yes" && !pickupAddress.trim()
     ? "Please enter your pickup address so we can arrange transport."
     : null;
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const transitionFlag = window.sessionStorage.getItem("tm_explore_route_fade_in");
+    if (transitionFlag !== "1") {
+      return;
+    }
+    window.sessionStorage.removeItem("tm_explore_route_fade_in");
+    setIsRouteEntering(true);
+    const timer = window.setTimeout(() => setIsRouteEntering(false), 260);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (needTransport !== "yes") {
@@ -111,6 +127,12 @@ export default function Home() {
             input: query,
             includedRegionCodes: ["AU"],
             languageCode: "en",
+            locationRestriction: {
+              rectangle: {
+                low: { latitude: -35.2, longitude: 112.9 },
+                high: { latitude: -13.5, longitude: 129.0 },
+              },
+            },
           }),
         });
         if (!response.ok) {
@@ -132,6 +154,7 @@ export default function Home() {
             label: entry.placePrediction?.text?.text?.trim() ?? "",
             placeId: entry.placePrediction?.placeId?.trim() ?? "",
           }))
+          .filter((entry) => /(?:\bWA\b|Western Australia)/i.test(entry.label))
           .filter((entry) => entry.label && entry.placeId)
           .slice(0, 6);
         setAddressSuggestions(nextSuggestions);
@@ -224,24 +247,30 @@ export default function Home() {
       pickupLongitude,
     };
     saveExplorePreferences(next);
-    router.push("/explore");
+    setIsRouteExiting(true);
+    window.setTimeout(() => {
+      window.sessionStorage.setItem("tm_explore_route_fade_in", "1");
+      router.push("/explore");
+    }, 180);
   }
 
   return (
     <AppShell
       eyebrow="Explore"
       title="Plan your Margaret River day, your way"
-      intro="Tell us a little about your trip and we'll find the perfect experiences for you."
+      intro={"Tell us a little about your trip and we'll find the perfect experiences for you."}
       navMode="public"
       showWorkflowStatus={false}
       showPageHeader={false}
     >
-      <div className="exploreLayout">
-        <div className="exploreUnifiedPanel" style={{ width: "100%" }}>
+      <div
+        className={`exploreLayout exploreRouteFade ${isRouteEntering ? "routeEntering" : ""} ${isRouteExiting ? "routeExiting" : ""}`}
+      >
+        <div className="exploreUnifiedPanel">
           <section className="exploreSectionBlock exploreUnifiedHero">
             <p className="eyebrow">Explore</p>
             <h1>Plan your Margaret River day, your way</h1>
-            <p className="heroCopy">Tell us a little about your trip and we'll find the perfect experiences for you.</p>
+            <p className="heroCopy">{"Tell us a little about your trip and we'll find the perfect experiences for you."}</p>
           </section>
 
           <section className="exploreSectionBlock">
@@ -268,21 +297,20 @@ export default function Home() {
                   min={todayIso}
                   placeholder="Choose your travel dates"
                 />
-                {noDateError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{noDateError}</p> : null}
-                {pastDateError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{pastDateError}</p> : null}
+                  {noDateError ? <p className="subtle errorText">{noDateError}</p> : null}
+                  {pastDateError ? <p className="subtle errorText">{pastDateError}</p> : null}
               </div>
 
               <div className="field">
                 <label htmlFor="groupSize">How many in your group?</label>
-                <div className="ctaRow" style={{ alignItems: "center" }}>
+                <div className="ctaRow ctaRowAlignCenter">
                   <button type="button" className="buttonGhost" onClick={() => handleGroupStep(-1)} aria-label="Decrease group size">-</button>
                   <input
                     id="groupSize"
                     type="number"
                     min={0}
                     max={30}
-                    className="inputLike inputField"
-                    style={{ maxWidth: 120 }}
+                    className="inputLike inputField groupSizeInput"
                     value={groupSize}
                     onChange={(event) => setGroupSize(Number(event.target.value) || 0)}
                   />
@@ -290,12 +318,12 @@ export default function Home() {
                 </div>
                 <p className="subtle">Including yourself</p>
                 {groupError ? (
-                  <p className="subtle" style={{ color: "#8f3a2b" }}>
+                    <p className="subtle errorText">
                     {groupSize > 20 ? (
                       <>
                         For groups larger than 20, please{" "}
-                        <Link href="mailto:sean@swagritech.com.au" style={{ textDecoration: "underline" }}>get in touch</Link>
-                        {" "}- we'll arrange something special.
+                        <Link href="mailto:sean@swagritech.com.au" className="textLinkUnderline">get in touch</Link>
+                        {" - we'll arrange something special."}
                       </>
                     ) : groupError}
                   </p>
@@ -315,7 +343,7 @@ export default function Home() {
                   </label>
                   <label className="choicePill">
                     <input type="radio" checked={tripLength === "multi-day"} onChange={() => setTripLength("multi-day")} />
-                    More than one day - We'll build a multi-day itinerary
+                    {"More than one day - We'll build a multi-day itinerary"}
                   </label>
                 </div>
               </div>
@@ -338,7 +366,7 @@ export default function Home() {
                     : "You're arranging your own way there - no problem."}
                 </p>
                 {needTransport === "yes" ? (
-                  <div className="field" style={{ position: "relative", marginTop: 8 }}>
+                  <div className="field pickupAddressField">
                     <label htmlFor="pickupAddress">Pickup address</label>
                     <input
                       id="pickupAddress"
@@ -358,21 +386,7 @@ export default function Home() {
                     {!googleApiKey ? <p className="subtle">Address autocomplete unavailable right now.</p> : null}
                     {addressLookupLoading ? <p className="subtle">Finding addresses...</p> : null}
                     {showAddressSuggestions && addressSuggestions.length > 0 ? (
-                      <div
-                        className="sectionCard"
-                        style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: 0,
-                          right: 0,
-                          zIndex: 20,
-                          padding: 8,
-                          marginTop: 6,
-                          borderRadius: 12,
-                          maxHeight: 220,
-                          overflowY: "auto",
-                        }}
-                      >
+                      <div className="sectionCard autocompleteSuggestionPanel">
                         <div className="selectorList">
                           {addressSuggestions.map((suggestion) => (
                             <button
@@ -393,13 +407,13 @@ export default function Home() {
                         </div>
                       </div>
                     ) : null}
-                    {pickupAddressError ? <p className="subtle" style={{ color: "#8f3a2b" }}>{pickupAddressError}</p> : null}
+                    {pickupAddressError ? <p className="subtle errorText">{pickupAddressError}</p> : null}
                   </div>
                 ) : null}
               </div>
 
               <button type="button" className="buttonPrimary fullWidthButton" onClick={handleBegin}>
-                Let's begin
+                {"Let's begin"}
               </button>
             </div>
           </section>

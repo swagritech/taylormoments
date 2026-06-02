@@ -27,10 +27,18 @@ const allowedWineStyles = new Set<WineStyle>([
   "Red Wine Specialist",
   "White Wine Specialist",
   "Sparkling & Method traditionnelle Specialist",
+  "Fortified & Dessert Wines",
   "Fortfied & Desert Wines",
   "Internationally awarded",
   "Wines only available at cellar door",
 ]);
+
+function normalizeWineStyle(style: string): WineStyle {
+  if (style === "Fortfied & Desert Wines") {
+    return "Fortified & Dessert Wines";
+  }
+  return style as WineStyle;
+}
 
 const allowedWinerySignals = new Set<WinerySignal>([
   "view_stunning",
@@ -193,7 +201,8 @@ function mapWinery(row: Record<string, unknown>): Winery {
       .filter((entry): entry is { name: string; price: number } => Boolean(entry)),
     wineStyles: rawWineStyles
       .map((entry) => String(entry).trim())
-      .filter((entry): entry is WineStyle => allowedWineStyles.has(entry as WineStyle)),
+      .filter((entry): entry is WineStyle => allowedWineStyles.has(entry as WineStyle))
+      .map((entry) => normalizeWineStyle(entry)),
     winerySignals: rawWinerySignals
       .map((entry) => String(entry).trim())
       .filter((entry): entry is WinerySignal => allowedWinerySignals.has(entry as WinerySignal)),
@@ -319,6 +328,59 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     return result.rows.map((row) => mapWinery(row));
   }
 
+  async remapWineryIdsToCanonical(wineryIds: string[]): Promise<string[]> {
+    if (wineryIds.length === 0) {
+      return [];
+    }
+
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        with requested as (
+          select winery_id, ordinality
+          from unnest($1::text[]) with ordinality as item(winery_id, ordinality)
+        ),
+        requested_name as (
+          select
+            requested.ordinality,
+            lower(winery.name) as name_key
+          from requested
+          left join winery
+            on winery.winery_id::text = requested.winery_id
+        ),
+        canonical as (
+          select distinct on (lower(name))
+            lower(name) as name_key,
+            winery_id as canonical_winery_id
+          from winery
+          order by lower(name) asc, updated_at desc nulls last, created_at desc nulls last, winery_id desc
+        )
+        select
+          requested.winery_id as requested_winery_id,
+          coalesce(canonical.canonical_winery_id::text, requested.winery_id) as canonical_winery_id
+        from requested
+        left join requested_name
+          on requested_name.ordinality = requested.ordinality
+        left join canonical
+          on canonical.name_key = requested_name.name_key
+        order by requested.ordinality asc
+      `,
+      [wineryIds],
+    );
+
+    const canonicalIds: string[] = [];
+    const seen = new Set<string>();
+    for (const row of result.rows) {
+      const canonicalId = String(row.canonical_winery_id);
+      if (!seen.has(canonicalId)) {
+        seen.add(canonicalId);
+        canonicalIds.push(canonicalId);
+      }
+    }
+
+    return canonicalIds;
+  }
+
   async getWineryById(wineryId: string): Promise<Winery | null> {
     const pool = getPool();
     const result = await pool.query(
@@ -387,7 +449,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
         request.offersCheeseBoard,
         JSON.stringify(request.uniqueExperienceOffers ?? []),
         request.tastingDurationMinutes ?? null,
-        JSON.stringify(request.wineStyles ?? []),
+        JSON.stringify((request.wineStyles ?? []).map((style) => normalizeWineStyle(style))),
         JSON.stringify(request.winerySignals ?? []),
       ],
     );
@@ -475,6 +537,25 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     return mapBooking(result.rows[0]);
   }
 
+  async getBookingsByIds(bookingIds: string[]): Promise<Booking[]> {
+    if (bookingIds.length === 0) {
+      return [];
+    }
+
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        select booking_id, lead_name, lead_phone, lead_email, booking_date, preferred_start_time, preferred_end_time,
+               pickup_location, party_size, preferred_region, preferred_wineries, status, created_at, updated_at
+        from booking
+        where booking_id = any($1::uuid[])
+      `,
+      [bookingIds],
+    );
+
+    return result.rows.map((row) => mapBooking(row));
+  }
+
   async listBookingsByLeadEmail(email: string): Promise<Booking[]> {
     const pool = getPool();
     const result = await pool.query(
@@ -486,6 +567,25 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
         order by created_at desc
       `,
       [email],
+    );
+
+    return result.rows.map((row) => mapBooking(row));
+  }
+
+  async listBookingsByUserId(userId: string): Promise<Booking[]> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        select booking.booking_id, booking.lead_name, booking.lead_phone, booking.lead_email, booking.booking_date,
+               booking.preferred_start_time, booking.preferred_end_time, booking.pickup_location, booking.party_size,
+               booking.preferred_region, booking.preferred_wineries, booking.status, booking.created_at, booking.updated_at
+        from booking
+        inner join user_account
+          on lower(user_account.email) = lower(booking.lead_email)
+        where user_account.user_id = $1
+        order by booking.created_at desc
+      `,
+      [userId],
     );
 
     return result.rows.map((row) => mapBooking(row));
@@ -638,6 +738,28 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     );
 
     return result.rows.map((row) => mapWineryMediaAsset(row));
+  }
+
+  async getWineryMediaAssetById(wineryId: string, mediaId: string): Promise<WineryMediaAsset | null> {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        select media_id, winery_id, object_key, public_url, file_name, content_type, file_size_bytes, caption,
+               status, uploaded_by_user_id, created_at, updated_at
+        from winery_media_asset
+        where winery_id = $1
+          and media_id = $2
+          and status <> 'archived'
+        limit 1
+      `,
+      [wineryId, mediaId],
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapWineryMediaAsset(result.rows[0]);
   }
 
   async markWineryMediaAssetUploaded(

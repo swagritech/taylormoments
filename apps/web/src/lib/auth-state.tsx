@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   getMe,
   loginAccount,
@@ -99,15 +99,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  async function login(params: { email: string; password: string }) {
+  const login = useCallback(async (params: { email: string; password: string }) => {
     const response = await loginAccount(params);
     persistAuth(response);
     setToken(response.token);
     setUser(response.user);
     return response.user;
-  }
+  }, []);
 
-  async function register(params: {
+  const register = useCallback(async (params: {
     email: string;
     password: string;
     role: "customer" | "winery" | "transport" | "ops";
@@ -124,24 +124,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     winery_website?: string;
     terms_accepted?: boolean;
     transport_company?: string;
-  }) {
+  }) => {
     const response = await registerAccount(params);
     persistAuth(response);
     setToken(response.token);
     setUser(response.user);
     return response.user;
-  }
+  }, []);
 
-  function logout() {
+  const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     setUser(null);
     setToken("");
-  }
+  }, []);
 
   const value = useMemo(
     () => ({ user, token, loading, login, register, logout }),
-    [user, token, loading],
+    [user, token, loading, login, register, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

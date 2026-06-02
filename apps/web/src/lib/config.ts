@@ -1,5 +1,4 @@
 export type DataMode = "demo" | "remote";
-const DEFAULT_LIVE_API_BASE_URL = "https://swagri-tailormoments-api-01.azurewebsites.net";
 
 export function getDataMode(): DataMode {
   const value = process.env.NEXT_PUBLIC_DATA_MODE?.toLowerCase();
@@ -7,10 +6,7 @@ export function getDataMode(): DataMode {
 }
 
 export function getApiBaseUrl() {
-  return (
-    process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ??
-    DEFAULT_LIVE_API_BASE_URL
-  );
+  return process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ?? "";
 }
 
 export function getTurnstileSiteKey() {
