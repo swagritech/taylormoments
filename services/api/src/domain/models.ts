@@ -261,6 +261,8 @@ export type PasswordResetToken = {
   usedAt?: string;
 };
 
+export type SupportedLocale = "en" | "zh-Hans" | "vi";
+
 export type RecommendItineraryRequest = {
   booking_date: string;
   party_size: number;
@@ -272,6 +274,7 @@ export type RecommendItineraryRequest = {
   preferred_region?: string;
   preferred_start_time?: string;
   preferred_end_time?: string;
+  locale?: SupportedLocale;
 };
 
 export type RecommendItineraryResponse = {

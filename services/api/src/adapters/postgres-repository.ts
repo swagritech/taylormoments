@@ -329,6 +329,29 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     return result.rows.map((row) => mapWinery(row));
   }
 
+  async getWineryTranslations(locale: string): Promise<Record<string, { description?: string; famousFor?: string }>> {
+    if (locale === "en") {
+      return {};
+    }
+    const pool = getPool();
+    const result = await pool.query(
+      `select winery_id, field, value from winery_translation
+       where locale = $1 and field in ('description', 'famous_for') and value is not null and value <> ''`,
+      [locale],
+    );
+    const overlay: Record<string, { description?: string; famousFor?: string }> = {};
+    for (const row of result.rows) {
+      const id = String(row.winery_id);
+      const entry = overlay[id] ?? (overlay[id] = {});
+      if (row.field === "description") {
+        entry.description = String(row.value);
+      } else if (row.field === "famous_for") {
+        entry.famousFor = String(row.value);
+      }
+    }
+    return overlay;
+  }
+
   async remapWineryIdsToCanonical(wineryIds: string[]): Promise<string[]> {
     if (wineryIds.length === 0) {
       return [];

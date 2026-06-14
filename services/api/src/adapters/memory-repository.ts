@@ -174,6 +174,10 @@ export class MemoryWorkflowRepository implements WorkflowRepository {
     return wineries;
   }
 
+  async getWineryTranslations(): Promise<Record<string, { description?: string; famousFor?: string }>> {
+    return {};
+  }
+
   async remapWineryIdsToCanonical(wineryIds: string[]): Promise<string[]> {
     const deduped: string[] = [];
     const seen = new Set<string>();

@@ -26,8 +26,14 @@ type CacheEntry<T> = {
   value: T;
 };
 
-let wineriesPublicCache: CacheEntry<{ wineries: unknown[] }> | null = null;
+const SUPPORTED_LOCALES = new Set(["en", "zh-Hans", "vi"]);
+const wineriesPublicCache = new Map<string, CacheEntry<{ wineries: unknown[] }>>();
 const wineryMediaPublicCache = new Map<string, CacheEntry<{ assets: unknown[] }>>();
+
+function resolveLocale(request: HttpRequest): "en" | "zh-Hans" | "vi" {
+  const raw = request.query.get("locale")?.trim() ?? "en";
+  return SUPPORTED_LOCALES.has(raw) ? (raw as "en" | "zh-Hans" | "vi") : "en";
+}
 
 function getCached<T>(entry: CacheEntry<T> | null): T | null {
   if (!entry) {
@@ -61,7 +67,7 @@ function okPublicCached(body: unknown): HttpResponseInit {
 }
 
 function invalidatePublicCaches(wineryId?: string) {
-  wineriesPublicCache = null;
+  wineriesPublicCache.clear();
   if (wineryId) {
     wineryMediaPublicCache.delete(wineryId);
   } else {
@@ -75,40 +81,48 @@ function invalidateWineryProfileCaches(wineryId?: string) {
 }
 
 export async function listWineriesHandler(
-  _request: HttpRequest,
+  request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
   try {
-    const cached = getCached(wineriesPublicCache);
+    const locale = resolveLocale(request);
+    const cached = getCached(wineriesPublicCache.get(locale) ?? null);
     if (cached) {
       return okPublicCached(cached);
     }
 
     const wineries = await workflowRepository.getWineries();
+    // Overlay translated static content (description/famous_for) for non-English locales.
+    // English stays canonical on the winery row; translations live in winery_translation.
+    const translations = await workflowRepository.getWineryTranslations(locale);
     const responseBody = {
-      wineries: wineries.map((winery) => ({
-        winery_id: winery.wineryId,
-        name: winery.name,
-        region: winery.region,
-        confirmation_mode: winery.confirmationMode,
-        capacity: winery.capacity,
-        catalog_featured: winery.catalogFeatured,
-        latitude: winery.latitude,
-        longitude: winery.longitude,
-        address: winery.address,
-        website: winery.website,
-        opening_hours: winery.openingHours,
-        tasting_price: winery.tastingPrice,
-        tasting_duration_minutes: winery.tastingDurationMinutes,
-        description: winery.description,
-        famous_for: winery.famousFor,
-        offers_cheese_board: winery.offersCheeseBoard,
-        unique_experience_offers: winery.uniqueExperienceOffers,
-        wine_styles: winery.wineStyles,
-        winery_signals: winery.winerySignals,
-      })),
+      wineries: wineries.map((winery) => {
+        const t = translations[winery.wineryId];
+        return {
+          winery_id: winery.wineryId,
+          name: winery.name,
+          region: winery.region,
+          confirmation_mode: winery.confirmationMode,
+          capacity: winery.capacity,
+          catalog_featured: winery.catalogFeatured,
+          latitude: winery.latitude,
+          longitude: winery.longitude,
+          address: winery.address,
+          website: winery.website,
+          opening_hours: winery.openingHours,
+          tasting_price: winery.tastingPrice,
+          tasting_duration_minutes: winery.tastingDurationMinutes,
+          description: t?.description ?? winery.description,
+          famous_for: t?.famousFor ?? winery.famousFor,
+          offers_cheese_board: winery.offersCheeseBoard,
+          unique_experience_offers: winery.uniqueExperienceOffers,
+          wine_styles: winery.wineStyles,
+          winery_signals: winery.winerySignals,
+          locale,
+        };
+      }),
     };
-    wineriesPublicCache = setCached(responseBody);
+    wineriesPublicCache.set(locale, setCached(responseBody));
     return okPublicCached(responseBody);
   } catch (error) {
     context.error(error);

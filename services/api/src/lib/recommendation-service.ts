@@ -765,6 +765,7 @@ export function buildCandidateItineraries(params: {
 export async function rankItinerariesWithAi(
   candidates: ItineraryOption[],
   factsById?: WineryFactsById,
+  locale?: RecommendItineraryRequest["locale"],
 ): Promise<ItineraryOption[]> {
   if (candidates.length === 0) {
     return [];
@@ -772,14 +773,14 @@ export async function rankItinerariesWithAi(
 
   // Mark the expert pick deterministically, then (best-effort) replace the top
   // pick's justification with a real OpenAI-generated one grounded in the wineries'
-  // actual facts. If no key is set or the call fails/times out, the deterministic
-  // justifications stand unchanged.
+  // actual facts and written in the requested locale. If no key is set or the call
+  // fails/times out, the deterministic justifications stand unchanged.
   const ranked = candidates.map((candidate, index) => ({
     ...candidate,
     expertPick: index === 0,
   }));
 
-  return enhanceWithAiJustifications(ranked, factsById);
+  return enhanceWithAiJustifications(ranked, factsById, locale ?? "en");
 }
 
 export async function recommendItineraries(params: {
@@ -862,7 +863,7 @@ export async function recommendItineraries(params: {
       description: winery.description,
     };
   }
-  const ranked = await rankItinerariesWithAi(candidateBuild.itineraries, wineryFactsById);
+  const ranked = await rankItinerariesWithAi(candidateBuild.itineraries, wineryFactsById, request.locale);
   const selectedRouteQuality = evaluateSelectedRouteTravelQuality({
     itinerary: ranked[0],
     travelTimes,

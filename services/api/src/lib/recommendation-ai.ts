@@ -1,5 +1,11 @@
 import { getOpenAIApiKey, getOpenAIModel } from "./config.js";
-import type { ItineraryOption } from "../domain/models.js";
+import type { ItineraryOption, SupportedLocale } from "../domain/models.js";
+
+const LOCALE_LANGUAGE: Record<SupportedLocale, string> = {
+  en: "English",
+  "zh-Hans": "Simplified Chinese (for mainland Chinese travellers)",
+  vi: "Vietnamese",
+};
 
 // Best-effort AI justification for the expert-pick itinerary. This runs on the
 // booking-critical recommend path, so it is strictly optional: if no OpenAI key
@@ -51,11 +57,13 @@ function buildItinerarySummary(itinerary: ItineraryOption, factsById?: WineryFac
 export async function generateExpertJustification(
   itinerary: ItineraryOption,
   factsById?: WineryFactsById,
+  locale: SupportedLocale = "en",
 ): Promise<string | null> {
   const apiKey = getOpenAIApiKey();
   if (!apiKey || itinerary.stops.length === 0) {
     return null;
   }
+  const language = LOCALE_LANGUAGE[locale] ?? LOCALE_LANGUAGE.en;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
@@ -75,7 +83,7 @@ export async function generateExpertJustification(
           {
             role: "system",
             content:
-              "You are a Margaret River wine-tour concierge for Tailor Moments. In 1-2 warm, concrete sentences, explain why this curated day flows well. Use ONLY the facts provided for each winery (and the arrival times). Do NOT add wine varieties, ratings, awards, prices, or descriptors that are not in the provided facts — if a winery has no facts listed, just refer to it by name. Never contradict the facts given.",
+              `You are a Margaret River wine-tour concierge for Tailor Moments. Write your reply in ${language}. In 1-2 warm, concrete sentences, explain why this curated day flows well. Use ONLY the facts provided for each winery (and the arrival times). Do NOT add wine varieties, ratings, awards, prices, or descriptors that are not in the provided facts — if a winery has no facts listed, just refer to it by name. Never contradict the facts given.`,
           },
           { role: "user", content: buildItinerarySummary(itinerary, factsById) },
         ],
@@ -102,6 +110,7 @@ export async function generateExpertJustification(
 export async function enhanceWithAiJustifications(
   candidates: ItineraryOption[],
   factsById?: WineryFactsById,
+  locale: SupportedLocale = "en",
 ): Promise<ItineraryOption[]> {
   if (candidates.length === 0 || !isAiJustificationEnabled()) {
     return candidates;
@@ -112,7 +121,7 @@ export async function enhanceWithAiJustifications(
     return candidates;
   }
 
-  const aiJustification = await generateExpertJustification(topPick, factsById);
+  const aiJustification = await generateExpertJustification(topPick, factsById, locale);
   if (!aiJustification) {
     return candidates;
   }

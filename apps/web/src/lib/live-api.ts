@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "@/lib/config";
+import { getLocale, type AppLocale } from "@/lib/locale";
 
 export type RecommendationStop = {
   winery_id: string;
@@ -338,13 +339,14 @@ export async function recommendItineraries(payload: {
   preferred_wineries: string[];
   preferred_start_time?: string;
   preferred_end_time?: string;
+  locale?: AppLocale;
 }) {
   const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/itinerary/recommend`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ locale: getLocale(), ...payload }),
   });
 
   return parseJson<RecommendResponse>(response);
@@ -401,8 +403,8 @@ export async function acceptTransportToken(tokenId: string) {
   return parseJson<TokenActionResponse>(response);
 }
 
-export async function listWineries() {
-  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries`, {
+export async function listWineries(locale: AppLocale = getLocale()) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/wineries?locale=${encodeURIComponent(locale)}`, {
     method: "GET",
   });
 

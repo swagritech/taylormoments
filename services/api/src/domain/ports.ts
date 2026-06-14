@@ -10,10 +10,17 @@ import type {
   WineryContact,
   Winery,
   WineryAvailability,
+  SupportedLocale,
 } from "./models.js";
+
+export type WineryTranslationOverlay = Record<
+  string,
+  { description?: string; famousFor?: string }
+>;
 
 export interface WorkflowRepository {
   getWineries(): Promise<Winery[]>;
+  getWineryTranslations(locale: SupportedLocale): Promise<WineryTranslationOverlay>;
   remapWineryIdsToCanonical(wineryIds: string[]): Promise<string[]>;
   getWineryById(wineryId: string): Promise<Winery | null>;
   updateWineryProfile(request: {
