@@ -2,6 +2,7 @@ import type {
   ItineraryOption,
   RecommendItineraryRequest,
   RecommendItineraryResponse,
+  SchedulePace,
   Winery,
   WineryAvailability,
 } from "../domain/models.js";
@@ -261,6 +262,7 @@ function buildSlotCombinations(
   function walk(
     index: number,
     current: Array<{ winery: Winery; slot: WineryAvailability }>,
+    minStartMinutes: number,
   ) {
     if (combinations.length >= maxCombinations) {
       return;
@@ -277,8 +279,16 @@ function buildSlotCombinations(
     }
 
     for (const slot of group.slots) {
+      // Only pick a slot that starts after the previous winery's slot has finished,
+      // so the chosen (winery, slot) picks can actually sequence into a time-ordered
+      // route. The old depth-first enumeration spent its whole budget on combinations
+      // that clustered multiple wineries at the same early time — which can never form
+      // a valid multi-stop day, so 3-4 stop itineraries were never found.
+      if (toTimeValue(slot.startTime) < minStartMinutes) {
+        continue;
+      }
       current.push({ winery: group.winery, slot });
-      walk(index + 1, current);
+      walk(index + 1, current, toTimeValue(slot.startTime) + DEFAULT_TASTING_DURATION_MINUTES);
       current.pop();
 
       if (combinations.length >= maxCombinations) {
@@ -287,7 +297,7 @@ function buildSlotCombinations(
     }
   }
 
-  walk(0, []);
+  walk(0, [], 0);
   return combinations;
 }
 
@@ -367,11 +377,32 @@ function buildFeasibleRoute(params: {
   };
 }
 
+// Pace tuning. stopReward lowers objectiveCost per stop (higher = pack more in);
+// idleWeight penalises gaps in the day (higher = tighter); lunchBonus rewards a
+// relaxed lunch window; scoreStopBonus shapes the displayed 0-99 score.
+// Each pace TARGETS a stop count; routes are penalised for deviating from it. A
+// linear per-stop reward can't settle on a middle count (the day collapses to the
+// min or max), so a target model is what produces a clean relaxed/balanced/maximise
+// ladder. idleWeight still nudges toward compact days; lunchBonus rewards a lunch
+// window; scoreStopBonus only shapes the displayed 0-99 score.
+const STOP_DEVIATION_WEIGHT = 14;
+const PACE_WEIGHTS: Record<SchedulePace, {
+  targetStops: number;
+  idleWeight: number;
+  lunchBonus: number;
+  scoreStopBonus: number;
+}> = {
+  relaxed: { targetStops: 2, idleWeight: 0.25, lunchBonus: 10, scoreStopBonus: 2 },
+  balanced: { targetStops: 3, idleWeight: 0.3, lunchBonus: 5, scoreStopBonus: 4 },
+  maximise: { targetStops: MAX_STOPS_PER_DAY, idleWeight: 0.2, lunchBonus: 3, scoreStopBonus: 8 },
+};
+
 function scoreRoute(params: {
   request: RecommendItineraryRequest;
   route: FeasibleRoute;
 }): { score: number; objectiveCost: number } {
   const { request, route } = params;
+  const weights = PACE_WEIGHTS[request.pace ?? "balanced"];
   const candidateScore =
     route.stops.reduce(
       (sum, stop) => sum + scoreCandidate(stop.winery, stop.slot, request.party_size),
@@ -382,17 +413,26 @@ function scoreRoute(params: {
   const acceptableDriveMinutes = route.stops.length * ACCEPTABLE_DRIVE_MINUTES_PER_STOP;
   const excessDriveMinutes = Math.max(0, route.totalDriveMinutes - acceptableDriveMinutes);
   const drivePenalty = excessDriveMinutes / 6;
-  const idlePenalty = route.totalIdleMinutes / 12;
-  const stopBonus = route.stops.length * 4;
-  // Prefer days that include a relaxed lunch window, but don't disqualify those
-  // that don't (the hard gate used to be a primary cause of empty results).
-  const lunchBonus = route.hasLunch ? 5 : 0;
+  const idlePenalty = (route.totalIdleMinutes / 12) * weights.idleWeight;
+  const stopBonus = route.stops.length * weights.scoreStopBonus;
+  // Lunch is a preference, not a gate (the old hard gate caused empty results).
+  const lunchBonus = route.hasLunch ? weights.lunchBonus : 0;
   const lunchPenalty = route.hasLunch ? 0 : 8;
   const score = Math.max(
     55,
     Math.min(99, Math.round(80 + stopBonus + qualityBonus + lunchBonus - drivePenalty - idlePenalty)),
   );
-  const objectiveCost = excessDriveMinutes + route.totalIdleMinutes * 1.1 - qualityBonus + lunchPenalty;
+  // Lower objectiveCost wins. The dominant term is how far the day is from the pace's
+  // target stop count, so relaxed lands on ~2 stops, balanced ~3, maximise the fullest
+  // feasible. Idle/drive break ties toward compact days; missing lunch is penalised.
+  const stopDeviationPenalty =
+    Math.abs(route.stops.length - weights.targetStops) * STOP_DEVIATION_WEIGHT;
+  const objectiveCost =
+    stopDeviationPenalty
+    + excessDriveMinutes
+    + route.totalIdleMinutes * weights.idleWeight
+    - qualityBonus
+    + lunchPenalty;
 
   return { score, objectiveCost };
 }
@@ -738,18 +778,21 @@ export function buildCandidateItineraries(params: {
   }
   diagnostics.feasibleRoutesFound = scoredRoutes.length;
 
-  const maxFeasibleStopCount = scoredRoutes.reduce(
-    (max, entry) => Math.max(max, entry.stopCount),
-    0,
-  );
+  const paceTargetStops =
+    request.pace === "relaxed"
+      ? MIN_STOPS_PER_DAY
+      : request.pace === "maximise"
+        ? MAX_STOPS_PER_DAY
+        : 3;
   const targetStopCount = Math.min(
-    MAX_STOPS_PER_DAY,
+    paceTargetStops,
     preferredSet.size > 0 ? preferredSet.size : slotGroups.length,
   );
 
-  // Prioritize fuller itineraries: if we can schedule more selected wineries, do that first.
-  const feasibleOptions = scoredRoutes
-    .filter((entry) => entry.stopCount === maxFeasibleStopCount)
+  // Rank ALL feasible routes by the pace-aware objective cost (which already encodes
+  // how strongly to reward extra stops vs a calmer day), rather than always forcing the
+  // fullest possible day. This is what makes "relaxed" vs "maximise" actually differ.
+  const feasibleOptions = [...scoredRoutes]
     .sort((a, b) => a.objectiveCost - b.objectiveCost || b.score - a.score)
     .slice(0, 3);
 

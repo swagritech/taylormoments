@@ -131,6 +131,7 @@ const baseItineraryRequestSchema = z.object({
   preferred_region: z.string().optional(),
   preferred_start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   preferred_end_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  pace: z.enum(["relaxed", "balanced", "maximise"]).optional(),
   locale: z.enum(["en", "zh-Hans", "vi"]).optional(),
 });
 

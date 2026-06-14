@@ -267,6 +267,10 @@ export type PasswordResetToken = {
 
 export type SupportedLocale = "en" | "zh-Hans" | "vi";
 
+// How densely to pack the day: relaxed = fewer stops + room to breathe;
+// balanced = a comfortable full day; maximise = as many cellar doors as fit.
+export type SchedulePace = "relaxed" | "balanced" | "maximise";
+
 export type RecommendItineraryRequest = {
   booking_date: string;
   party_size: number;
@@ -278,6 +282,7 @@ export type RecommendItineraryRequest = {
   preferred_region?: string;
   preferred_start_time?: string;
   preferred_end_time?: string;
+  pace?: SchedulePace;
   locale?: SupportedLocale;
 };
 
