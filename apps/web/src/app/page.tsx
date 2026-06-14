@@ -466,7 +466,7 @@ function SoftCta({ t, onPlan }: { t: HomeCopy; onPlan: () => void }) {
     <section className="tm-cta tm-section">
       <div className="tm-cta__media" aria-hidden="true">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/hero-vineyard.png" alt="" className="tm-cta__img" />
+        <img src="/hero-cta.jpg" alt="" className="tm-cta__img" />
         <div className="tm-cta__scrim" />
       </div>
       <div className="tm-wrap tm-cta__inner">
