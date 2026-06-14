@@ -3,10 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { WorkflowStatus } from "@/components/workflow-status";
 import { useAuth } from "@/lib/auth-state";
-import { clearExplorePreferences, hasExplorePreferences } from "@/lib/explore-preferences";
+import { clearExplorePreferences } from "@/lib/explore-preferences";
 import { clearExploreTourSummary } from "@/lib/explore-tour-summary";
 
 type AppShellProps = {
@@ -59,18 +59,12 @@ export function AppShell({
   const { user, logout } = useAuth();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [hasSavedPlan, setHasSavedPlan] = useState(false);
 
-  // Show "Start over" only on the public flow once the visitor has a saved trip,
-  // so they can clear their answers and begin a fresh search.
-  useEffect(() => {
-    setHasSavedPlan(hasExplorePreferences());
-  }, []);
-
+  // Clear the saved trip and start a fresh search. Always available on the public
+  // flow so a visitor can reset at any point.
   function handleStartOver() {
     clearExplorePreferences();
     clearExploreTourSummary();
-    setHasSavedPlan(false);
     setMobileMenuOpen(false);
     router.push("/");
   }
@@ -126,7 +120,7 @@ export function AppShell({
               ))}
             </nav>
             <div className={`ctaRow authRow ${mobileMenuOpen ? "\u2715" : "\u2630"}`}>
-              {navMode === "public" && hasSavedPlan ? (
+              {navMode === "public" ? (
                 <button
                   type="button"
                   className="buttonGhost"
