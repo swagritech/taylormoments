@@ -27,6 +27,7 @@ type FeasibleRoute = {
   stops: PlannedStop[];
   totalDriveMinutes: number;
   totalIdleMinutes: number;
+  hasLunch: boolean;
 };
 type EvaluatedRoute = {
   route: FeasibleRoute;
@@ -354,11 +355,16 @@ function buildFeasibleRoute(params: {
     return overlapEnd - overlapStart >= LUNCH_BREAK_MINUTES;
   });
 
-  if (!hasLunchBreak && !hasLunchAtStop) {
-    return null;
-  }
-
-  return { stops, totalDriveMinutes, totalIdleMinutes };
+  // A relaxed lunch window is a strong PREFERENCE, not a hard requirement.
+  // Rejecting every route without one was a primary cause of "no feasible routes"
+  // (especially on half-day windows). Routes without lunch are still valid; they
+  // just score lower (see scoreRoute).
+  return {
+    stops,
+    totalDriveMinutes,
+    totalIdleMinutes,
+    hasLunch: hasLunchBreak || hasLunchAtStop,
+  };
 }
 
 function scoreRoute(params: {
@@ -378,11 +384,15 @@ function scoreRoute(params: {
   const drivePenalty = excessDriveMinutes / 6;
   const idlePenalty = route.totalIdleMinutes / 12;
   const stopBonus = route.stops.length * 4;
+  // Prefer days that include a relaxed lunch window, but don't disqualify those
+  // that don't (the hard gate used to be a primary cause of empty results).
+  const lunchBonus = route.hasLunch ? 5 : 0;
+  const lunchPenalty = route.hasLunch ? 0 : 8;
   const score = Math.max(
     55,
-    Math.min(99, Math.round(80 + stopBonus + qualityBonus - drivePenalty - idlePenalty)),
+    Math.min(99, Math.round(80 + stopBonus + qualityBonus + lunchBonus - drivePenalty - idlePenalty)),
   );
-  const objectiveCost = excessDriveMinutes + route.totalIdleMinutes * 1.1 - qualityBonus;
+  const objectiveCost = excessDriveMinutes + route.totalIdleMinutes * 1.1 - qualityBonus + lunchPenalty;
 
   return { score, objectiveCost };
 }
@@ -551,33 +561,58 @@ function buildRelaxedFallbackItinerary(params: {
   };
 }
 
+const MAX_SUBSETS_PER_STOP_COUNT = 12;
+
 function buildGroupSubsets(slotGroups: WinerySlotGroup[]) {
   const maxSize = Math.min(MAX_STOPS_PER_DAY, slotGroups.length);
   const minSize = Math.min(MIN_STOPS_PER_DAY, maxSize);
-  const subsets: WinerySlotGroup[][] = [];
 
-  function walk(start: number, size: number, current: WinerySlotGroup[]) {
-    if (current.length === size) {
-      subsets.push([...current]);
-      return;
-    }
-    for (let index = start; index < slotGroups.length; index += 1) {
-      const group = slotGroups[index];
-      if (!group) {
-        continue;
-      }
-      current.push(group);
-      walk(index + 1, size, current);
-      current.pop();
-      if (subsets.length >= 36) {
+  // Generate up to MAX_SUBSETS_PER_STOP_COUNT subsets for EACH stop count (min..max).
+  // Previously the search generated only the largest size first and stopped at a
+  // shared cap, so for any pool bigger than ~4 wineries it produced ONLY 4-stop
+  // subsets — the hardest to schedule — and never tried 2- or 3-stop days. That
+  // starved feasible routes and forced the heuristic fallback every time.
+  const bySize = new Map<number, WinerySlotGroup[][]>();
+  for (let size = maxSize; size >= minSize; size -= 1) {
+    const sized: WinerySlotGroup[][] = [];
+    const walk = (start: number, current: WinerySlotGroup[]) => {
+      if (sized.length >= MAX_SUBSETS_PER_STOP_COUNT) {
         return;
       }
-    }
+      if (current.length === size) {
+        sized.push([...current]);
+        return;
+      }
+      for (let index = start; index < slotGroups.length; index += 1) {
+        const group = slotGroups[index];
+        if (!group) {
+          continue;
+        }
+        current.push(group);
+        walk(index + 1, current);
+        current.pop();
+        if (sized.length >= MAX_SUBSETS_PER_STOP_COUNT) {
+          return;
+        }
+      }
+    };
+    walk(0, []);
+    bySize.set(size, sized);
   }
 
-  for (let size = maxSize; size >= minSize; size -= 1) {
-    walk(0, size, []);
-    if (subsets.length >= 36) {
+  // Interleave stop counts (fuller days first within each round) so a truncated
+  // evaluation still gets a mix of 2-, 3- and 4-stop options instead of all 4-stop.
+  const subsets: WinerySlotGroup[][] = [];
+  for (let round = 0; ; round += 1) {
+    let added = false;
+    for (let size = maxSize; size >= minSize; size -= 1) {
+      const entry = bySize.get(size)?.[round];
+      if (entry) {
+        subsets.push(entry);
+        added = true;
+      }
+    }
+    if (!added) {
       break;
     }
   }
@@ -718,7 +753,11 @@ export function buildCandidateItineraries(params: {
     .sort((a, b) => a.objectiveCost - b.objectiveCost || b.score - a.score)
     .slice(0, 3);
 
-  if (feasibleOptions.length === 0 || maxFeasibleStopCount < targetStopCount) {
+  // Only fall back to the heuristic when the real scheduler found NO feasible route
+  // at all. Previously it also fell back whenever the best feasible day had fewer
+  // than the (capped) target stop count — so a perfectly good 2- or 3-stop day was
+  // discarded in favour of an availability-blind fallback.
+  if (feasibleOptions.length === 0) {
     const fallback = buildRelaxedFallbackItinerary({
       request,
       slotGroups,
