@@ -23,6 +23,10 @@ export type Booking = {
   partySize: number;
   preferredRegion?: string;
   preferredWineries: string[];
+  dietaryRequirements: string[];
+  accessibilityRequirements: string[];
+  occasion?: string;
+  specialRequests?: string;
   status: BookingStatus;
   createdAt: string;
   updatedAt: string;
@@ -342,6 +346,10 @@ export type CreateBookingRequest = RecommendItineraryRequest & {
   lead_name: string;
   lead_email?: string;
   lead_phone?: string;
+  dietary_requirements?: string[];
+  accessibility_requirements?: string[];
+  occasion?: string;
+  special_requests?: string;
   turnstile_token?: string;
 };
 

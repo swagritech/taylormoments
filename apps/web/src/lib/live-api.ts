@@ -79,6 +79,10 @@ export type CreateBookingRequest = {
   party_size: number;
   preferred_region?: string;
   preferred_wineries: string[];
+  dietary_requirements?: string[];
+  accessibility_requirements?: string[];
+  occasion?: string;
+  special_requests?: string;
   turnstile_token?: string;
 };
 
@@ -93,6 +97,10 @@ export type BookingResponse = {
   pickupLocation: string;
   partySize: number;
   preferredWineries: string[];
+  dietaryRequirements?: string[];
+  accessibilityRequirements?: string[];
+  occasion?: string;
+  specialRequests?: string;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -125,6 +133,10 @@ export type MyBookingsResponse = {
     pickupLocation: string;
     partySize: number;
     preferredWineries: string[];
+    dietaryRequirements?: string[];
+    accessibilityRequirements?: string[];
+    occasion?: string;
+    specialRequests?: string;
     status: string;
     createdAt: string;
     updatedAt: string;
@@ -164,8 +176,26 @@ export type WineryPortalItem = {
     bookingDate: string;
     pickupLocation: string;
     partySize: number;
+    dietaryRequirements?: string[];
+    accessibilityRequirements?: string[];
+    occasion?: string;
+    specialRequests?: string;
     status: string;
   } | null;
+};
+
+export type BookingByTokenResponse = {
+  booking_id: string;
+  lead_name: string;
+  booking_date: string;
+  preferred_start_time?: string;
+  preferred_end_time?: string;
+  pickup_location: string;
+  party_size: number;
+  dietary_requirements: string[];
+  accessibility_requirements: string[];
+  occasion?: string;
+  special_requests?: string;
 };
 
 export type WineryPortalResponse = {
@@ -381,6 +411,14 @@ export async function createWineryApprovalToken(bookingId: string, wineryId: str
   });
 
   return parseJson<TokenResponse>(response);
+}
+
+export async function getBookingByToken(tokenId: string) {
+  const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/action-tokens/${tokenId}/booking`, {
+    method: "GET",
+  });
+
+  return parseJson<BookingByTokenResponse>(response);
 }
 
 export async function approveWineryToken(tokenId: string, turnstileToken?: string) {

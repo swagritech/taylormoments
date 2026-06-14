@@ -1,10 +1,40 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { SectionCard } from "@/components/section-card";
-import { acceptTransportToken } from "@/lib/live-api";
+import { acceptTransportToken, getBookingByToken, type BookingByTokenResponse } from "@/lib/live-api";
+
+function humanizeNote(value: string) {
+  return value.replace(/_/g, " ").trim();
+}
+
+function TransportSafetyNotesPanel({ booking }: { booking: BookingByTokenResponse }) {
+  const accessibility = booking.accessibility_requirements ?? [];
+  const hasNotes = accessibility.length > 0 || Boolean(booking.special_requests);
+
+  return (
+    <div className="callout">
+      <p className="miniLabel">Run details</p>
+      <p>
+        <strong>{booking.lead_name}</strong> · {booking.booking_date} · {booking.party_size} guests · pickup {booking.pickup_location}
+      </p>
+      {hasNotes ? (
+        <>
+          {accessibility.length > 0 ? (
+            <p><strong>Accessibility:</strong> {accessibility.map(humanizeNote).join(", ")}</p>
+          ) : null}
+          {booking.special_requests ? (
+            <p><strong>Notes:</strong> {booking.special_requests}</p>
+          ) : null}
+        </>
+      ) : (
+        <p className="subtle">No accessibility or special transport requests were recorded for this run.</p>
+      )}
+    </div>
+  );
+}
 
 export function TransportAcceptFlow() {
   const searchParams = useSearchParams();
@@ -13,6 +43,33 @@ export function TransportAcceptFlow() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ status: string; booking_id: string; token_id: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [bookingDetails, setBookingDetails] = useState<BookingByTokenResponse | null>(null);
+
+  useEffect(() => {
+    const trimmed = tokenId.trim();
+    if (!trimmed) {
+      setBookingDetails(null);
+      return;
+    }
+
+    let active = true;
+    void (async () => {
+      try {
+        const details = await getBookingByToken(trimmed);
+        if (active) {
+          setBookingDetails(details);
+        }
+      } catch {
+        if (active) {
+          setBookingDetails(null);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [tokenId]);
 
   async function handleAccept() {
     if (!tokenId.trim()) {
@@ -51,6 +108,8 @@ export function TransportAcceptFlow() {
             <label htmlFor="transportToken">Transport token</label>
             <input id="transportToken" className="inputLike inputField" value={tokenId} onChange={(event) => setTokenId(event.target.value)} placeholder="Paste or open a link containing the token" />
           </div>
+
+          {bookingDetails ? <TransportSafetyNotesPanel booking={bookingDetails} /> : null}
 
           <button type="button" className="buttonPrimary fullWidthButton" onClick={handleAccept} disabled={submitting}>
             {submitting ? "Accepting..." : "Accept job"}

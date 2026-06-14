@@ -33,6 +33,7 @@ export type ExplorePreferences = {
   dietaryNeeds?: string[];
   accessibilityNeeds?: string[];
   accessibilityOther?: string;
+  specialRequests?: string;
   matchedWineryIds?: string[];
   previewDate?: string;
 };

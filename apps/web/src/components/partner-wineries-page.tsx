@@ -37,6 +37,39 @@ function statusClass(value: string) {
   return value.replace(/[^a-z]+/gi, "").toLowerCase();
 }
 
+function humanizeNote(value: string) {
+  return value.replace(/_/g, " ").trim();
+}
+
+function BookingSafetyNotes({ booking }: { booking: WineryPortalItem["booking"] }) {
+  if (!booking) {
+    return null;
+  }
+  const dietary = booking.dietaryRequirements ?? [];
+  const accessibility = booking.accessibilityRequirements ?? [];
+  const hasNotes =
+    dietary.length > 0 || accessibility.length > 0 || Boolean(booking.occasion) || Boolean(booking.specialRequests);
+  if (!hasNotes) {
+    return null;
+  }
+  return (
+    <div className="callout" style={{ marginTop: 8 }}>
+      {dietary.length > 0 ? (
+        <p><strong>Dietary:</strong> {dietary.map(humanizeNote).join(", ")}</p>
+      ) : null}
+      {accessibility.length > 0 ? (
+        <p><strong>Accessibility:</strong> {accessibility.map(humanizeNote).join(", ")}</p>
+      ) : null}
+      {booking.occasion ? (
+        <p><strong>Occasion:</strong> {humanizeNote(booking.occasion)}</p>
+      ) : null}
+      {booking.specialRequests ? (
+        <p><strong>Notes:</strong> {booking.specialRequests}</p>
+      ) : null}
+    </div>
+  );
+}
+
 function tokenFromActionUrl(actionUrl: string) {
   try {
     const url = new URL(actionUrl);
@@ -965,6 +998,7 @@ export function PartnerWineriesPage() {
                     </div>
                     <span className={`status ${statusClass(item.status)}`}>{item.status}</span>
                   </div>
+                  <BookingSafetyNotes booking={item.booking} />
                   <div className="metaRow">
                     <span className="meta">Sent via {item.sent_channel}</span>
                     <span className="meta">Recipient {item.sent_recipient ?? "(not configured)"}</span>
@@ -1010,6 +1044,7 @@ export function PartnerWineriesPage() {
                     </div>
                     <span className={`status ${statusClass(item.status)}`}>{item.status}</span>
                   </div>
+                  <BookingSafetyNotes booking={item.booking} />
                   <div className="metaRow">
                     <span className="meta">Approved {formatDateTime(item.approved_at)}</span>
                     <span className="meta">Booking {item.booking_id}</span>

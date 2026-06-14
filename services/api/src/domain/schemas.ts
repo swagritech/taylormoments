@@ -188,6 +188,10 @@ export const createBookingRequestSchema = baseItineraryRequestSchema.extend({
   lead_name: z.string().min(1),
   lead_email: z.string().email().optional(),
   lead_phone: z.string().min(5).optional(),
+  dietary_requirements: z.array(z.string()).optional(),
+  accessibility_requirements: z.array(z.string()).optional(),
+  occasion: z.string().optional(),
+  special_requests: z.string().max(1000).optional(),
   turnstile_token: z.string().min(1).optional(),
 }).refine(
   (value) => hasCoordinatePair(value),

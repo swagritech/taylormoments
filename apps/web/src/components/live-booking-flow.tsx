@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/section-card";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { pickupOptions, wineries as legacyWineries } from "@/lib/demo-data";
-import { getSuggestedWindowFromTripLength, loadExplorePreferences } from "@/lib/explore-preferences";
+import {
+  getSuggestedWindowFromTripLength,
+  loadExplorePreferences,
+  saveExplorePreferences,
+} from "@/lib/explore-preferences";
 import { useAuth } from "@/lib/auth-state";
 import { slugToWineryUuid } from "@/lib/winery-id";
 import {
@@ -50,6 +54,10 @@ export function LiveBookingFlow({
   const [preferredEndTime, setPreferredEndTime] = useState("17:00");
   const [pickupLocation, setPickupLocation] = useState(pickupOptions[0]?.label ?? "Margaret River Visitor Centre");
   const [partySize, setPartySize] = useState(4);
+  const [dietaryNeeds, setDietaryNeeds] = useState<string[]>([]);
+  const [accessibilityNeeds, setAccessibilityNeeds] = useState<string[]>([]);
+  const [occasion, setOccasion] = useState<string>("");
+  const [specialRequests, setSpecialRequests] = useState("");
   const [internalSelectedWineries, setInternalSelectedWineries] = useState<string[]>([legacyWineries[0]?.id ?? "", legacyWineries[1]?.id ?? ""].filter(Boolean));
   const [requesting, setRequesting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -129,7 +137,21 @@ export function LiveBookingFlow({
       setPreferredStartTime(window.start);
       setPreferredEndTime(window.end);
     }
-  }, [leadName, leadEmail, partySize, pickupLocation, preferredStartTime, preferredEndTime]);
+
+    // Carry safety-critical notes captured in the explore quiz through to booking.
+    if (Array.isArray(saved.dietaryNeeds)) {
+      setDietaryNeeds(saved.dietaryNeeds);
+    }
+    if (Array.isArray(saved.accessibilityNeeds)) {
+      setAccessibilityNeeds(saved.accessibilityNeeds);
+    }
+    if (saved.occasion) {
+      setOccasion(saved.occasion);
+    }
+    if (saved.specialRequests && !specialRequests.trim()) {
+      setSpecialRequests(saved.specialRequests);
+    }
+  }, [leadName, leadEmail, partySize, pickupLocation, preferredStartTime, preferredEndTime, specialRequests]);
 
   useEffect(() => {
     if (!user || user.role !== "customer") {
@@ -214,6 +236,14 @@ export function LiveBookingFlow({
         return;
       }
 
+      const trimmedSpecialRequests = specialRequests.trim();
+
+      // Persist the free-text note back to ExplorePreferences so it survives a reload.
+      const savedPreferences = loadExplorePreferences();
+      if (savedPreferences) {
+        saveExplorePreferences({ ...savedPreferences, specialRequests: trimmedSpecialRequests || undefined });
+      }
+
       const created = await createBooking({
         lead_name: leadName,
         lead_email: leadEmail || undefined,
@@ -224,6 +254,10 @@ export function LiveBookingFlow({
         pickup_location: pickupLocation,
         party_size: partySize,
         preferred_wineries: selectedCatalogWineries.map((entry) => uuidForWinerySlug(entry.id)),
+        dietary_requirements: dietaryNeeds.length > 0 ? dietaryNeeds : undefined,
+        accessibility_requirements: accessibilityNeeds.length > 0 ? accessibilityNeeds : undefined,
+        occasion: occasion || undefined,
+        special_requests: trimmedSpecialRequests || undefined,
         turnstile_token: turnstileToken,
       });
 
@@ -300,6 +334,35 @@ export function LiveBookingFlow({
                   <option key={option.id} value={option.label}>{option.label}</option>
                 ))}
               </select>
+            </div>
+            {(dietaryNeeds.length > 0 || accessibilityNeeds.length > 0 || occasion) ? (
+              <div className="field">
+                <label>From your preferences</label>
+                <div className="explorePreferenceSummary">
+                  {dietaryNeeds.length > 0 ? (
+                    <p><strong>Dietary:</strong> {dietaryNeeds.map((item) => item.replace(/_/g, " ")).join(", ")}</p>
+                  ) : null}
+                  {accessibilityNeeds.length > 0 ? (
+                    <p><strong>Accessibility:</strong> {accessibilityNeeds.map((item) => item.replace(/_/g, " ")).join(", ")}</p>
+                  ) : null}
+                  {occasion ? (
+                    <p><strong>Occasion:</strong> {occasion.replace(/_/g, " ")}</p>
+                  ) : null}
+                  <p className="subtle">These are shared with your wineries and transport partner so they can prepare.</p>
+                </div>
+              </div>
+            ) : null}
+            <div className="field">
+              <label htmlFor="specialRequests">Special requests / anything we should know?</label>
+              <textarea
+                id="specialRequests"
+                className="inputLike inputField"
+                rows={3}
+                maxLength={1000}
+                value={specialRequests}
+                onChange={(event) => setSpecialRequests(event.target.value)}
+                placeholder="Allergies, mobility needs, celebrations, or anything our partners should prepare for."
+              />
             </div>
             <div className="field">
               <label>Preferred wineries</label>

@@ -12,14 +12,57 @@ export type NotificationPreview = {
   message: string;
 };
 
+export type BookingSafetyNotes = {
+  dietaryRequirements?: string[];
+  accessibilityRequirements?: string[];
+  occasion?: string;
+  specialRequests?: string;
+};
+
+function humanizeNote(value: string) {
+  return value.replace(/_/g, " ").trim();
+}
+
+// Build a concise, clearly-labelled safety-notes line for partner notifications.
+// Returns an empty string when there is nothing to surface so callers can skip it.
+export function formatBookingSafetyNotes(notes: BookingSafetyNotes): string {
+  const segments: string[] = [];
+
+  const dietary = (notes.dietaryRequirements ?? []).map(humanizeNote).filter(Boolean);
+  if (dietary.length > 0) {
+    segments.push(`Dietary: ${dietary.join(", ")}`);
+  }
+
+  const accessibility = (notes.accessibilityRequirements ?? []).map(humanizeNote).filter(Boolean);
+  if (accessibility.length > 0) {
+    segments.push(`Accessibility: ${accessibility.join(", ")}`);
+  }
+
+  const occasion = notes.occasion ? humanizeNote(notes.occasion) : "";
+  if (occasion) {
+    segments.push(`Occasion: ${occasion}`);
+  }
+
+  const special = notes.specialRequests?.trim();
+  if (special) {
+    segments.push(`Notes: ${special}`);
+  }
+
+  return segments.join(" / ");
+}
+
 export async function notifyWineryApprovalRequested(params: {
   wineryName?: string;
   recipientEmail?: string;
   recipientPhone?: string;
   actionUrl: string;
   bookingId: string;
+  safetyNotes?: BookingSafetyNotes;
 }) {
-  const message = `New Tailor Moments booking requires approval. Review booking ${params.bookingId}: ${params.actionUrl}`;
+  const safetyLine = params.safetyNotes ? formatBookingSafetyNotes(params.safetyNotes) : "";
+  const message = `New Tailor Moments booking requires approval. Review booking ${params.bookingId}: ${params.actionUrl}${
+    safetyLine ? ` | ${safetyLine}` : ""
+  }`;
 
   const emailConfigured = Boolean(getAcsEmailConnectionString() && getAcsEmailSenderAddress() && params.recipientEmail);
   if (emailConfigured) {

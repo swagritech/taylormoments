@@ -44,6 +44,44 @@ export async function createWineryApprovalTokenHandler(
   }
 }
 
+export async function getBookingByTokenHandler(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  try {
+    const tokenId = actionTokenRouteSchema.parse(request.params).tokenId;
+    const token = await workflowRepository.getActionToken(tokenId);
+
+    if (!token) {
+      return notFound("Action token not found.");
+    }
+
+    const booking = await workflowRepository.getBooking(token.bookingId);
+    if (!booking) {
+      return notFound("Booking not found.");
+    }
+
+    // Only expose the booking details a partner needs to make a decision,
+    // including the safety-critical dietary/accessibility/special-request notes.
+    return ok({
+      booking_id: booking.bookingId,
+      lead_name: booking.leadName,
+      booking_date: booking.bookingDate,
+      preferred_start_time: booking.preferredStartTime,
+      preferred_end_time: booking.preferredEndTime,
+      pickup_location: booking.pickupLocation,
+      party_size: booking.partySize,
+      dietary_requirements: booking.dietaryRequirements,
+      accessibility_requirements: booking.accessibilityRequirements,
+      occasion: booking.occasion,
+      special_requests: booking.specialRequests,
+    });
+  } catch (error) {
+    context.error(error);
+    return badRequest(error instanceof Error ? error.message : "Unable to fetch booking for token.");
+  }
+}
+
 export async function approveByTokenHandler(
   request: HttpRequest,
   context: InvocationContext,
@@ -104,6 +142,13 @@ app.http("create-winery-approval-token", {
   authLevel: "anonymous",
   route: "v1/action-tokens/winery-approve",
   handler: createWineryApprovalTokenHandler,
+});
+
+app.http("get-booking-by-token", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: "v1/action-tokens/{tokenId}/booking",
+  handler: getBookingByTokenHandler,
 });
 
 app.http("approve-booking-by-token", {

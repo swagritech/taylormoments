@@ -1,11 +1,49 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { SectionCard } from "@/components/section-card";
 import { TurnstileWidget } from "@/components/turnstile-widget";
-import { approveWineryToken } from "@/lib/live-api";
+import { approveWineryToken, getBookingByToken, type BookingByTokenResponse } from "@/lib/live-api";
+
+function humanizeNote(value: string) {
+  return value.replace(/_/g, " ").trim();
+}
+
+function BookingSafetyNotesPanel({ booking }: { booking: BookingByTokenResponse }) {
+  const dietary = booking.dietary_requirements ?? [];
+  const accessibility = booking.accessibility_requirements ?? [];
+  const hasNotes =
+    dietary.length > 0 || accessibility.length > 0 || Boolean(booking.occasion) || Boolean(booking.special_requests);
+
+  return (
+    <div className="callout">
+      <p className="miniLabel">Booking details</p>
+      <p>
+        <strong>{booking.lead_name}</strong> · {booking.booking_date} · {booking.party_size} guests · {booking.pickup_location}
+      </p>
+      {hasNotes ? (
+        <>
+          {dietary.length > 0 ? (
+            <p><strong>Dietary:</strong> {dietary.map(humanizeNote).join(", ")}</p>
+          ) : null}
+          {accessibility.length > 0 ? (
+            <p><strong>Accessibility:</strong> {accessibility.map(humanizeNote).join(", ")}</p>
+          ) : null}
+          {booking.occasion ? (
+            <p><strong>Occasion:</strong> {humanizeNote(booking.occasion)}</p>
+          ) : null}
+          {booking.special_requests ? (
+            <p><strong>Notes:</strong> {booking.special_requests}</p>
+          ) : null}
+        </>
+      ) : (
+        <p className="subtle">No dietary, accessibility, or special requests were recorded for this booking.</p>
+      )}
+    </div>
+  );
+}
 
 export function WineryApprovalFlow() {
   const searchParams = useSearchParams();
@@ -15,6 +53,33 @@ export function WineryApprovalFlow() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ status: string; booking_id: string; token_id: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [bookingDetails, setBookingDetails] = useState<BookingByTokenResponse | null>(null);
+
+  useEffect(() => {
+    const trimmed = tokenId.trim();
+    if (!trimmed) {
+      setBookingDetails(null);
+      return;
+    }
+
+    let active = true;
+    void (async () => {
+      try {
+        const details = await getBookingByToken(trimmed);
+        if (active) {
+          setBookingDetails(details);
+        }
+      } catch {
+        if (active) {
+          setBookingDetails(null);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [tokenId]);
 
   async function handleApprove() {
     if (!tokenId.trim()) {
@@ -53,6 +118,8 @@ export function WineryApprovalFlow() {
             <label htmlFor="tokenId">Approval token</label>
             <input id="tokenId" className="inputLike inputField" value={tokenId} onChange={(event) => setTokenId(event.target.value)} placeholder="Paste or open a link containing the token" />
           </div>
+
+          {bookingDetails ? <BookingSafetyNotesPanel booking={bookingDetails} /> : null}
 
           <TurnstileWidget
             action="winery_confirm"

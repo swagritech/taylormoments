@@ -19,6 +19,18 @@ export async function dispatchWineryApprovalRequests(params: {
   const uniqueWineryIds = Array.from(new Set(params.wineryIds.filter(Boolean)));
   const results: WineryDispatchResult[] = [];
 
+  // Load the booking once so safety-critical notes (dietary / accessibility /
+  // special requests) can be surfaced to each winery in the approval message.
+  const booking = await params.repository.getBooking(params.bookingId);
+  const safetyNotes = booking
+    ? {
+        dietaryRequirements: booking.dietaryRequirements,
+        accessibilityRequirements: booking.accessibilityRequirements,
+        occasion: booking.occasion,
+        specialRequests: booking.specialRequests,
+      }
+    : undefined;
+
   for (const wineryId of uniqueWineryIds) {
     const { token, actionUrl } = createActionToken({
       bookingId: params.bookingId,
@@ -36,6 +48,7 @@ export async function dispatchWineryApprovalRequests(params: {
       actionUrl,
       recipientEmail: contact?.email,
       recipientPhone: contact?.phone,
+      safetyNotes,
     });
 
     await params.repository.createWineryBookingRequest({

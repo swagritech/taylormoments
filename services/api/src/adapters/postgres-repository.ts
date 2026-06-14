@@ -143,6 +143,14 @@ function mapBooking(row: Record<string, unknown>): Booking {
     preferredWineries: Array.isArray(row.preferred_wineries)
       ? row.preferred_wineries.map((value) => String(value))
       : [],
+    dietaryRequirements: Array.isArray(row.dietary_requirements)
+      ? row.dietary_requirements.map((value) => String(value))
+      : [],
+    accessibilityRequirements: Array.isArray(row.accessibility_requirements)
+      ? row.accessibility_requirements.map((value) => String(value))
+      : [],
+    occasion: row.occasion ? String(row.occasion) : undefined,
+    specialRequests: row.special_requests ? String(row.special_requests) : undefined,
     status: row.status as Booking["status"],
     createdAt: new Date(String(row.created_at)).toISOString(),
     updatedAt: new Date(String(row.updated_at)).toISOString(),
@@ -517,11 +525,17 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
           party_size,
           preferred_region,
           preferred_wineries,
+          dietary_requirements,
+          accessibility_requirements,
+          occasion,
+          special_requests,
           status
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::uuid[], 'awaiting_winery')
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::uuid[], $12::jsonb, $13::jsonb, $14, $15, 'awaiting_winery')
         returning booking_id, lead_name, lead_phone, lead_email, booking_date, preferred_start_time, preferred_end_time,
-                  pickup_location, party_size, preferred_region, preferred_wineries, status, created_at, updated_at
+                  pickup_location, party_size, preferred_region, preferred_wineries,
+                  dietary_requirements, accessibility_requirements, occasion, special_requests,
+                  status, created_at, updated_at
       `,
       [
         bookingId,
@@ -535,6 +549,10 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
         request.party_size,
         request.preferred_region ?? null,
         request.preferred_wineries ?? [],
+        JSON.stringify(request.dietary_requirements ?? []),
+        JSON.stringify(request.accessibility_requirements ?? []),
+        request.occasion ?? null,
+        request.special_requests ?? null,
       ],
     );
 
@@ -547,7 +565,9 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
       `
         select booking_id, lead_name, lead_phone, lead_email, booking_date, preferred_start_time, preferred_end_time,
                pickup_location, party_size,
-               preferred_region, preferred_wineries, status, created_at, updated_at
+               preferred_region, preferred_wineries,
+               dietary_requirements, accessibility_requirements, occasion, special_requests,
+               status, created_at, updated_at
         from booking
         where booking_id = $1
       `,
@@ -570,7 +590,9 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const result = await pool.query(
       `
         select booking_id, lead_name, lead_phone, lead_email, booking_date, preferred_start_time, preferred_end_time,
-               pickup_location, party_size, preferred_region, preferred_wineries, status, created_at, updated_at
+               pickup_location, party_size, preferred_region, preferred_wineries,
+               dietary_requirements, accessibility_requirements, occasion, special_requests,
+               status, created_at, updated_at
         from booking
         where booking_id = any($1::uuid[])
       `,
@@ -585,7 +607,9 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const result = await pool.query(
       `
         select booking_id, lead_name, lead_phone, lead_email, booking_date, preferred_start_time, preferred_end_time,
-               pickup_location, party_size, preferred_region, preferred_wineries, status, created_at, updated_at
+               pickup_location, party_size, preferred_region, preferred_wineries,
+               dietary_requirements, accessibility_requirements, occasion, special_requests,
+               status, created_at, updated_at
         from booking
         where lower(lead_email) = lower($1)
         order by created_at desc
@@ -602,7 +626,9 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
       `
         select booking.booking_id, booking.lead_name, booking.lead_phone, booking.lead_email, booking.booking_date,
                booking.preferred_start_time, booking.preferred_end_time, booking.pickup_location, booking.party_size,
-               booking.preferred_region, booking.preferred_wineries, booking.status, booking.created_at, booking.updated_at
+               booking.preferred_region, booking.preferred_wineries,
+               booking.dietary_requirements, booking.accessibility_requirements, booking.occasion, booking.special_requests,
+               booking.status, booking.created_at, booking.updated_at
         from booking
         inner join user_account
           on lower(user_account.email) = lower(booking.lead_email)
