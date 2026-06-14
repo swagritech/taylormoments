@@ -176,6 +176,7 @@ function mapWinery(row: Record<string, unknown>): Winery {
     website: row.website ? String(row.website) : undefined,
     openingHours: row.opening_hours ? String(row.opening_hours) : undefined,
     active: Boolean(row.active),
+    catalogFeatured: Boolean(row.catalog_featured),
     tastingPrice: row.tasting_price !== null && row.tasting_price !== undefined
       ? Number(row.tasting_price)
       : undefined,
@@ -319,7 +320,7 @@ export class PostgresWorkflowRepository implements WorkflowRepository {
     const pool = getPool();
     const result = await pool.query(`
         select distinct on (lower(name))
-             winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, website, opening_hours, active,
+             winery_id, name, region, confirmation_mode, capacity, latitude, longitude, address, website, opening_hours, active, catalog_featured,
              tasting_price, tasting_duration_minutes, description, famous_for, offers_cheese_board, unique_experience_offers, wine_styles, winery_signals
       from winery
       order by lower(name) asc, updated_at desc, created_at desc

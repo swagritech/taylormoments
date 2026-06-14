@@ -92,6 +92,7 @@ export async function listWineriesHandler(
         region: winery.region,
         confirmation_mode: winery.confirmationMode,
         capacity: winery.capacity,
+        catalog_featured: winery.catalogFeatured,
         latitude: winery.latitude,
         longitude: winery.longitude,
         address: winery.address,

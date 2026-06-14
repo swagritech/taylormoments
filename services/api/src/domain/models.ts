@@ -40,6 +40,7 @@ export type Winery = {
   website?: string;
   openingHours?: string;
   active: boolean;
+  catalogFeatured: boolean;
   tastingPrice?: number;
   tastingDurationMinutes?: number;
   description?: string;
