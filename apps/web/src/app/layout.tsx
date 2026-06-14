@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
 import { Providers } from "@/components/providers";
-import { Cinzel, Inter } from "next/font/google";
+import { Cinzel, Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 
 const display = Cinzel({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
+  preload: false,
+});
+
+const editorial = Cormorant_Garamond({
+  variable: "--font-editorial",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
   preload: false,
 });
 
@@ -29,7 +37,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${display.variable} ${sans.variable}`}>
+      <body className={`${display.variable} ${editorial.variable} ${sans.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>

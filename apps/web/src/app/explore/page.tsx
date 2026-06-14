@@ -22,6 +22,7 @@ import {
   type ExploreYesNo,
 } from "@/lib/explore-preferences";
 import { saveExploreTourSummary } from "@/lib/explore-tour-summary";
+import { TripSetup } from "@/components/home/trip-setup";
 
 type TripLength = ExploreTripLength;
 type YesNo = ExploreYesNo;
@@ -492,10 +493,13 @@ export default function ExplorePage() {
   const [email, setEmail] = useState(initialPreferences?.email ?? "");
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
   const [needTransport, setNeedTransport] = useState<YesNo>(initialPreferences?.needTransport ?? "yes");
-  const [pickupAddress] = useState(initialPreferences?.pickupAddress ?? "");
-  const [pickupPlaceId] = useState(initialPreferences?.pickupPlaceId ?? "");
-  const [pickupLatitude] = useState<number | undefined>(initialPreferences?.pickupLatitude);
-  const [pickupLongitude] = useState<number | undefined>(initialPreferences?.pickupLongitude);
+  const [pickupAddress, setPickupAddress] = useState(initialPreferences?.pickupAddress ?? "");
+  const [pickupPlaceId, setPickupPlaceId] = useState(initialPreferences?.pickupPlaceId ?? "");
+  const [pickupLatitude, setPickupLatitude] = useState<number | undefined>(initialPreferences?.pickupLatitude);
+  const [pickupLongitude, setPickupLongitude] = useState<number | undefined>(initialPreferences?.pickupLongitude);
+  // Trip basics (date/group/transport/pickup) are captured up front via <TripSetup />.
+  // Returning visitors who already saved a travel date skip straight to the quiz.
+  const [tripReady, setTripReady] = useState<boolean>(() => Boolean(initialPreferences?.previewDate));
   const [tripLength, setTripLength] = useState<TripLength>(initialPreferences?.tripLength ?? "full-day");
   const [selectedWineStyles, setSelectedWineStyles] = useState<WineStyleId[]>(() => {
     if (initialPreferences?.wineStyles?.length) {
@@ -1070,9 +1074,39 @@ export default function ExplorePage() {
         >
         <section className="exploreSectionBlock exploreUnifiedHero">
           <p className="eyebrow">Explore</p>
-          <h1>What makes a great day out for you?</h1>
-          <p className="heroCopy">No right answers - the more you tell us, the better we can tailor your experience.</p>
+          <h1>{tripReady ? "What makes a great day out for you?" : "Plan your Margaret River day, your way"}</h1>
+          <p className="heroCopy">
+            {tripReady
+              ? "No right answers - the more you tell us, the better we can tailor your experience."
+              : "Tell us a little about your trip and we'll find the perfect experiences for you."}
+          </p>
         </section>
+        {!tripReady ? (
+          <div className="explorePreferencesWrap">
+            <section className="exploreSectionBlock">
+              <TripSetup
+                name={name}
+                setName={setName}
+                visitDate={previewDate}
+                setVisitDate={setPreviewDate}
+                groupSize={groupSize}
+                setGroupSize={setGroupSize}
+                tripLength={tripLength}
+                setTripLength={setTripLength}
+                needTransport={needTransport}
+                setNeedTransport={setNeedTransport}
+                pickupAddress={pickupAddress}
+                setPickupAddress={setPickupAddress}
+                pickupPlaceId={pickupPlaceId}
+                setPickupPlaceId={setPickupPlaceId}
+                setPickupLatitude={setPickupLatitude}
+                setPickupLongitude={setPickupLongitude}
+                onComplete={() => setTripReady(true)}
+              />
+            </section>
+          </div>
+        ) : null}
+        {tripReady ? (
         <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`} >
           <section className="exploreSectionBlock">
             <div className="sectionHeader">
@@ -1227,8 +1261,9 @@ export default function ExplorePage() {
             )}
           </section>
         </div>
+        ) : null}
 
-        {hasPlanned ? (
+        {tripReady && hasPlanned ? (
           <div ref={previewRef} className="explorePreviewWrap" >
             <section className="exploreSectionBlock">
               <div className="sectionHeader">
