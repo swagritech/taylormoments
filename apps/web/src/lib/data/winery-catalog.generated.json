@@ -6,15 +6,17 @@
     "latitude": -33.813177,
     "longitude": 115.118549,
     "address": "8141 Bussell Hwy, Metricup WA 6280",
-    "tasting_price": null,
-    "famous_for": "Cabernet Sauvignon, Chardonnay, Shiraz",
-    "description": "Family-owned winery producing approachable, fruit-forward wines from Margaret River and Frankland River fruit. Relaxed cellar door with vineyard outlook.",
-    "wine_styles": [],
+    "tasting_price": 15,
+    "famous_for": "Chardonnay and Shiraz from the Margaret River region",
+    "description": "3 Oceans is a major winemaking operation in Margaret River celebrating Western Australia's dramatic coastline and pristine environment. Their cellar door offers a curated selection of single-vineyard and regional wines.",
+    "wine_styles": [
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "White Wine Specialist"
+    ],
     "winery_signals": [
-      "cellar_door_tasting",
-      "wheelchair_access",
-      "charcuterie_board",
-      "corporate_events"
+      "cellar_door_tasting"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -27,12 +29,23 @@
     "longitude": 115.07692,
     "address": "61 Thornton Rd, Yallingup",
     "tasting_price": 15,
-    "famous_for": "Cabernet Sauvignon, Chardonnay, Sparkling",
-    "description": "Luxury estate with award-winning restaurant, function spaces, rose gardens and popular cellar door. Known for elegant Cabernet and Chardonnay.",
-    "wine_styles": [],
+    "famous_for": "Award-winning wines, garden-to-table dining and a sports car museum",
+    "description": "Aravina Estate is a Margaret River winery and destination restaurant in Yallingup, established in 2010, combining award-winning wines with fine dining. The estate features a cellar door for tastings, modern Australian cuisine, manicured gardens and a renowned sports car museum.",
+    "wine_styles": [
+      "Red Wine Specialist",
+      "Well known Margaret River Name",
+      "Estate-grown fruit only"
+    ],
     "winery_signals": [
       "cellar_door_tasting",
+      "guided_tasting",
       "winery_lunch",
+      "garden_picnic",
+      "view_stunning",
+      "seated_tasting",
+      "vegetarian",
+      "vegan",
+      "gluten_free",
       "corporate_events"
     ],
     "offers_cheese_board": false,
@@ -46,17 +59,22 @@
     "longitude": 115.05605782,
     "address": "379 Tom Cullity Dr, Wilyabrup",
     "tasting_price": 15,
-    "famous_for": "Semillon, Chardonnay, Cabernet Sauvignon",
-    "description": "Family-owned estate with a long track record for consistent, elegant wines. Walk-in friendly, uncrowded, no-fuss experience.",
+    "famous_for": "Elegant premium wines; James Halliday recognition",
+    "description": "A family-owned estate in Wilyabrup operating for over 40 years, Ashbrook produces elegant, handcrafted varietal wines using sustainable vineyard practices. Renowned for understated quality and exceptional value, the winery runs a quiet cellar door focused on premium wine experiences.",
     "wine_styles": [
-      "Family-owned Estate"
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Internationally awarded"
     ],
     "winery_signals": [
+      "quiet_space",
       "cellar_door_tasting",
-      "guided_tasting",
-      "multi_generation",
-      "historic_estate",
-      "intimate_welcome"
+      "trophy_winner",
+      "gold_medals",
+      "multi_generation"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -68,14 +86,33 @@
     "latitude": -33.8167537,
     "longitude": 115.06323323,
     "address": "248 Tom Cullity Dr, Cowaramup",
-    "tasting_price": 15,
-    "famous_for": "Nougat & fortified wines, Cabernet Sauvignon, Rosé",
-    "description": "Boutique family winery best known for handcrafted nougat and wines. A fun, relaxed stop especially for groups — unique sweet wine and food angle.",
-    "wine_styles": [],
+    "tasting_price": 25,
+    "famous_for": "Premium wines and decadent hand-crafted nougat",
+    "description": "Established in 1989 by the Bettenay family in Cowaramup, this boutique estate produces premium Cabernet Sauvignon, Chardonnay and Shiraz alongside its renowned hand-crafted nougat. Guests enjoy a distinctive cellar door experience paired with lakeside dining and on-site accommodation.",
+    "wine_styles": [
+      "Red Wine Specialist",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Internationally awarded"
+    ],
     "winery_signals": [
-      "cellar_door_tasting",
       "view_stunning",
-      "wine_chocolate"
+      "intimate_welcome",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "garden_picnic",
+      "wine_chocolate",
+      "charcuterie_board",
+      "winery_lunch",
+      "accommodation",
+      "private_tasting_room",
+      "sunset_tasting",
+      "seated_tasting",
+      "dog_friendly",
+      "child_friendly",
+      "gold_medals",
+      "trophy_winner",
+      "multi_generation"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -88,16 +125,21 @@
     "longitude": 115.0384561,
     "address": "1101 Caves Rd, Yallingup",
     "tasting_price": 15,
-    "famous_for": "Natural/skin-contact wines, Chenin Blanc, Grenache",
-    "description": "Small-batch natural winemaker producing minimal-intervention wines with character. A favourite among wine enthusiasts seeking something different.",
+    "famous_for": "Certified organic and biodynamic natural wines",
+    "description": "A certified organic and biodynamic winery in Yallingup with 20 years of heritage, Blind Corner crafts naturally made wines using old-world techniques with new-world innovation. Their cellar door welcomes visitors to taste biodynamically grown wines beside the working vineyard.",
     "wine_styles": [
+      "Organic & Biodynamic",
       "Natural & Minimal Intervention",
-      "Organic & Biodynamic"
+      "White Wine Specialist",
+      "Red Wine Specialist",
+      "Sparkling & Method traditionnelle Specialist"
     ],
     "winery_signals": [
       "cellar_door_tasting",
+      "small_production",
       "certified_organic",
       "regenerative",
+      "garden_picnic",
       "vineyard_walk"
     ],
     "offers_cheese_board": false,
@@ -111,15 +153,20 @@
     "longitude": 115.16438629,
     "address": "925 Rosa Brook Rd, Rosa Brook",
     "tasting_price": 15,
-    "famous_for": "Cabernet Sauvignon, Shiraz, Verdelho",
-    "description": "Family-run estate in the south of the region. Known for robust reds and value-for-money wines in a welcoming, no-fuss setting.",
+    "famous_for": "Bold red wines, particularly Cabernet Sauvignon",
+    "description": "Brown Hill Estate is a family-owned Margaret River winery where all fruit is hand-picked and hand-sorted at harvest. Visitors enjoy tastings in a welcoming cellar door open daily, in a warm family setting that celebrates the estate's journey from bare paddock to premium wines.",
     "wine_styles": [
-      "Red Wine Specialist"
+      "Red Wine Specialist",
+      "Estate-grown fruit only",
+      "Family-owned Estate",
+      "Well known Margaret River Name"
     ],
     "winery_signals": [
       "cellar_door_tasting",
-      "barrel_tasting",
-      "private_tasting_room"
+      "intimate_welcome",
+      "guided_tasting",
+      "close_to_town",
+      "barrel_tasting"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -132,16 +179,16 @@
     "longitude": 115.03510776,
     "address": "331 Wallcliffe Rd, Margaret River",
     "tasting_price": 15,
-    "famous_for": "Cabernet Sauvignon, Zinfandel, Semillon Sauvignon Blanc",
-    "description": "One of Margaret River's founding estates. Iconic Cabernet and Zinfandel, picturesque cellar door with garden, pétanque lanes and seasonal outdoor cinema.",
+    "famous_for": "Benchmark Cabernet Sauvignon and Shiraz",
+    "description": "Cape Mentelle is a pioneering Margaret River winery established in the early 1970s, known for terroir-driven wines of exceptional quality and consistency. The estate welcomes visitors to its cellar door for tastings and tours of its acclaimed vineyard.",
     "wine_styles": [
       "Red Wine Specialist",
       "Well known Margaret River Name"
     ],
     "winery_signals": [
       "cellar_door_tasting",
-      "historic_estate",
-      "corporate_events"
+      "guided_tasting",
+      "vineyard_walk"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -154,16 +201,25 @@
     "longitude": 115.13591598,
     "address": "8 Gale Rd, Metricup",
     "tasting_price": 15,
-    "famous_for": "16 organic varietals",
-    "description": "Organically operated across 16 varietals, with self-guided organic vineyard picnics.",
+    "famous_for": "Certified organic wines, especially Chardonnay",
+    "description": "Churchview Estate is a family-owned organic winery in Metricup, established in 1999, growing 16 grape varieties across 100 hectares. The cellar door offers tastings of premium, rare wines paired with optional ploughman's lunches or picnics overlooking the vineyards.",
     "wine_styles": [
-      "Organic & Biodynamic"
+      "Organic & Biodynamic",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Well known Margaret River Name"
     ],
     "winery_signals": [
+      "view_stunning",
+      "intimate_welcome",
+      "garden_picnic",
       "cellar_door_tasting",
-      "certified_organic",
+      "charcuterie_board",
       "picnic_on_estate",
-      "vineyard_walk"
+      "wine_chocolate",
+      "certified_organic"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -176,19 +232,25 @@
     "longitude": 115.0389356,
     "address": "4323 Caves Rd, Wilyabrup",
     "tasting_price": 15,
-    "famous_for": "Diana Madeline Cabernet Merlot, Kevin John Chardonnay, biodynamic wines",
-    "description": "Australia's first certified carbon-neutral and carbon-positive winery. Biodynamic viticulture pioneers. Home of the iconic Diana Madeline Cabernet and Kevin John Chardonnay. Exceptional restaurant serving 90% estate-grown produce.",
+    "famous_for": "Biodynamic, award-winning Cabernet Sauvignon and Chardonnay",
+    "description": "A premier biodynamic and organic winery in Wilyabrup, founded in 1971 and now in its third generation under Vanya Cullen. Cullen produces award-winning wines with a focus on exceptional Cabernet Sauvignon and Chardonnay, crafted through certified biodynamic viticulture.",
     "wine_styles": [
       "Organic & Biodynamic",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
       "White Wine Specialist",
-      "Well known Margaret River Name"
+      "Internationally awarded"
     ],
     "winery_signals": [
       "cellar_door_tasting",
+      "guided_tasting",
+      "historic_estate",
+      "multi_generation",
+      "view_stunning",
       "certified_organic",
-      "regenerative",
-      "vineyard_walk",
-      "historic_estate"
+      "gold_medals",
+      "intimate_welcome"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -201,16 +263,28 @@
     "longitude": 115.07698588,
     "address": "889 Commonage Rd, Yallingup",
     "tasting_price": 15,
-    "famous_for": "Elite Chardonnay",
-    "description": "Ridge-top views and elite Chardonnay, with Reserve horizontal deck tastings.",
+    "famous_for": "Cabernet, Chardonnay and Rose; Halliday Five Red Star",
+    "description": "An award-winning Margaret River estate perched on a ridge above a secluded valley of native jarrah and marri. Deep Woods produces acclaimed Cabernet Sauvignon, Reserve Chardonnay and Rose, poured in a modern cellar door set in a stunning natural setting.",
     "wine_styles": [
-      "White Wine Specialist"
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Small batch & Boutique",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Internationally awarded"
     ],
     "winery_signals": [
-      "cellar_door_tasting",
       "view_stunning",
+      "intimate_welcome",
+      "secluded",
+      "garden_picnic",
+      "cellar_door_tasting",
+      "guided_tasting",
       "seated_tasting",
-      "guided_tasting"
+      "halliday_5star",
+      "gold_medals",
+      "trophy_winner",
+      "multi_generation"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -223,12 +297,18 @@
     "longitude": 115.03599942,
     "address": "687 Ellen Brook Rd, Cowaramup",
     "tasting_price": 15,
-    "famous_for": "Cabernet Sauvignon, Chardonnay",
-    "description": "Small family winery south of Cowaramup. Focused on low-intervention Cabernet and Chardonnay from estate vineyards.",
-    "wine_styles": [],
+    "famous_for": "Hand-crafted quality wines with family heritage",
+    "description": "Edwards Wines is a hand-crafted Margaret River winery in Cowaramup where quality wines are paired with a warm family story. The cellar door welcomes guests daily for attentive service and tastings in a distinctive setting.",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Red Wine Specialist",
+      "White Wine Specialist"
+    ],
     "winery_signals": [
       "cellar_door_tasting",
-      "seated_tasting"
+      "guided_tasting",
+      "multi_generation"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -241,15 +321,16 @@
     "longitude": 115.14125383,
     "address": "529 Osmington Rd, Bramley WA 6285",
     "tasting_price": 15,
-    "famous_for": "Chardonnay, Cabernet Sauvignon, Reserve small-batch wines",
-    "description": "Working winery estate with expansive lawns and kids' play area. Reserve wines exclusive to the cellar door. Cheese boards available.",
+    "famous_for": "Halliday 5-star wines; WA Winery of the Year",
+    "description": "An acclaimed boutique Margaret River winery holding a James Halliday 5-star rating and named a Western Australian Winery of the Year. Visitors enjoy premium cellar-door tastings in a small-batch estate known for excellence.",
     "wine_styles": [
+      "Well known Margaret River Name",
       "Small batch & Boutique"
     ],
     "winery_signals": [
-      "cellar_door_tasting",
       "halliday_5star",
-      "barrel_tasting",
+      "cellar_door_tasting",
+      "guided_tasting",
       "intimate_welcome",
       "small_production"
     ],
@@ -264,14 +345,33 @@
     "longitude": 115.04710804,
     "address": "838 Metricup Rd, Wilyabrup",
     "tasting_price": 15,
-    "famous_for": "World-class Cabernet",
-    "description": "Wilyabrup 'sweet spot' estate making world-class Cabernet, with seated Reserve tastings.",
+    "famous_for": "World-class Cabernet Sauvignon",
+    "description": "Fermoy Estate is a family-owned Wilyabrup winery established in 1985, crafting refined Cabernet Sauvignon and Chardonnay with a philosophy of precision and elegance. The cellar door offers guided tastings and seasonal small bites, indoors or in the vineyard gardens.",
     "wine_styles": [
-      "Red Wine Specialist"
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Estate-grown fruit only",
+      "Small batch & Boutique"
     ],
     "winery_signals": [
       "cellar_door_tasting",
-      "seated_tasting"
+      "guided_tasting",
+      "wine_chocolate",
+      "charcuterie_board",
+      "dog_friendly",
+      "garden_picnic",
+      "picnic_on_estate",
+      "seated_tasting",
+      "accommodation",
+      "private_tasting_room",
+      "barrel_tasting",
+      "winery_lunch",
+      "intimate_welcome",
+      "close_to_town",
+      "gold_medals",
+      "multi_generation",
+      "regenerative"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -284,16 +384,23 @@
     "longitude": 115.07903354,
     "address": "493 Metricup Rd, Wilyabrup",
     "tasting_price": 15,
-    "famous_for": "Bordeaux-style reds",
-    "description": "Bordeaux-style elegance from the Parterre vineyard, with an electric-buggy vineyard and barrel tour.",
+    "famous_for": "Cabernet Sauvignon; Decanter Best in Show; Halliday 5-star",
+    "description": "Fraser Gallop Estate is a Halliday 5-star Wilyabrup winery producing exceptional single-vineyard wines with a focus on precision and purity. The intimate cellar door welcomes guests daily to taste award-winning Cabernet Sauvignon and Chardonnay overlooking the vineyard.",
     "wine_styles": [
-      "Red Wine Specialist"
+      "Red Wine Specialist",
+      "Estate-grown fruit only",
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Internationally awarded"
     ],
     "winery_signals": [
       "cellar_door_tasting",
-      "barrel_tasting",
-      "cellar_tour",
-      "vineyard_walk"
+      "guided_tasting",
+      "view_stunning",
+      "dog_friendly",
+      "halliday_5star",
+      "gold_medals",
+      "intimate_welcome"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -305,18 +412,33 @@
     "latitude": -34.18857945,
     "longitude": 115.15850027,
     "address": "70 Glenarty Rd, Karridale",
-    "tasting_price": 15,
-    "famous_for": "Farm-to-table",
-    "description": "Farm-to-table with sheep and vines, offering a Ground to Glass foragers tour.",
+    "tasting_price": 35,
+    "famous_for": "Farm-to-table dining and minimal-intervention wines; award-winning regional restaurant",
+    "description": "Glenarty Road is a fifth-generation family farm in Karridale where premium minimal-intervention wines and farm-to-table dining thrive across 81 hectares of regeneratively managed land. Guests enjoy cellar-door tastings alongside seasonal cuisine from estate-grown produce and grass-fed meats in a rustic farmhouse setting.",
     "wine_styles": [
-      "Organic & Biodynamic"
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Natural & Minimal Intervention",
+      "Red Wine Specialist",
+      "White Wine Specialist"
     ],
     "winery_signals": [
       "cellar_door_tasting",
-      "certified_organic",
-      "regenerative",
+      "guided_tasting",
+      "garden_picnic",
+      "dog_friendly",
+      "vineyard_walk",
+      "cellar_tour",
       "winery_lunch",
-      "vineyard_walk"
+      "charcuterie_board",
+      "picnic_on_estate",
+      "intimate_welcome",
+      "secluded",
+      "vegetarian",
+      "multi_generation",
+      "regenerative",
+      "press_featured"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -329,17 +451,26 @@
     "longitude": 115.03798744,
     "address": "4145 Caves Rd, Wilyabrup",
     "tasting_price": 15,
-    "famous_for": "Famous fortifieds",
-    "description": "The region's first cellar door (est. 1975), famous for fortifieds and premium vertical museum flights.",
+    "famous_for": "Famous fortifieds; premium Cabernet and Chardonnay",
+    "description": "Gralyn Estate is a family-owned Wilyabrup winery established in 1975, now in its second generation, renowned for premium estate wines and exceptional fortifieds from mature, non-irrigated vines. Visitors explore the cellar door with tastings of celebrated Chardonnay, Cabernet and award-winning fortified wines.",
     "wine_styles": [
+      "Red Wine Specialist",
+      "White Wine Specialist",
       "Fortified & Dessert Wines",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
       "Well known Margaret River Name",
-      "Organic & Biodynamic"
+      "Internationally awarded"
     ],
     "winery_signals": [
-      "cellar_door_tasting",
       "historic_estate",
-      "guided_tasting"
+      "cellar_door_tasting",
+      "private_tasting_room",
+      "guided_tasting",
+      "barrel_tasting",
+      "multi_generation",
+      "trophy_winner",
+      "gold_medals"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -352,15 +483,27 @@
     "longitude": 115.1240369,
     "address": "199 McDonald Rd, Karridale",
     "tasting_price": 15,
-    "famous_for": "Valley & lake views",
-    "description": "Coastal-influenced wines with valley and lake views, and a seated deck platter and wine lunch.",
-    "wine_styles": [],
+    "famous_for": "Award-winning estate wines and scenic cellar-door dining",
+    "description": "Established in 1992 by the Drake-Brockman family, Hamelin Bay is a boutique Karridale winery producing elegant whites and structured reds from gravelly loam soils. The estate sits on a north-facing ridge with panoramic vineyard, valley and karri-forest views, with a welcoming cellar door and on-site restaurant.",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Red Wine Specialist",
+      "White Wine Specialist"
+    ],
     "winery_signals": [
-      "cellar_door_tasting",
       "view_stunning",
-      "seated_tasting",
+      "intimate_welcome",
+      "cellar_door_tasting",
+      "guided_tasting",
       "winery_lunch",
-      "charcuterie_board"
+      "cheese_board",
+      "charcuterie_board",
+      "child_friendly",
+      "seated_tasting",
+      "quiet_space",
+      "gold_medals",
+      "multi_generation"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -373,14 +516,22 @@
     "longitude": 115.06630897,
     "address": "511 Harmans Mill Rd, Wilyabrup",
     "tasting_price": 15,
-    "famous_for": "Rustico tapas pairing",
-    "description": "Set around a historic hay shed (est. 1973), known for Rustico tapas and wine pairing lunches.",
-    "wine_styles": [],
+    "famous_for": "Premium Chardonnay and Cabernet; 20-vintage winemaking legacy",
+    "description": "One of Margaret River's pioneering wineries, Hayshed Hill offers a beautiful cellar door for seated tastings of an extensive range of wines. The intimate setting is the perfect backdrop to explore renowned Chardonnays and Cabernet blends with vineyard views.",
+    "wine_styles": [
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Well known Margaret River Name"
+    ],
     "winery_signals": [
       "cellar_door_tasting",
-      "winery_lunch",
-      "charcuterie_board",
-      "historic_estate"
+      "seated_tasting",
+      "guided_tasting",
+      "blending_experience",
+      "wine_chocolate",
+      "dog_friendly",
+      "halliday_5star",
+      "view_stunning"
     ],
     "offers_cheese_board": true,
     "unique_experience_offers": [
@@ -402,15 +553,29 @@
     "longitude": 115.03140673,
     "address": "Cnr Caves & Quininup Rd, Cowaramup",
     "tasting_price": 15,
-    "famous_for": "Organic award-winning labels",
-    "description": "Organic methods and award-winning labels, with The Full Hand chocolate and wine flight.",
+    "famous_for": "Certified-organic single-vineyard, hand-crafted wines",
+    "description": "House of Cards is a certified-organic, single-vineyard winery where Elizabeth and Travis Wray craft handmade wines using traditional methods like hand-plunging and basket pressing. Visitors enjoy intimate tastings and local cheese platters at a relaxed cellar door overlooking the natural landscape.",
     "wine_styles": [
-      "Organic & Biodynamic"
+      "Organic & Biodynamic",
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Red Wine Specialist",
+      "White Wine Specialist"
     ],
     "winery_signals": [
+      "intimate_welcome",
+      "secluded",
       "cellar_door_tasting",
+      "garden_picnic",
+      "dog_friendly",
+      "child_friendly",
+      "accommodation",
+      "cheese_board",
+      "seated_tasting",
+      "quiet_space",
       "certified_organic",
-      "wine_chocolate"
+      "small_production"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -423,15 +588,21 @@
     "longitude": 115.06169532,
     "address": "543 Miamup Rd, Cowaramup",
     "tasting_price": 15,
-    "famous_for": "Riesling & sparkling",
-    "description": "Modern architecture and a focus on Riesling and bubbles, with Methode Traditionnelle masterclasses.",
+    "famous_for": "Award-winning sparkling and premium estate wines",
+    "description": "Howard Park is an acclaimed Margaret River estate spanning 138 hectares of vines and native bushland near Cowaramup. The architecturally striking cellar door welcomes visitors to taste award-winning wines, with spacious lawns ideal for a picnic.",
     "wine_styles": [
-      "White Wine Specialist",
-      "Sparkling & Method traditionnelle Specialist"
+      "Sparkling & Method traditionnelle Specialist",
+      "Well known Margaret River Name",
+      "Internationally awarded"
     ],
     "winery_signals": [
       "cellar_door_tasting",
-      "guided_tasting"
+      "garden_picnic",
+      "historic_estate",
+      "halliday_5star",
+      "gold_medals",
+      "seated_tasting",
+      "vineyard_walk"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -444,16 +615,28 @@
     "longitude": 115.064967,
     "address": "Stevens Rd, Margaret River Western Australia 6285",
     "tasting_price": 15,
-    "famous_for": "Art Series & concerts",
-    "description": "World-famous Art Series labels and concerts (est. 1973), with wine and art gallery pairing flights.",
+    "famous_for": "Art Series Chardonnay and Cabernet; the Leeuwin Concerts",
+    "description": "Leeuwin Estate is a renowned Margaret River producer devoted to the art of fine wine, set amid rolling lawns and karri forest. The cellar door offers seated tastings in an art-gallery setting, complemented by an acclaimed restaurant and the celebrated Leeuwin Concert series.",
     "wine_styles": [
-      "Well known Margaret River Name"
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Internationally awarded"
     ],
     "winery_signals": [
+      "view_stunning",
       "cellar_door_tasting",
-      "press_featured",
-      "corporate_events",
-      "historic_estate"
+      "seated_tasting",
+      "guided_tasting",
+      "winery_lunch",
+      "wine_chocolate",
+      "vineyard_walk",
+      "garden_picnic",
+      "intimate_welcome",
+      "historic_estate",
+      "gold_medals",
+      "trophy_winner",
+      "press_featured"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -466,14 +649,23 @@
     "longitude": 115.13087393,
     "address": "163 Treeton Rd N, Cowaramup",
     "tasting_price": 15,
-    "famous_for": "Experimental funky wines",
-    "description": "Experimental, high-energy wines with a hands-on School of Winemaking.",
+    "famous_for": "Clean, expressive minimal-intervention wines; award-winning Chardonnay",
+    "description": "LS Merchants is a handcrafted boutique winery (founded 2015) embracing minimal-intervention winemaking across diverse South West varietals. Their Cowaramup cellar door offers seated tastings overlooking the vineyard, balancing premium classics with experimental, approachable wines.",
     "wine_styles": [
+      "Small batch & Boutique",
       "Natural & Minimal Intervention",
-      "Small batch & Boutique"
+      "Family-owned Estate",
+      "Lesser known (off the beaten track)"
     ],
     "winery_signals": [
       "cellar_door_tasting",
+      "dog_friendly",
+      "child_friendly",
+      "seated_tasting",
+      "vineyard_walk",
+      "garden_picnic",
+      "corporate_events",
+      "wedding_venue",
       "blending_experience"
     ],
     "offers_cheese_board": false,
@@ -486,20 +678,31 @@
     "latitude": -33.67934439,
     "longitude": 115.02710472,
     "address": "28 Whittle Rd, Yallingup",
-    "tasting_price": 15,
-    "famous_for": "Biodynamic forest vineyard",
-    "description": "A biodynamic forest vineyard with beach vibes and forest-side personalised tastings.",
+    "tasting_price": 0,
+    "famous_for": "Demeter-certified biodynamic wines, especially Sparkling Chenin Blanc",
+    "description": "A family-owned Demeter-certified biodynamic vineyard established in 1992, Marri Wood Park crafts pure expressions of Margaret River terroir using chemical-free practices. Visitors retreat to an intimate rustic cellar door in native bushland for tastings of biodynamic wines, from lively sparkling to serious estate reds.",
     "wine_styles": [
       "Organic & Biodynamic",
-      "Natural & Minimal Intervention"
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Sparkling & Method traditionnelle Specialist"
     ],
     "winery_signals": [
-      "cellar_door_tasting",
-      "certified_organic",
-      "regenerative",
       "secluded",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "dog_friendly",
+      "child_friendly",
       "intimate_welcome",
-      "vineyard_walk"
+      "garden_picnic",
+      "quiet_space",
+      "cheese_board",
+      "vineyard_walk",
+      "cellar_tour",
+      "certified_organic",
+      "regenerative"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -512,19 +715,27 @@
     "longitude": 115.08858855,
     "address": "5962 Bussell Hwy, Margaret River",
     "tasting_price": 15,
-    "famous_for": "Single-vineyard mastery",
-    "description": "Single-vineyard, low-intervention wines with a vintner's lunch and biodiversity walks.",
+    "famous_for": "Biodynamic single-vineyard wines",
+    "description": "A biodynamically certified estate in Margaret River's south producing minimal-intervention, single-vineyard wines that express place. The expanded Witchcliffe cellar door pairs guided tastings with seasonal Mediterranean cuisine and a Vintners wine bar sourced from estate farms.",
     "wine_styles": [
       "Organic & Biodynamic",
-      "Natural & Minimal Intervention",
-      "Estate-grown fruit only"
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "White Wine Specialist"
     ],
     "winery_signals": [
       "cellar_door_tasting",
+      "guided_tasting",
+      "winery_lunch",
+      "cheese_board",
+      "garden_picnic",
+      "seated_tasting",
       "certified_organic",
       "regenerative",
-      "winery_lunch",
-      "vineyard_walk"
+      "small_production",
+      "vegetarian",
+      "wine_chocolate"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -537,17 +748,18 @@
     "longitude": 115.09325688,
     "address": "400 Metricup Rd, Wilyabrup",
     "tasting_price": 15,
-    "famous_for": "High-density terroir",
-    "description": "High-density 1m x 1m plantings for pure terroir, with a behind-the-scenes barrel room tour.",
+    "famous_for": "High-density vineyard and organic, hand-crafted wines",
+    "description": "A family-owned Wilyabrup winery featuring one of Australia's rare high-density vineyards, with vines planted at four times standard density to deepen terroir expression. Rob and Emma Menzies welcome visitors to an intimate cellar door for hand-picked, organically grown wines.",
     "wine_styles": [
-      "Estate-grown fruit only",
       "Small batch & Boutique",
-      "Organic & Biodynamic"
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Red Wine Specialist"
     ],
     "winery_signals": [
       "cellar_door_tasting",
-      "barrel_tasting",
-      "cellar_tour"
+      "intimate_welcome",
+      "vineyard_walk"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -560,15 +772,24 @@
     "longitude": 115.03172373,
     "address": "7087 Caves Rd, Redgate",
     "tasting_price": 15,
-    "famous_for": "Italian-soul handcraft",
-    "description": "Traditional hand-craft wines with an Italian soul, paired with curated tastings and local grazing boards.",
+    "famous_for": "Italian-influenced Margaret River wines",
+    "description": "Mr Barval is a boutique Margaret River winery founded by Robert Gherardi, drawing on three generations of family winemaking and Italian techniques from Barolo. The cellar door welcomes visitors daily for Italian-inspired wines paired with local cheeses and artisanal condiments.",
     "wine_styles": [
-      "Small batch & Boutique"
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Red Wine Specialist",
+      "White Wine Specialist"
     ],
     "winery_signals": [
       "cellar_door_tasting",
+      "guided_tasting",
+      "barrel_tasting",
+      "winery_lunch",
+      "cheese_board",
       "charcuterie_board",
-      "guided_tasting"
+      "vineyard_walk",
+      "intimate_welcome",
+      "multi_generation"
     ],
     "offers_cheese_board": true,
     "unique_experience_offers": []
@@ -581,16 +802,28 @@
     "longitude": 115.03345761,
     "address": "655 Ellen Brook Rd, Cowaramup",
     "tasting_price": 15,
-    "famous_for": "Wildlife sanctuary wines",
-    "description": "A highly personal estate with a wildlife sanctuary focus and a Nature & Wine wildlife walk.",
+    "famous_for": "Trophy-winning sparkling and small-batch reds; conservation focus",
+    "description": "A family-owned boutique winery in a Margaret River bushland setting, crafting small-batch wines while stewarding a native flora sanctuary. The cellar door invites visitors to taste premium Shiraz, Cabernet and Chardonnay while supporting conservation of the endangered Western Ringtail Possum.",
     "wine_styles": [
-      "Small batch & Boutique"
+      "Small batch & Boutique",
+      "Estate-grown fruit only",
+      "Red Wine Specialist",
+      "Sparkling & Method traditionnelle Specialist",
+      "Internationally awarded"
     ],
     "winery_signals": [
+      "garden_picnic",
+      "dog_friendly",
       "cellar_door_tasting",
-      "intimate_welcome",
+      "guided_tasting",
+      "seated_tasting",
       "vineyard_walk",
-      "secluded"
+      "charcuterie_board",
+      "gold_medals",
+      "trophy_winner",
+      "halliday_5star",
+      "small_production",
+      "regenerative"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -602,19 +835,25 @@
     "latitude": -33.79630798,
     "longitude": 115.03462001,
     "address": "4051 Caves Rd, Wilyabrup",
-    "tasting_price": 15,
-    "famous_for": "Elite Chardonnay",
-    "description": "Elite Burgundian-style Chardonnay (est. 1979), with personalised Friday vineyard tours.",
+    "tasting_price": 0,
+    "famous_for": "Cult-status Chardonnay of monumental weight and texture",
+    "description": "Pierro is a boutique Wilyabrup estate founded in 1979 by Dr Michael Peterkin, known for unconventional high-density viticulture and uncompromising winemaking. It produces stylish, complex whites and exceptional reds, poured at an intimate rammed-earth cellar door set among the vines with creek views.",
     "wine_styles": [
-      "White Wine Specialist",
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
       "Well known Margaret River Name",
-      "Organic & Biodynamic"
+      "White Wine Specialist",
+      "Red Wine Specialist",
+      "Internationally awarded"
     ],
     "winery_signals": [
-      "cellar_door_tasting",
-      "vineyard_walk",
       "intimate_welcome",
-      "historic_estate"
+      "secluded",
+      "dog_friendly",
+      "cellar_door_tasting",
+      "quiet_space",
+      "vineyard_walk"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -627,17 +866,24 @@
     "longitude": 115.17854165,
     "address": "779 Davis Rd, Rosa Glen",
     "tasting_price": 15,
-    "famous_for": "Zero-intervention natural wines",
-    "description": "Natural-farming, zero-intervention wines via by-appointment winemaker sessions.",
+    "famous_for": "Biodynamic, minimal-intervention natural wines; skin-contact styles",
+    "description": "Si Vintners is a biodynamically certified Margaret River estate in Rosa Glen, dedicated to minimal-intervention winemaking from its own dry-grown vines. Founded by Sarah Morris and Iwo Jakimowicz, it produces distinctive natural wines, welcoming visitors by appointment for cellar-door tastings.",
     "wine_styles": [
       "Natural & Minimal Intervention",
-      "Organic & Biodynamic"
+      "Organic & Biodynamic",
+      "Estate-grown fruit only",
+      "Small batch & Boutique",
+      "Family-owned Estate"
     ],
     "winery_signals": [
       "cellar_door_tasting",
       "certified_organic",
       "regenerative",
-      "intimate_welcome"
+      "small_production",
+      "female_winemaker",
+      "dog_friendly",
+      "wedding_venue",
+      "corporate_events"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -650,15 +896,22 @@
     "longitude": 115.04786014,
     "address": "633 Abbeys Farm Rd, Yallingup",
     "tasting_price": 15,
-    "famous_for": "Lo-Fi young wines",
-    "description": "Funky 'Lo-Fi' young wines, with Green Room cheese and wine sessions.",
+    "famous_for": "Minimal-intervention natural wines with wild ferments",
+    "description": "Skigh Wine is an intimate boutique minimal-intervention winery set among Yallingup's gardens, making small-batch natural wines that showcase Margaret River fruit with old-world flair. The rustic barn cellar door offers personalised tastings across its classic, Coda and experimental ranges in a laid-back setting.",
     "wine_styles": [
       "Natural & Minimal Intervention",
       "Small batch & Boutique",
-      "Organic & Biodynamic"
+      "Estate-grown fruit only",
+      "Well known Margaret River Name"
     ],
     "winery_signals": [
+      "intimate_welcome",
+      "garden_picnic",
       "cellar_door_tasting",
+      "guided_tasting",
+      "quiet_space",
+      "small_production",
+      "vegan",
       "cheese_board"
     ],
     "offers_cheese_board": false,
@@ -671,13 +924,30 @@
     "latitude": -33.9697902,
     "longitude": 115.10448879,
     "address": "205 Rosa Brook Rd, Margaret River",
-    "tasting_price": 15,
-    "famous_for": "Suckfizzle",
-    "description": "Southern cool-climate elegance, known for Suckfizzle and horizontal tasting sessions.",
-    "wine_styles": [],
+    "tasting_price": 10,
+    "famous_for": "Premium Chardonnay and Cabernet; the Suckfizzle range",
+    "description": "A boutique Margaret River winery producing wines of elegant finesse and precision from the region's pristine southern terroir. The cellar door, just minutes from town, invites visitors to experience an award-winning portfolio in a charming, unpretentious vineyard setting.",
+    "wine_styles": [
+      "Well known Margaret River Name",
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Internationally awarded"
+    ],
     "winery_signals": [
+      "view_stunning",
       "cellar_door_tasting",
-      "guided_tasting"
+      "guided_tasting",
+      "picnic_on_estate",
+      "dog_friendly",
+      "child_friendly",
+      "close_to_town",
+      "garden_picnic",
+      "quiet_space",
+      "gold_medals",
+      "trophy_winner"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -690,19 +960,23 @@
     "longitude": 115.0324522,
     "address": "3503 Caves Rd, Wilyabrup",
     "tasting_price": 15,
-    "famous_for": "Low-intervention small batch",
-    "description": "Compost-focused, low-intervention small-batch wines with intimate garden-side tastings.",
+    "famous_for": "Certified-organic, minimal-intervention wines and sparkling",
+    "description": "Stormflower is a boutique certified-organic winery in Wilyabrup producing elegant, handcrafted wines entirely from estate-grown fruit. Visitors enjoy a relaxed, naturally designed cellar door and can unwind with a picnic rug in the gardens, surrounded by nine hectares of sustainably managed vineyard.",
     "wine_styles": [
       "Organic & Biodynamic",
       "Natural & Minimal Intervention",
-      "Small batch & Boutique"
+      "Small batch & Boutique",
+      "Estate-grown fruit only",
+      "Sparkling & Method traditionnelle Specialist"
     ],
     "winery_signals": [
-      "cellar_door_tasting",
-      "certified_organic",
       "intimate_welcome",
-      "garden_picnic",
-      "small_production"
+      "cellar_door_tasting",
+      "picnic_on_estate",
+      "vineyard_walk",
+      "certified_organic",
+      "small_production",
+      "garden_picnic"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -715,16 +989,24 @@
     "longitude": 115.03681765,
     "address": "4415 Caves Rd, Wilyabrup",
     "tasting_price": 15,
-    "famous_for": "Cabernet & Chardonnay",
-    "description": "Margaret River's founding winery (est. 1967), celebrated for its Art of Cabernet and Chardonnay, with a vine-to-table epicurean lunch tour.",
+    "famous_for": "Cabernet Sauvignon and Chardonnay; the region's founding winery",
+    "description": "Vasse Felix is Margaret River's founding wine estate (established 1967), offering a premium cellar-door experience of estate-grown wines made with minimal intervention. Visitors enjoy tastings, fine dining, art installations and guided vineyard tours across the Home Vineyard overlooking Wilyabrup Brook.",
     "wine_styles": [
-      "Well known Margaret River Name"
+      "Natural & Minimal Intervention",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "White Wine Specialist"
     ],
     "winery_signals": [
+      "historic_estate",
       "cellar_door_tasting",
+      "guided_tasting",
       "winery_lunch",
       "vineyard_walk",
-      "historic_estate"
+      "cellar_tour",
+      "multi_generation"
     ],
     "offers_cheese_board": true,
     "unique_experience_offers": []
@@ -737,18 +1019,26 @@
     "longitude": 115.05435328,
     "address": "41 Stevens Rd, Margaret River",
     "tasting_price": 15,
-    "famous_for": "Manicured gardens & degustation",
-    "description": "Cape Dutch-style estate famous for manicured gardens, offering a 7-course degustation and garden walk.",
+    "famous_for": "Cabernet Sauvignon and manicured gardens",
+    "description": "Voyager Estate is a Margaret River winery built on generations of farming heritage, where certified-organic viticulture and sustainable practices shape every bottle. Visitors experience estate-grown wines, manicured Cape Dutch gardens, a seasonal restaurant and immersive vineyard experiences.",
     "wine_styles": [
+      "Estate-grown fruit only",
       "Organic & Biodynamic",
-      "Well known Margaret River Name"
+      "Well known Margaret River Name",
+      "Red Wine Specialist"
     ],
     "winery_signals": [
       "cellar_door_tasting",
-      "certified_organic",
+      "guided_tasting",
       "winery_lunch",
       "vineyard_walk",
-      "historic_estate"
+      "cellar_tour",
+      "garden_picnic",
+      "certified_organic",
+      "historic_estate",
+      "wedding_venue",
+      "corporate_events",
+      "gold_medals"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -761,14 +1051,31 @@
     "longitude": 115.04716772,
     "address": "17 Brash Rd, Yallingup",
     "tasting_price": 15,
-    "famous_for": "Paladin Shiraz & fine dining",
-    "description": "Fine-dining focus and the flagship Paladin Shiraz, with a 4-course chef's selection lunch.",
+    "famous_for": "Cabernet, Shiraz and sparkling; award-winning restaurant",
+    "description": "Wills Domain is a prestigious estate on 60 hectares of sun-drenched slopes in Yallingup's Gunyulgup Valley, with sweeping views across vine-covered hills. The cellar door pairs exceptional estate-grown wines with curated snacks, alongside an acclaimed fine-dining restaurant in an unforgettable vineyard setting.",
     "wine_styles": [
-      "Red Wine Specialist"
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Sparkling & Method traditionnelle Specialist",
+      "Estate-grown fruit only",
+      "Internationally awarded"
     ],
     "winery_signals": [
+      "view_stunning",
       "cellar_door_tasting",
-      "winery_lunch"
+      "guided_tasting",
+      "seated_tasting",
+      "winery_lunch",
+      "cheese_board",
+      "charcuterie_board",
+      "wedding_venue",
+      "corporate_events",
+      "dog_friendly",
+      "halliday_5star",
+      "gold_medals",
+      "press_featured",
+      "historic_estate"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -781,17 +1088,29 @@
     "longitude": 115.01289565,
     "address": "400 Quininup Rd, Wilyabrup",
     "tasting_price": 15,
-    "famous_for": "Artisan basket-press wines",
-    "description": "Artisan basket-press methods with a soil focus, offering a behind-the-scenes Grape to Glass tour.",
+    "famous_for": "Certified-organic, hand-crafted wines and private picnic tastings",
+    "description": "A boutique Margaret River winery owned by Chris and Joanne Davies, regarded as one of the region's most exciting producers. The cellar door welcomes visitors daily for curated tastings and gourmet picnics on the manicured lawn or by the vineyard dam.",
     "wine_styles": [
       "Organic & Biodynamic",
-      "Small batch & Boutique"
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Red Wine Specialist",
+      "White Wine Specialist"
     ],
     "winery_signals": [
       "cellar_door_tasting",
-      "certified_organic",
+      "guided_tasting",
+      "private_tasting_room",
+      "picnic_on_estate",
+      "vineyard_walk",
       "cellar_tour",
-      "guided_tasting"
+      "certified_organic",
+      "garden_picnic",
+      "intimate_welcome",
+      "vegetarian",
+      "vegan",
+      "charcuterie_board"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -803,20 +1122,30 @@
     "latitude": -33.788359,
     "longitude": 115.03129902,
     "address": "3948 Caves Rd, Wilyabrup",
-    "tasting_price": 15,
-    "famous_for": "Heritage Cabernet",
-    "description": "Dry-grown vines and elegant heritage Cabernets (est. 1973), with seated vertical museum tastings.",
+    "tasting_price": 0,
+    "famous_for": "Heritage Cabernet Sauvignon and Chardonnay from dry-grown vines",
+    "description": "Established in 1973, Woodlands is one of Margaret River's pioneering wineries, crafting premium wines from certified-organic vineyards in the Wilyabrup Valley. The cellar door welcomes visitors for hand-picked, traditionally made wines in a warm, family-friendly setting with seated tastings and gourmet cheese platters.",
     "wine_styles": [
       "Red Wine Specialist",
+      "White Wine Specialist",
       "Organic & Biodynamic",
-      "Estate-grown fruit only"
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Internationally awarded"
     ],
     "winery_signals": [
       "cellar_door_tasting",
-      "certified_organic",
       "seated_tasting",
       "guided_tasting",
-      "historic_estate"
+      "cheese_board",
+      "charcuterie_board",
+      "dog_friendly",
+      "child_friendly",
+      "garden_picnic",
+      "intimate_welcome",
+      "gold_medals",
+      "multi_generation",
+      "certified_organic"
     ],
     "offers_cheese_board": true,
     "unique_experience_offers": []
@@ -828,17 +1157,31 @@
     "latitude": -33.9805122,
     "longitude": 115.05324335,
     "address": "316 Boodjidup Rd, Margaret River",
-    "tasting_price": 15,
-    "famous_for": "Consistent trophy winner",
-    "description": "A consistent trophy winner with a modern rustic vibe and Cellar Collective museum sessions.",
+    "tasting_price": 30,
+    "famous_for": "International award-winning Cabernet Sauvignon and Chardonnay",
+    "description": "Xanadu is a pioneering Margaret River estate established in 1977, set among stunning vineyard views with a tranquil courtyard. A minimalist winemaking philosophy expresses the region's true character, with a cellar door and fine-dining restaurant showcasing globally awarded Cabernet Sauvignon and Chardonnay.",
     "wine_styles": [
+      "Red Wine Specialist",
+      "Well known Margaret River Name",
+      "Estate-grown fruit only",
       "Internationally awarded"
     ],
     "winery_signals": [
+      "view_stunning",
       "cellar_door_tasting",
-      "trophy_winner",
       "guided_tasting",
-      "historic_estate"
+      "private_tasting_room",
+      "winery_lunch",
+      "cheese_board",
+      "charcuterie_board",
+      "vineyard_walk",
+      "cellar_tour",
+      "wedding_venue",
+      "seated_tasting",
+      "wheelchair_access",
+      "gold_medals",
+      "trophy_winner",
+      "close_to_town"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
@@ -851,17 +1194,20 @@
     "longitude": 115.03423663,
     "address": "401 Wallcliffe Rd, Margaret River",
     "tasting_price": 15,
-    "famous_for": "Authentic rustic wines",
-    "description": "Unpretentious, authentic rustic wines with winemaker-led private tours.",
+    "famous_for": "Lesser-known varieties and natural winemaking",
+    "description": "Yeah Wine is a Margaret River producer crafting handmade, small-batch wines that showcase the personality of single-vineyard sources. Founded in 2020 by Andrew Dawson and Sian, the cellar door welcomes families and dogs in a warm, approachable setting for natural, experimental wines.",
     "wine_styles": [
       "Natural & Minimal Intervention",
       "Small batch & Boutique",
+      "Family-owned Estate",
       "Lesser known (off the beaten track)"
     ],
     "winery_signals": [
+      "dog_friendly",
+      "child_friendly",
       "cellar_door_tasting",
-      "cellar_tour",
-      "intimate_welcome"
+      "small_production",
+      "vegan"
     ],
     "offers_cheese_board": false,
     "unique_experience_offers": []
