@@ -7,7 +7,18 @@ import type { ItineraryOption } from "../domain/models.js";
 // justifications unchanged. Never let this throw into the caller.
 
 const OPENAI_TIMEOUT_MS = 4000;
-const MAX_JUSTIFICATION_TOKENS = 90;
+const MAX_JUSTIFICATION_TOKENS = 110;
+const MAX_DESCRIPTION_CHARS = 220;
+
+// Real, DB-sourced facts about a winery, keyed by winery id. Used to ground the
+// justification so the model describes the actual wineries rather than relying on
+// its own (possibly inaccurate) general knowledge.
+export type WineryFacts = {
+  name: string;
+  famousFor?: string;
+  description?: string;
+};
+export type WineryFactsById = Record<string, WineryFacts>;
 
 export function isAiJustificationEnabled() {
   return getOpenAIApiKey().length > 0;
@@ -20,17 +31,27 @@ function clockFromIso(value: string | undefined): string {
   return value.slice(11, 16);
 }
 
-function buildItinerarySummary(itinerary: ItineraryOption): string {
-  const stops = itinerary.stops
-    .map((stop, index) => {
-      const arrival = clockFromIso(stop.arrivalTime);
-      return `${index + 1}. ${stop.wineryName}${arrival ? ` (arrive ${arrival})` : ""}`;
-    })
-    .join("; ");
-  return `A ${itinerary.stops.length}-stop Margaret River day: ${stops}.`;
+function buildItinerarySummary(itinerary: ItineraryOption, factsById?: WineryFactsById): string {
+  const lines = itinerary.stops.map((stop, index) => {
+    const arrival = clockFromIso(stop.arrivalTime);
+    const facts = factsById?.[stop.wineryId];
+    const detailParts: string[] = [];
+    if (facts?.famousFor) {
+      detailParts.push(`known for ${facts.famousFor}`);
+    }
+    if (facts?.description) {
+      detailParts.push(facts.description.slice(0, MAX_DESCRIPTION_CHARS));
+    }
+    const detail = detailParts.length > 0 ? ` — ${detailParts.join(". ")}` : "";
+    return `${index + 1}. ${stop.wineryName}${arrival ? ` (arrive ${arrival})` : ""}${detail}`;
+  });
+  return `A ${itinerary.stops.length}-stop Margaret River day:\n${lines.join("\n")}`;
 }
 
-export async function generateExpertJustification(itinerary: ItineraryOption): Promise<string | null> {
+export async function generateExpertJustification(
+  itinerary: ItineraryOption,
+  factsById?: WineryFactsById,
+): Promise<string | null> {
   const apiKey = getOpenAIApiKey();
   if (!apiKey || itinerary.stops.length === 0) {
     return null;
@@ -54,9 +75,9 @@ export async function generateExpertJustification(itinerary: ItineraryOption): P
           {
             role: "system",
             content:
-              "You are a Margaret River wine-tour concierge for Tailor Moments. In 1-2 warm, concrete sentences, explain why this curated day is a great pick. Reference the wineries by name and the natural flow of the day. Do NOT invent facts, prices, wine varieties, or details beyond the winery names and arrival times provided.",
+              "You are a Margaret River wine-tour concierge for Tailor Moments. In 1-2 warm, concrete sentences, explain why this curated day flows well. Use ONLY the facts provided for each winery (and the arrival times). Do NOT add wine varieties, ratings, awards, prices, or descriptors that are not in the provided facts — if a winery has no facts listed, just refer to it by name. Never contradict the facts given.",
           },
-          { role: "user", content: buildItinerarySummary(itinerary) },
+          { role: "user", content: buildItinerarySummary(itinerary, factsById) },
         ],
       }),
     });
@@ -80,6 +101,7 @@ export async function generateExpertJustification(itinerary: ItineraryOption): P
 
 export async function enhanceWithAiJustifications(
   candidates: ItineraryOption[],
+  factsById?: WineryFactsById,
 ): Promise<ItineraryOption[]> {
   if (candidates.length === 0 || !isAiJustificationEnabled()) {
     return candidates;
@@ -90,7 +112,7 @@ export async function enhanceWithAiJustifications(
     return candidates;
   }
 
-  const aiJustification = await generateExpertJustification(topPick);
+  const aiJustification = await generateExpertJustification(topPick, factsById);
   if (!aiJustification) {
     return candidates;
   }

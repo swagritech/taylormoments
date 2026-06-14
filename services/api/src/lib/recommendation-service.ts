@@ -6,7 +6,7 @@ import type {
   WineryAvailability,
 } from "../domain/models.js";
 import { makeId } from "../lib/crypto.js";
-import { enhanceWithAiJustifications } from "./recommendation-ai.js";
+import { enhanceWithAiJustifications, type WineryFactsById } from "./recommendation-ai.js";
 import {
   buildTravelTimeMatrix,
   estimateBaselineTravelMinutes,
@@ -762,20 +762,24 @@ export function buildCandidateItineraries(params: {
   };
 }
 
-export async function rankItinerariesWithAi(candidates: ItineraryOption[]): Promise<ItineraryOption[]> {
+export async function rankItinerariesWithAi(
+  candidates: ItineraryOption[],
+  factsById?: WineryFactsById,
+): Promise<ItineraryOption[]> {
   if (candidates.length === 0) {
     return [];
   }
 
   // Mark the expert pick deterministically, then (best-effort) replace the top
-  // pick's justification with a real OpenAI-generated one. If no key is set or
-  // the call fails/times out, the deterministic justifications stand unchanged.
+  // pick's justification with a real OpenAI-generated one grounded in the wineries'
+  // actual facts. If no key is set or the call fails/times out, the deterministic
+  // justifications stand unchanged.
   const ranked = candidates.map((candidate, index) => ({
     ...candidate,
     expertPick: index === 0,
   }));
 
-  return enhanceWithAiJustifications(ranked);
+  return enhanceWithAiJustifications(ranked, factsById);
 }
 
 export async function recommendItineraries(params: {
@@ -850,7 +854,15 @@ export async function recommendItineraries(params: {
     availability,
     travelTimes,
   });
-  const ranked = await rankItinerariesWithAi(candidateBuild.itineraries);
+  const wineryFactsById: WineryFactsById = {};
+  for (const winery of wineries) {
+    wineryFactsById[winery.wineryId] = {
+      name: winery.name,
+      famousFor: winery.famousFor,
+      description: winery.description,
+    };
+  }
+  const ranked = await rankItinerariesWithAi(candidateBuild.itineraries, wineryFactsById);
   const selectedRouteQuality = evaluateSelectedRouteTravelQuality({
     itinerary: ranked[0],
     travelTimes,
