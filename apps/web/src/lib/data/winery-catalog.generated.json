@@ -1,0 +1,869 @@
+[
+  {
+    "winery_id": "36716a04-29bc-98e3-1fcd-f2e7602e02e7",
+    "name": "3 Oceans",
+    "region": "Metricup",
+    "latitude": -33.813177,
+    "longitude": 115.118549,
+    "address": "8141 Bussell Hwy, Metricup WA 6280",
+    "tasting_price": null,
+    "famous_for": "Cabernet Sauvignon, Chardonnay, Shiraz",
+    "description": "Family-owned winery producing approachable, fruit-forward wines from Margaret River and Frankland River fruit. Relaxed cellar door with vineyard outlook.",
+    "wine_styles": [],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "wheelchair_access",
+      "charcuterie_board",
+      "corporate_events"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "d83fd6d2-8bdd-989f-53e2-4e4d641d6f71",
+    "name": "Aravina Estate",
+    "region": "Yallingup",
+    "latitude": -33.70389742,
+    "longitude": 115.07692,
+    "address": "61 Thornton Rd, Yallingup",
+    "tasting_price": 15,
+    "famous_for": "Cabernet Sauvignon, Chardonnay, Sparkling",
+    "description": "Luxury estate with award-winning restaurant, function spaces, rose gardens and popular cellar door. Known for elegant Cabernet and Chardonnay.",
+    "wine_styles": [],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "winery_lunch",
+      "corporate_events"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "af6a0bbf-f27a-5a9c-5d10-5123a1e4665b",
+    "name": "Ashbrook Estate",
+    "region": "Wilyabrup",
+    "latitude": -33.80363523,
+    "longitude": 115.05605782,
+    "address": "379 Tom Cullity Dr, Wilyabrup",
+    "tasting_price": 15,
+    "famous_for": "Semillon, Chardonnay, Cabernet Sauvignon",
+    "description": "Family-owned estate with a long track record for consistent, elegant wines. Walk-in friendly, uncrowded, no-fuss experience.",
+    "wine_styles": [
+      "Family-owned Estate"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "guided_tasting",
+      "multi_generation",
+      "historic_estate",
+      "intimate_welcome"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "31378e5f-07d1-217b-36e6-af243908afda",
+    "name": "Bettenay's",
+    "region": "Cowaramup",
+    "latitude": -33.8167537,
+    "longitude": 115.06323323,
+    "address": "248 Tom Cullity Dr, Cowaramup",
+    "tasting_price": 15,
+    "famous_for": "Nougat & fortified wines, Cabernet Sauvignon, Rosé",
+    "description": "Boutique family winery best known for handcrafted nougat and wines. A fun, relaxed stop especially for groups — unique sweet wine and food angle.",
+    "wine_styles": [],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "view_stunning",
+      "wine_chocolate"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "017d1fc8-1afd-10bd-1b80-0f751c7a3085",
+    "name": "Blind Corner",
+    "region": "Yallingup",
+    "latitude": -33.72769742,
+    "longitude": 115.0384561,
+    "address": "1101 Caves Rd, Yallingup",
+    "tasting_price": 15,
+    "famous_for": "Natural/skin-contact wines, Chenin Blanc, Grenache",
+    "description": "Small-batch natural winemaker producing minimal-intervention wines with character. A favourite among wine enthusiasts seeking something different.",
+    "wine_styles": [
+      "Natural & Minimal Intervention",
+      "Organic & Biodynamic"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "certified_organic",
+      "regenerative",
+      "vineyard_walk"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "fa2f4f97-b0f9-2886-4ad6-6711ab28781d",
+    "name": "Brown Hill",
+    "region": "Rosa Brook",
+    "latitude": -33.95135185,
+    "longitude": 115.16438629,
+    "address": "925 Rosa Brook Rd, Rosa Brook",
+    "tasting_price": 15,
+    "famous_for": "Cabernet Sauvignon, Shiraz, Verdelho",
+    "description": "Family-run estate in the south of the region. Known for robust reds and value-for-money wines in a welcoming, no-fuss setting.",
+    "wine_styles": [
+      "Red Wine Specialist"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "barrel_tasting",
+      "private_tasting_room"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "bf7e6df5-5101-2569-ee7f-489c107f935e",
+    "name": "Cape Mentelle",
+    "region": "Wallcliffe",
+    "latitude": -33.96637357,
+    "longitude": 115.03510776,
+    "address": "331 Wallcliffe Rd, Margaret River",
+    "tasting_price": 15,
+    "famous_for": "Cabernet Sauvignon, Zinfandel, Semillon Sauvignon Blanc",
+    "description": "One of Margaret River's founding estates. Iconic Cabernet and Zinfandel, picturesque cellar door with garden, pétanque lanes and seasonal outdoor cinema.",
+    "wine_styles": [
+      "Red Wine Specialist",
+      "Well known Margaret River Name"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "historic_estate",
+      "corporate_events"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "75208f29-0dc6-1580-78e6-9aa982e6a4a9",
+    "name": "Churchview",
+    "region": "Metricup",
+    "latitude": -33.78238999,
+    "longitude": 115.13591598,
+    "address": "8 Gale Rd, Metricup",
+    "tasting_price": 15,
+    "famous_for": "16 organic varietals",
+    "description": "Organically operated across 16 varietals, with self-guided organic vineyard picnics.",
+    "wine_styles": [
+      "Organic & Biodynamic"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "certified_organic",
+      "picnic_on_estate",
+      "vineyard_walk"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "22222222-2222-2222-2222-222222222222",
+    "name": "Cullen Wines",
+    "region": "Wilyabrup",
+    "latitude": -33.81791409,
+    "longitude": 115.0389356,
+    "address": "4323 Caves Rd, Wilyabrup",
+    "tasting_price": 15,
+    "famous_for": "Diana Madeline Cabernet Merlot, Kevin John Chardonnay, biodynamic wines",
+    "description": "Australia's first certified carbon-neutral and carbon-positive winery. Biodynamic viticulture pioneers. Home of the iconic Diana Madeline Cabernet and Kevin John Chardonnay. Exceptional restaurant serving 90% estate-grown produce.",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "White Wine Specialist",
+      "Well known Margaret River Name"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "certified_organic",
+      "regenerative",
+      "vineyard_walk",
+      "historic_estate"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "de8c34be-f131-04ad-2fbd-3013cfbd396b",
+    "name": "Deep Woods",
+    "region": "Yallingup",
+    "latitude": -33.68914721,
+    "longitude": 115.07698588,
+    "address": "889 Commonage Rd, Yallingup",
+    "tasting_price": 15,
+    "famous_for": "Elite Chardonnay",
+    "description": "Ridge-top views and elite Chardonnay, with Reserve horizontal deck tastings.",
+    "wine_styles": [
+      "White Wine Specialist"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "view_stunning",
+      "seated_tasting",
+      "guided_tasting"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "b4e8b6a2-851b-de47-31f3-68e53a0494e9",
+    "name": "Edwards Wines",
+    "region": "Cowaramup",
+    "latitude": -33.89461588,
+    "longitude": 115.03599942,
+    "address": "687 Ellen Brook Rd, Cowaramup",
+    "tasting_price": 15,
+    "famous_for": "Cabernet Sauvignon, Chardonnay",
+    "description": "Small family winery south of Cowaramup. Focused on low-intervention Cabernet and Chardonnay from estate vineyards.",
+    "wine_styles": [],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "seated_tasting"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "1b5e3afb-da62-c8a2-c13c-f259f5c1039d",
+    "name": "Evoi Wines",
+    "region": "Bramley",
+    "latitude": -33.91052038,
+    "longitude": 115.14125383,
+    "address": "529 Osmington Rd, Bramley WA 6285",
+    "tasting_price": 15,
+    "famous_for": "Chardonnay, Cabernet Sauvignon, Reserve small-batch wines",
+    "description": "Working winery estate with expansive lawns and kids' play area. Reserve wines exclusive to the cellar door. Cheese boards available.",
+    "wine_styles": [
+      "Small batch & Boutique"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "halliday_5star",
+      "barrel_tasting",
+      "intimate_welcome",
+      "small_production"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "83a42af6-841d-a94d-07b9-83bb07c1d443",
+    "name": "Fermoy Estate",
+    "region": "Wilyabrup",
+    "latitude": -33.78204797,
+    "longitude": 115.04710804,
+    "address": "838 Metricup Rd, Wilyabrup",
+    "tasting_price": 15,
+    "famous_for": "World-class Cabernet",
+    "description": "Wilyabrup 'sweet spot' estate making world-class Cabernet, with seated Reserve tastings.",
+    "wine_styles": [
+      "Red Wine Specialist"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "seated_tasting"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "33333333-3333-3333-3333-333333333333",
+    "name": "Fraser Gallop",
+    "region": "Wilyabrup",
+    "latitude": -33.78755329,
+    "longitude": 115.07903354,
+    "address": "493 Metricup Rd, Wilyabrup",
+    "tasting_price": 15,
+    "famous_for": "Bordeaux-style reds",
+    "description": "Bordeaux-style elegance from the Parterre vineyard, with an electric-buggy vineyard and barrel tour.",
+    "wine_styles": [
+      "Red Wine Specialist"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "barrel_tasting",
+      "cellar_tour",
+      "vineyard_walk"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "c60a5b7c-8a29-51e8-4c23-0a945033ad64",
+    "name": "Glenarty Road",
+    "region": "Karridale",
+    "latitude": -34.18857945,
+    "longitude": 115.15850027,
+    "address": "70 Glenarty Rd, Karridale",
+    "tasting_price": 15,
+    "famous_for": "Farm-to-table",
+    "description": "Farm-to-table with sheep and vines, offering a Ground to Glass foragers tour.",
+    "wine_styles": [
+      "Organic & Biodynamic"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "certified_organic",
+      "regenerative",
+      "winery_lunch",
+      "vineyard_walk"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "6878ef0b-b794-39dc-dfec-d6d7200d28e7",
+    "name": "Gralyn Estate",
+    "region": "Wilyabrup",
+    "latitude": -33.80333444,
+    "longitude": 115.03798744,
+    "address": "4145 Caves Rd, Wilyabrup",
+    "tasting_price": 15,
+    "famous_for": "Famous fortifieds",
+    "description": "The region's first cellar door (est. 1975), famous for fortifieds and premium vertical museum flights.",
+    "wine_styles": [
+      "Fortified & Dessert Wines",
+      "Well known Margaret River Name",
+      "Organic & Biodynamic"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "historic_estate",
+      "guided_tasting"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "bc30ab2c-95ed-c658-29dd-6d74521e7184",
+    "name": "Hamelin Bay",
+    "region": "Karridale",
+    "latitude": -34.17204569,
+    "longitude": 115.1240369,
+    "address": "199 McDonald Rd, Karridale",
+    "tasting_price": 15,
+    "famous_for": "Valley & lake views",
+    "description": "Coastal-influenced wines with valley and lake views, and a seated deck platter and wine lunch.",
+    "wine_styles": [],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "view_stunning",
+      "seated_tasting",
+      "winery_lunch",
+      "charcuterie_board"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "d5df22ab-333e-2eed-e6e1-0c46091d5198",
+    "name": "Hayshed Hill",
+    "region": "Wilyabrup",
+    "latitude": -33.798146,
+    "longitude": 115.06630897,
+    "address": "511 Harmans Mill Rd, Wilyabrup",
+    "tasting_price": 15,
+    "famous_for": "Rustico tapas pairing",
+    "description": "Set around a historic hay shed (est. 1973), known for Rustico tapas and wine pairing lunches.",
+    "wine_styles": [],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "winery_lunch",
+      "charcuterie_board",
+      "historic_estate"
+    ],
+    "offers_cheese_board": true,
+    "unique_experience_offers": [
+      {
+        "name": "Wine & Chocolate Pairing",
+        "price": 39
+      },
+      {
+        "name": "Wine Blending Experience",
+        "price": 45
+      }
+    ]
+  },
+  {
+    "winery_id": "d1bf0d17-ae35-b32c-7f8a-be3b7ff4c043",
+    "name": "House of Cards",
+    "region": "Cowaramup",
+    "latitude": -33.720048,
+    "longitude": 115.03140673,
+    "address": "Cnr Caves & Quininup Rd, Cowaramup",
+    "tasting_price": 15,
+    "famous_for": "Organic award-winning labels",
+    "description": "Organic methods and award-winning labels, with The Full Hand chocolate and wine flight.",
+    "wine_styles": [
+      "Organic & Biodynamic"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "certified_organic",
+      "wine_chocolate"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "67b423d3-54e3-48fa-3357-6b29bc976ccd",
+    "name": "Howard Park",
+    "region": "Cowaramup",
+    "latitude": -33.82726599,
+    "longitude": 115.06169532,
+    "address": "543 Miamup Rd, Cowaramup",
+    "tasting_price": 15,
+    "famous_for": "Riesling & sparkling",
+    "description": "Modern architecture and a focus on Riesling and bubbles, with Methode Traditionnelle masterclasses.",
+    "wine_styles": [
+      "White Wine Specialist",
+      "Sparkling & Method traditionnelle Specialist"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "guided_tasting"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "8023295f-0fda-e61e-8ff9-cf418ffe0f7d",
+    "name": "Leeuwin Estate",
+    "region": "Wallcliffe",
+    "latitude": -34.012521,
+    "longitude": 115.064967,
+    "address": "Stevens Rd, Margaret River Western Australia 6285",
+    "tasting_price": 15,
+    "famous_for": "Art Series & concerts",
+    "description": "World-famous Art Series labels and concerts (est. 1973), with wine and art gallery pairing flights.",
+    "wine_styles": [
+      "Well known Margaret River Name"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "press_featured",
+      "corporate_events",
+      "historic_estate"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "e831283e-09c2-eaca-e1f3-c2f4f1f41308",
+    "name": "LS Merchants",
+    "region": "Cowaramup",
+    "latitude": -33.83609235,
+    "longitude": 115.13087393,
+    "address": "163 Treeton Rd N, Cowaramup",
+    "tasting_price": 15,
+    "famous_for": "Experimental funky wines",
+    "description": "Experimental, high-energy wines with a hands-on School of Winemaking.",
+    "wine_styles": [
+      "Natural & Minimal Intervention",
+      "Small batch & Boutique"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "blending_experience"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "5d5bd129-3b5e-bb49-6605-6a6098ba8c72",
+    "name": "Marri Wood Park",
+    "region": "Yallingup",
+    "latitude": -33.67934439,
+    "longitude": 115.02710472,
+    "address": "28 Whittle Rd, Yallingup",
+    "tasting_price": 15,
+    "famous_for": "Biodynamic forest vineyard",
+    "description": "A biodynamic forest vineyard with beach vibes and forest-side personalised tastings.",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Natural & Minimal Intervention"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "certified_organic",
+      "regenerative",
+      "secluded",
+      "intimate_welcome",
+      "vineyard_walk"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "773a08da-f201-c484-853b-cc5e693bcd5e",
+    "name": "McHenry Hohnen",
+    "region": "Wallcliffe",
+    "latitude": -33.98516094,
+    "longitude": 115.08858855,
+    "address": "5962 Bussell Hwy, Margaret River",
+    "tasting_price": 15,
+    "famous_for": "Single-vineyard mastery",
+    "description": "Single-vineyard, low-intervention wines with a vintner's lunch and biodiversity walks.",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Natural & Minimal Intervention",
+      "Estate-grown fruit only"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "certified_organic",
+      "regenerative",
+      "winery_lunch",
+      "vineyard_walk"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "b1222f17-4b74-754c-fa56-5a5bfc96a463",
+    "name": "Menzies Vineyard",
+    "region": "Wilyabrup",
+    "latitude": -33.77703903,
+    "longitude": 115.09325688,
+    "address": "400 Metricup Rd, Wilyabrup",
+    "tasting_price": 15,
+    "famous_for": "High-density terroir",
+    "description": "High-density 1m x 1m plantings for pure terroir, with a behind-the-scenes barrel room tour.",
+    "wine_styles": [
+      "Estate-grown fruit only",
+      "Small batch & Boutique",
+      "Organic & Biodynamic"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "barrel_tasting",
+      "cellar_tour"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "c22cbb53-a339-8a7b-6115-3128656645ce",
+    "name": "Mr. Barval",
+    "region": "Wallcliffe",
+    "latitude": -34.04393236,
+    "longitude": 115.03172373,
+    "address": "7087 Caves Rd, Redgate",
+    "tasting_price": 15,
+    "famous_for": "Italian-soul handcraft",
+    "description": "Traditional hand-craft wines with an Italian soul, paired with curated tastings and local grazing boards.",
+    "wine_styles": [
+      "Small batch & Boutique"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "charcuterie_board",
+      "guided_tasting"
+    ],
+    "offers_cheese_board": true,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "8d99b646-1362-04a2-9efb-b2e4a0fbbae8",
+    "name": "Passel Estate",
+    "region": "Cowaramup",
+    "latitude": -33.8920211,
+    "longitude": 115.03345761,
+    "address": "655 Ellen Brook Rd, Cowaramup",
+    "tasting_price": 15,
+    "famous_for": "Wildlife sanctuary wines",
+    "description": "A highly personal estate with a wildlife sanctuary focus and a Nature & Wine wildlife walk.",
+    "wine_styles": [
+      "Small batch & Boutique"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "intimate_welcome",
+      "vineyard_walk",
+      "secluded"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "786a007c-6447-c792-1c2d-c7eedcb1c80e",
+    "name": "Pierro",
+    "region": "Wilyabrup",
+    "latitude": -33.79630798,
+    "longitude": 115.03462001,
+    "address": "4051 Caves Rd, Wilyabrup",
+    "tasting_price": 15,
+    "famous_for": "Elite Chardonnay",
+    "description": "Elite Burgundian-style Chardonnay (est. 1979), with personalised Friday vineyard tours.",
+    "wine_styles": [
+      "White Wine Specialist",
+      "Well known Margaret River Name",
+      "Organic & Biodynamic"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "vineyard_walk",
+      "intimate_welcome",
+      "historic_estate"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "49e41adf-d8bc-e9ef-9158-f33022a104ce",
+    "name": "Si Vintners",
+    "region": "Rosa Glen",
+    "latitude": -34.02050687,
+    "longitude": 115.17854165,
+    "address": "779 Davis Rd, Rosa Glen",
+    "tasting_price": 15,
+    "famous_for": "Zero-intervention natural wines",
+    "description": "Natural-farming, zero-intervention wines via by-appointment winemaker sessions.",
+    "wine_styles": [
+      "Natural & Minimal Intervention",
+      "Organic & Biodynamic"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "certified_organic",
+      "regenerative",
+      "intimate_welcome"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "82dc2053-1d49-5227-9f95-7274a025727a",
+    "name": "Skigh Wine",
+    "region": "Yallingup",
+    "latitude": -33.71963962,
+    "longitude": 115.04786014,
+    "address": "633 Abbeys Farm Rd, Yallingup",
+    "tasting_price": 15,
+    "famous_for": "Lo-Fi young wines",
+    "description": "Funky 'Lo-Fi' young wines, with Green Room cheese and wine sessions.",
+    "wine_styles": [
+      "Natural & Minimal Intervention",
+      "Small batch & Boutique",
+      "Organic & Biodynamic"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "cheese_board"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "7097c5db-283a-6e0e-58ad-abd598d233e9",
+    "name": "Stella Bella",
+    "region": "Wallcliffe",
+    "latitude": -33.9697902,
+    "longitude": 115.10448879,
+    "address": "205 Rosa Brook Rd, Margaret River",
+    "tasting_price": 15,
+    "famous_for": "Suckfizzle",
+    "description": "Southern cool-climate elegance, known for Suckfizzle and horizontal tasting sessions.",
+    "wine_styles": [],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "guided_tasting"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "6be3229f-dc8c-8265-b76f-a0fa486fa504",
+    "name": "Stormflower",
+    "region": "Wilyabrup",
+    "latitude": -33.74660153,
+    "longitude": 115.0324522,
+    "address": "3503 Caves Rd, Wilyabrup",
+    "tasting_price": 15,
+    "famous_for": "Low-intervention small batch",
+    "description": "Compost-focused, low-intervention small-batch wines with intimate garden-side tastings.",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Natural & Minimal Intervention",
+      "Small batch & Boutique"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "certified_organic",
+      "intimate_welcome",
+      "garden_picnic",
+      "small_production"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "11111111-1111-1111-1111-111111111111",
+    "name": "Vasse Felix",
+    "region": "Wilyabrup",
+    "latitude": -33.81799462,
+    "longitude": 115.03681765,
+    "address": "4415 Caves Rd, Wilyabrup",
+    "tasting_price": 15,
+    "famous_for": "Cabernet & Chardonnay",
+    "description": "Margaret River's founding winery (est. 1967), celebrated for its Art of Cabernet and Chardonnay, with a vine-to-table epicurean lunch tour.",
+    "wine_styles": [
+      "Well known Margaret River Name"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "winery_lunch",
+      "vineyard_walk",
+      "historic_estate"
+    ],
+    "offers_cheese_board": true,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "81c43507-fd2d-866e-7ce9-b3697ef1bb75",
+    "name": "Voyager Estate",
+    "region": "Wallcliffe",
+    "latitude": -33.99666589,
+    "longitude": 115.05435328,
+    "address": "41 Stevens Rd, Margaret River",
+    "tasting_price": 15,
+    "famous_for": "Manicured gardens & degustation",
+    "description": "Cape Dutch-style estate famous for manicured gardens, offering a 7-course degustation and garden walk.",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Well known Margaret River Name"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "certified_organic",
+      "winery_lunch",
+      "vineyard_walk",
+      "historic_estate"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "5c8e4e4b-601e-70f2-3c90-3eb9bcacbf3d",
+    "name": "Wills Domain",
+    "region": "Yallingup",
+    "latitude": -33.71433573,
+    "longitude": 115.04716772,
+    "address": "17 Brash Rd, Yallingup",
+    "tasting_price": 15,
+    "famous_for": "Paladin Shiraz & fine dining",
+    "description": "Fine-dining focus and the flagship Paladin Shiraz, with a 4-course chef's selection lunch.",
+    "wine_styles": [
+      "Red Wine Specialist"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "winery_lunch"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "99889e7f-0541-3e5e-9cc9-a0219ec9dcdd",
+    "name": "Windows Estate",
+    "region": "Wilyabrup",
+    "latitude": -33.73696647,
+    "longitude": 115.01289565,
+    "address": "400 Quininup Rd, Wilyabrup",
+    "tasting_price": 15,
+    "famous_for": "Artisan basket-press wines",
+    "description": "Artisan basket-press methods with a soil focus, offering a behind-the-scenes Grape to Glass tour.",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Small batch & Boutique"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "certified_organic",
+      "cellar_tour",
+      "guided_tasting"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "44444444-4444-4444-4444-444444444444",
+    "name": "Woodlands",
+    "region": "Wilyabrup",
+    "latitude": -33.788359,
+    "longitude": 115.03129902,
+    "address": "3948 Caves Rd, Wilyabrup",
+    "tasting_price": 15,
+    "famous_for": "Heritage Cabernet",
+    "description": "Dry-grown vines and elegant heritage Cabernets (est. 1973), with seated vertical museum tastings.",
+    "wine_styles": [
+      "Red Wine Specialist",
+      "Organic & Biodynamic",
+      "Estate-grown fruit only"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "certified_organic",
+      "seated_tasting",
+      "guided_tasting",
+      "historic_estate"
+    ],
+    "offers_cheese_board": true,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "0220379d-36c2-41b8-34e2-762538e27955",
+    "name": "Xanadu Wines",
+    "region": "Wallcliffe",
+    "latitude": -33.9805122,
+    "longitude": 115.05324335,
+    "address": "316 Boodjidup Rd, Margaret River",
+    "tasting_price": 15,
+    "famous_for": "Consistent trophy winner",
+    "description": "A consistent trophy winner with a modern rustic vibe and Cellar Collective museum sessions.",
+    "wine_styles": [
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "trophy_winner",
+      "guided_tasting",
+      "historic_estate"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  },
+  {
+    "winery_id": "d1239ea2-d792-43c7-06b1-dd65a8b5e269",
+    "name": "Yeah Wine",
+    "region": "Wallcliffe",
+    "latitude": -33.96293472,
+    "longitude": 115.03423663,
+    "address": "401 Wallcliffe Rd, Margaret River",
+    "tasting_price": 15,
+    "famous_for": "Authentic rustic wines",
+    "description": "Unpretentious, authentic rustic wines with winemaker-led private tours.",
+    "wine_styles": [
+      "Natural & Minimal Intervention",
+      "Small batch & Boutique",
+      "Lesser known (off the beaten track)"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "cellar_tour",
+      "intimate_welcome"
+    ],
+    "offers_cheese_board": false,
+    "unique_experience_offers": []
+  }
+]

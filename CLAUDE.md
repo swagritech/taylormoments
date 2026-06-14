@@ -146,9 +146,9 @@ These pages are designed to work without the partner being logged in — the tok
 
 ### Winery Catalog
 
-`src/lib/winery-catalog.ts` transforms a static JSON file (`src/lib/data/winery-prospects.json`) at import time into `WineryCatalogItem[]`. This catalog is **entirely separate from the live DB** — it is a static prospect list used only for the explore preference quiz UI.
+`src/lib/winery-catalog.ts` transforms `src/lib/data/winery-catalog.generated.json` at import time into `WineryCatalogItem[]`. **This generated file is the single source of truth's frontend artifact** — it is produced from the live DB by `apps/web/scripts/generate-winery-catalog.mjs` (fetches `GET /v1/wineries`, keeps `catalog_featured` wineries, uses **real winery UUIDs** as `id`). **Do not hand-edit the generated JSON — regenerate it** after winery data changes. The old hand-maintained `winery-prospects.json` is deprecated/orphaned (no longer imported).
 
-Only 4 wineries have hardcoded canonical UUIDs in `src/lib/winery-id.ts` (`canonicalWineryIds`): Vasse Felix, Cullen Wines, Fraser Gallop, Woodlands. All other slugs generate deterministic pseudo-UUIDs via a hash function — the API will not recognise these as preferred wineries.
+Because catalog `id` is now the real winery UUID, `slugToWineryUuid()` in `src/lib/winery-id.ts` is a pass-through for UUIDs (it only hashes legacy slugs for backward compatibility). The 4 hardcoded `canonicalWineryIds` and the hash remain as a compatibility shim and can be fully removed once no legacy slug data remains.
 
 **Styling** is plain CSS in `src/app/globals.css` using CSS custom properties and BEM-like class names. No Tailwind, no CSS modules. Prefer CSS custom properties over hardcoded hex values.
 
@@ -345,10 +345,12 @@ The `release/`, `release_new2/`, `release_new3/` directories under `services/api
 
 ### Slug vs UUID for wineries
 
-Frontend catalog uses slugs (e.g. `"vasse-felix"`). Backend uses UUIDs. Only 4 wineries have real canonical UUIDs in `src/lib/winery-id.ts`. Adding a new live-bookable winery requires:
-1. Adding `slug → UUID` to `canonicalWineryIds` in `apps/web/src/lib/winery-id.ts`
-2. Ensuring the winery exists in the DB with that exact UUID
-3. Optionally adding coordinates to `knownCoordinates` in `apps/web/src/lib/winery-catalog.ts`
+The frontend catalog now carries **real winery UUIDs** as `id` (sourced from the DB via the generated catalog). Adding a new bookable winery to the quiz is now:
+1. Add/activate the winery in the DB and set `catalog_featured = true`
+2. Regenerate the frontend catalog: `cd apps/web && node ./scripts/generate-winery-catalog.mjs`
+3. Rebuild/redeploy the frontend
+
+No slug→UUID mapping needed anymore. (Legacy `canonicalWineryIds` + hash in `winery-id.ts` remain only as a backward-compat shim for old localStorage slugs.)
 
 ### Type duplication
 

@@ -28,12 +28,21 @@ function hashToHex(seed: string) {
   return `${hexA}${hexB}${hexC}${hexD}`.slice(0, 32);
 }
 
-export function slugToWineryUuid(slug: string) {
-  const known = canonicalWineryIds[slug];
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function slugToWineryUuid(value: string) {
+  // The catalog is now sourced from the DB with real winery UUIDs as ids, so a UUID
+  // passes straight through. Legacy slugs (e.g. old saved localStorage preferences)
+  // still resolve via the canonical map / deterministic hash for backward compatibility.
+  if (uuidPattern.test(value)) {
+    return value;
+  }
+
+  const known = canonicalWineryIds[value];
   if (known) {
     return known;
   }
 
-  const hashHex = hashToHex(`tailormoments:${slug}`);
+  const hashHex = hashToHex(`tailormoments:${value}`);
   return `${hashHex.slice(0, 8)}-${hashHex.slice(8, 12)}-${hashHex.slice(12, 16)}-${hashHex.slice(16, 20)}-${hashHex.slice(20, 32)}`;
 }
