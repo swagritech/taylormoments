@@ -25,6 +25,10 @@
   --tm-display-font: var(--font-editorial), "Cormorant Garamond", Georgia, serif;
   --tm-body-font: var(--font-sans), "Inter", system-ui, -apple-system, sans-serif;
   --tm-kicker-font: var(--font-display), "Cinzel", serif;
+  /* The brand wordmark is always Cinzel — it is the logo and must never be
+     swapped per-locale (unlike --tm-kicker-font, which routes to the body face
+     for vi / Simplified Chinese). */
+  --tm-brand-font: var(--font-display), "Cinzel", serif;
   --tm-space-scale: 1;
 
   --tm-wrap: 1200px;
@@ -128,7 +132,7 @@
 /* ── Wordmark ─────────────────────────────────────────────────────────────── */
 .tm-wordmark { display: inline-grid; justify-items: start; gap: 3px; line-height: 1; }
 .tm-wordmark__name {
-  font-family: var(--tm-kicker-font);
+  font-family: var(--tm-brand-font);
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -141,7 +145,7 @@
   background: linear-gradient(90deg, var(--tm-accent), transparent);
 }
 .tm-wordmark__tag {
-  font-family: var(--tm-kicker-font);
+  font-family: var(--tm-brand-font);
   font-weight: 500;
   letter-spacing: 0.4em;
   text-transform: uppercase;
