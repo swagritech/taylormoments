@@ -228,27 +228,51 @@ export default function ExploreSummaryPage() {
               <div className="summaryPageSplit">
                 <div className="summaryPageLeft">
                   <div className="schedulePreviewCard">
-                    {orderedSummaryStops.map((stop, index) => {
-                      const arrival = formatDisplayTimeSafe(stop.arrival_time);
-                      const departure = formatDisplayTimeSafe(stop.departure_time);
-                      const profile = profilesById[stop.winery_id];
-                      const tastingPrice = profile?.tasting_price ?? stop.tasting_price;
-                      return (
-                      <div key={`${stop.winery_id}-${index}`} className="tourSummaryRow">
-                        <div>
-                          {arrival ? <p className="timelineTime">{arrival}</p> : null}
-                          <h3>{stop.winery_name}</h3>
-                          {departure ? (
-                            <p className="subtle">Depart {departure}</p>
-                          ) : (
-                            <p className="subtle">Time to be confirmed during scheduling.</p>
-                          )}
-                        </div>
-                        <div className="tourSummaryPrice">
-                          {typeof tastingPrice === "number" ? `$${tastingPrice}` : "Tasting fee TBD"}
-                        </div>
-                      </div>
-                    )})}
+                    {(() => {
+                      const renderStopRow = (
+                        stop: (typeof orderedSummaryStops)[number],
+                        index: number,
+                        keyPrefix: string,
+                      ) => {
+                        const arrival = formatDisplayTimeSafe(stop.arrival_time);
+                        const departure = formatDisplayTimeSafe(stop.departure_time);
+                        const profile = profilesById[stop.winery_id];
+                        const tastingPrice = profile?.tasting_price ?? stop.tasting_price;
+                        return (
+                          <div key={`${keyPrefix}-${stop.winery_id}-${index}`} className="tourSummaryRow">
+                            <div>
+                              {arrival ? <p className="timelineTime">{arrival}</p> : null}
+                              <h3>{stop.winery_name}</h3>
+                              {departure ? (
+                                <p className="subtle">Depart {departure}</p>
+                              ) : (
+                                <p className="subtle">Time to be confirmed during scheduling.</p>
+                              )}
+                            </div>
+                            <div className="tourSummaryPrice">
+                              {typeof tastingPrice === "number" ? `$${tastingPrice}` : "Tasting fee TBD"}
+                            </div>
+                          </div>
+                        );
+                      };
+
+                      // Multi-day plans render one labelled section per day; single-day
+                      // plans keep the original flat list (combined `stops`).
+                      if (summary.days && summary.days.length > 1) {
+                        return summary.days.map((day) => (
+                          <div key={`day-${day.day_index}`} className="multiDaySummarySection">
+                            <h4 className="multiDaySummaryHeading">
+                              Day {day.day_index + 1} - {day.date}
+                            </h4>
+                            {day.stops.map((stop, index) =>
+                              renderStopRow(stop, index, `day-${day.day_index}`),
+                            )}
+                          </div>
+                        ));
+                      }
+
+                      return orderedSummaryStops.map((stop, index) => renderStopRow(stop, index, "all"));
+                    })()}
                   </div>
                   <div className="callout">
                     <p>

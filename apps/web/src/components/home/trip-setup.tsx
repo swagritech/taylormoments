@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { ExploreTripLength, ExploreYesNo } from "@/lib/explore-preferences";
+import type { ExploreDayPace, ExploreYesNo } from "@/lib/explore-preferences";
 
 type AddressSuggestion = {
   label: string;
@@ -48,8 +48,10 @@ export type TripSetupProps = {
   setVisitDate: (value: string) => void;
   groupSize: number;
   setGroupSize: (value: number | ((current: number) => number)) => void;
-  tripLength: ExploreTripLength;
-  setTripLength: (value: ExploreTripLength) => void;
+  dayPace: ExploreDayPace;
+  setDayPace: (value: ExploreDayPace) => void;
+  tripDays: number;
+  setTripDays: (value: number) => void;
   needTransport: ExploreYesNo;
   setNeedTransport: (value: ExploreYesNo) => void;
   pickupAddress: string;
@@ -68,8 +70,10 @@ export function TripSetup({
   setVisitDate,
   groupSize,
   setGroupSize,
-  tripLength,
-  setTripLength,
+  dayPace,
+  setDayPace,
+  tripDays,
+  setTripDays,
   needTransport,
   setNeedTransport,
   pickupAddress,
@@ -303,20 +307,37 @@ export function TripSetup({
       </div>
 
       <div className="field">
-        <label>How long would you like your winery day?</label>
+        <label>What kind of day are you after?</label>
         <div className="choiceRow profileChoiceGrid">
           <label className="choicePill">
-            <input type="radio" checked={tripLength === "half-day"} onChange={() => setTripLength("half-day")} />
-            Half day - Around 3-4 hours
+            <input type="radio" name="dayPace" checked={dayPace === "relaxed"} onChange={() => setDayPace("relaxed")} />
+            Relaxed - 2-3 cellar doors, a long lunch, no rush
           </label>
           <label className="choicePill">
-            <input type="radio" checked={tripLength === "full-day"} onChange={() => setTripLength("full-day")} />
-            Full day - Around 6-8 hours
+            <input type="radio" name="dayPace" checked={dayPace === "balanced"} onChange={() => setDayPace("balanced")} />
+            The full experience - 3-4 cellar doors with lunch
           </label>
           <label className="choicePill">
-            <input type="radio" checked={tripLength === "multi-day"} onChange={() => setTripLength("multi-day")} />
-            {"More than one day - We'll build a multi-day itinerary"}
+            <input type="radio" name="dayPace" checked={dayPace === "maximise"} onChange={() => setDayPace("maximise")} />
+            Maximise it - as many as we can comfortably fit, based on your tastes
           </label>
+        </div>
+      </div>
+
+      <div className="field">
+        <label>How many days touring?</label>
+        <div className="choiceRow">
+          {[1, 2, 3].map((days) => (
+            <label key={days} className="choicePill">
+              <input
+                type="radio"
+                name="tripDays"
+                checked={tripDays === days}
+                onChange={() => setTripDays(days)}
+              />
+              {days === 1 ? "1 day" : `${days} days`}
+            </label>
+          ))}
         </div>
       </div>
 

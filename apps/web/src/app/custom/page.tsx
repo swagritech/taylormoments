@@ -97,6 +97,7 @@ export default function CustomPage() {
         party_size: latestSummary.party_size,
         preferred_start_time: latestSummary.preferred_start_time,
         preferred_end_time: latestSummary.preferred_end_time,
+        pace: latestSummary.day_pace,
         preferred_wineries: preferredUuids,
       });
 
@@ -120,6 +121,9 @@ export default function CustomPage() {
               tasting_price: profile?.tasting_price,
             };
           }),
+          // Customising flattens any multi-day plan into one combined day.
+          trip_days: 1,
+          days: undefined,
           generated_at: new Date().toISOString(),
         };
         saveExploreTourSummary(nextSummary);
@@ -154,6 +158,9 @@ export default function CustomPage() {
         ...latestSummary,
         matched_winery_ids: selectedWineries,
         stops: updatedStops,
+        // Customising flattens any multi-day plan into one combined day.
+        trip_days: 1,
+        days: undefined,
         generated_at: new Date().toISOString(),
       };
       saveExploreTourSummary(fallbackSummary);

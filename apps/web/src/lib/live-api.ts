@@ -369,6 +369,7 @@ export async function recommendItineraries(payload: {
   preferred_wineries: string[];
   preferred_start_time?: string;
   preferred_end_time?: string;
+  pace?: "relaxed" | "balanced" | "maximise";
   locale?: AppLocale;
 }) {
   const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/itinerary/recommend`, {

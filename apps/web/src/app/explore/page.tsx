@@ -17,14 +17,14 @@ import {
   loadExplorePreferences,
   saveExplorePreferences,
   type ExplorePreferences,
-  type ExploreTripLength,
+  type ExploreDayPace,
   type ExploreVibe,
   type ExploreYesNo,
 } from "@/lib/explore-preferences";
-import { saveExploreTourSummary } from "@/lib/explore-tour-summary";
+import { saveExploreTourSummary, type ExploreTourSummaryDay } from "@/lib/explore-tour-summary";
 import { TripSetup } from "@/components/home/trip-setup";
 
-type TripLength = ExploreTripLength;
+type DayPace = ExploreDayPace;
 type YesNo = ExploreYesNo;
 type Vibe = ExploreVibe;
 
@@ -37,14 +37,19 @@ type SearchProfile = {
   minAdvanceDays: number;
   vibeTag: "popular" | "lesser-known";
   transportSuitable: boolean;
-  supportsHalfDay: boolean;
-  supportsFullDay: boolean;
-  supportsMultiDay: boolean;
 };
 
 type ItineraryChapter = {
   label: "Morning" | "Afternoon" | "Evening";
   stops: Recommendation["stops"];
+};
+
+type MultiDayResult = {
+  dayIndex: number;
+  date: string;
+  recommendation: Recommendation;
+  // The catalog wineries selected for this day (used for matched-id handoff).
+  pool: WineryCatalogItem[];
 };
 
 type AnimatedWordsProps = {
@@ -111,12 +116,17 @@ type BudgetId = (typeof BUDGET_OPTIONS)[number]["id"];
 type DietaryId = (typeof DIETARY_OPTIONS)[number]["id"];
 type AccessibilityId = (typeof ACCESSIBILITY_OPTIONS)[number]["id"];
 
-function toTimeWindow(length: TripLength) {
-  if (length === "half-day") {
-    return { start: "09:00", end: "13:30", stops: 2 };
-  }
-  return { start: "09:00", end: "17:00", stops: 4 };
+// The backend `pace` field now controls itinerary density, so the time window
+// is a fixed full day for every pace.
+function toTimeWindow() {
+  return { start: "09:00", end: "17:00" };
 }
+
+const PACE_LABELS: Record<DayPace, string> = {
+  relaxed: "Relaxed",
+  balanced: "Full experience",
+  maximise: "Maximise",
+};
 
 function toIsoDate(dayOffset = 7) {
   const date = new Date();
@@ -359,9 +369,6 @@ function toSearchProfile(
           ? "popular"
           : "lesser-known",
     transportSuitable: true,
-    supportsHalfDay: true,
-    supportsFullDay: true,
-    supportsMultiDay: true,
   };
 }
 
@@ -500,7 +507,8 @@ export default function ExplorePage() {
   // Trip basics (date/group/transport/pickup) are captured up front via <TripSetup />.
   // Returning visitors who already saved a travel date skip straight to the quiz.
   const [tripReady, setTripReady] = useState<boolean>(() => Boolean(initialPreferences?.previewDate));
-  const [tripLength, setTripLength] = useState<TripLength>(initialPreferences?.tripLength ?? "full-day");
+  const [dayPace, setDayPace] = useState<DayPace>(initialPreferences?.dayPace ?? "balanced");
+  const [tripDays, setTripDays] = useState<number>(initialPreferences?.tripDays ?? 1);
   const [selectedWineStyles, setSelectedWineStyles] = useState<WineStyleId[]>(() => {
     if (initialPreferences?.wineStyles?.length) {
       return initialPreferences.wineStyles.filter((value): value is WineStyleId =>
@@ -573,6 +581,8 @@ export default function ExplorePage() {
   const [previewDate, setPreviewDate] = useState<string>(initialPreferences?.previewDate ?? toIsoDate(7));
   const [recommendationOptions, setRecommendationOptions] = useState<Recommendation[]>([]);
   const [selectedRecommendationIndex, setSelectedRecommendationIndex] = useState(0);
+  // Per-day itineraries when tripDays > 1 (each entry is one full touring day).
+  const [multiDayPlan, setMultiDayPlan] = useState<MultiDayResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [hasPlanned, setHasPlanned] = useState(false);
   const [isPreferencesCollapsed, setIsPreferencesCollapsed] = useState(false);
@@ -603,9 +613,8 @@ export default function ExplorePage() {
       ? "lesser-known"
       : "";
 
-  const timeWindow = useMemo(() => toTimeWindow(tripLength), [tripLength]);
+  const timeWindow = useMemo(() => toTimeWindow(), []);
   const recommendation = recommendationOptions[selectedRecommendationIndex] ?? null;
-  const itineraryChapters = recommendation ? buildItineraryChapters(recommendation.stops) : [];
   const itineraryAnimationKey = recommendation ? `${recommendation.itinerary_id}-${itineraryReplaySeed}` : "idle";
   let itineraryAnimationCursor = 90;
 
@@ -640,7 +649,8 @@ export default function ExplorePage() {
       pickupPlaceId: pickupPlaceId || undefined,
       pickupLatitude,
       pickupLongitude,
-      tripLength,
+      dayPace,
+      tripDays,
       includeLunch,
       prefOrganic,
       prefSpecialExperience,
@@ -666,7 +676,8 @@ export default function ExplorePage() {
     pickupPlaceId,
     pickupLatitude,
     pickupLongitude,
-    tripLength,
+    dayPace,
+    tripDays,
     selectedWineStyles,
     selectedExperiences,
     budgetBand,
@@ -750,6 +761,7 @@ export default function ExplorePage() {
     setRequesting(true);
     setRecommendationOptions([]);
     setSelectedRecommendationIndex(0);
+    setMultiDayPlan([]);
     setItineraryReplaySeed(0);
 
     try {
@@ -793,49 +805,12 @@ export default function ExplorePage() {
 
       const hasCheeseBoardMatch = (winery: WineryCatalogItem) =>
         toSearchProfile(winery, profilesById[slugToWineryUuid(winery.id)]).hasCheeseBoard;
-      const requestDate = new Date(`${(previewDate || toIsoDate(7))}T00:00:00`);
-      const weekdayMap = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-      const requestedWeekday = weekdayMap[requestDate.getDay()] ?? "mon";
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const bookingDate = new Date(requestDate);
-      bookingDate.setHours(0, 0, 0, 0);
-      const daysAhead = Math.max(0, Math.floor((bookingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
-
-      const filterByPreferences = (includeVibePreference: boolean) => wineryCatalog.filter((winery) => {
-        const profile = toSearchProfile(winery, profilesById[slugToWineryUuid(winery.id)]);
-        if (profile.openDays.length > 0 && !profile.openDays.includes(requestedWeekday)) {
-          return false;
-        }
-        if (daysAhead < profile.minAdvanceDays) {
-          return false;
-        }
-        if (includeLunch === "yes" && !profile.hasLunchExperience) {
-          return false;
-        }
-        if (prefOrganic && !profile.organicFriendly) {
-          return false;
-        }
-        if (prefSpecialExperience && !profile.hasSpecialExperience) {
-          return false;
-        }
-        if (includeVibePreference && vibe && profile.vibeTag !== vibe) {
-          return false;
-        }
-        if (needTransport === "yes" && !profile.transportSuitable) {
-          return false;
-        }
-        if (tripLength === "half-day" && !profile.supportsHalfDay) {
-          return false;
-        }
-        if (tripLength === "full-day" && !profile.supportsFullDay) {
-          return false;
-        }
-        if (tripLength === "multi-day" && !profile.supportsMultiDay) {
-          return false;
-        }
-        return true;
-      });
+      const pickupLocationLabel =
+        needTransport === "yes"
+          ? pickupAddress.trim() || "Margaret River Visitor Centre"
+          : "Self-drive (no transport required)";
 
       const routeStartPoint =
         needTransport === "yes" &&
@@ -844,147 +819,254 @@ export default function ExplorePage() {
           ? { latitude: requestPickupLatitude, longitude: requestPickupLongitude }
           : undefined;
 
-      let candidatePool = filterByPreferences(true);
-      let apiPreferredPool = buildPreferredPoolFromPickup({
-        wineries: candidatePool,
-        profilesById,
-        pickupPoint: routeStartPoint,
-        maxCount: 10,
-      });
-      let routeOptimized = pickNearestRoute(
-        apiPreferredPool,
-        Math.min(10, apiPreferredPool.length),
-        profilesById,
-        routeStartPoint,
-      );
+      // Build the preferred winery pool for a single touring day. `excludedIds`
+      // are catalog ids already used on earlier days (multi-day) so a day never
+      // repeats a winery. `dateValue` drives the open-day / advance-notice filter.
+      const buildDayPool = (dateValue: string, excludedIds: Set<string>) => {
+        const requestDate = new Date(`${dateValue}T00:00:00`);
+        const weekdayMap = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+        const requestedWeekday = weekdayMap[requestDate.getDay()] ?? "mon";
+        const bookingDate = new Date(requestDate);
+        bookingDate.setHours(0, 0, 0, 0);
+        const daysAhead = Math.max(
+          0,
+          Math.floor((bookingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
+        );
 
-      if (routeOptimized.length < 2 && vibe) {
-        candidatePool = filterByPreferences(false);
-        apiPreferredPool = buildPreferredPoolFromPickup({
+        const filterByPreferences = (includeVibePreference: boolean) =>
+          wineryCatalog.filter((winery) => {
+            if (excludedIds.has(winery.id)) {
+              return false;
+            }
+            const profile = toSearchProfile(winery, profilesById[slugToWineryUuid(winery.id)]);
+            if (profile.openDays.length > 0 && !profile.openDays.includes(requestedWeekday)) {
+              return false;
+            }
+            if (daysAhead < profile.minAdvanceDays) {
+              return false;
+            }
+            if (includeLunch === "yes" && !profile.hasLunchExperience) {
+              return false;
+            }
+            if (prefOrganic && !profile.organicFriendly) {
+              return false;
+            }
+            if (prefSpecialExperience && !profile.hasSpecialExperience) {
+              return false;
+            }
+            if (includeVibePreference && vibe && profile.vibeTag !== vibe) {
+              return false;
+            }
+            if (needTransport === "yes" && !profile.transportSuitable) {
+              return false;
+            }
+            return true;
+          });
+
+        let candidatePool = filterByPreferences(true);
+        let apiPreferredPool = buildPreferredPoolFromPickup({
           wineries: candidatePool,
           profilesById,
           pickupPoint: routeStartPoint,
           maxCount: 10,
         });
-        routeOptimized = pickNearestRoute(
+        let routeOptimized = pickNearestRoute(
           apiPreferredPool,
           Math.min(10, apiPreferredPool.length),
           profilesById,
           routeStartPoint,
         );
-      }
 
-      if (prefCheeseBoard) {
-        const cheeseCandidates = candidatePool.filter(hasCheeseBoardMatch);
-        const fallbackCheeseCandidates = wineryCatalog.filter(hasCheeseBoardMatch);
-        const cheesePool = cheeseCandidates.length > 0 ? cheeseCandidates : fallbackCheeseCandidates;
-        if (cheesePool.length === 0) {
-          setError("No cheeseboard wineries are currently available.");
-          return;
+        if (routeOptimized.length < 2 && vibe) {
+          candidatePool = filterByPreferences(false);
+          apiPreferredPool = buildPreferredPoolFromPickup({
+            wineries: candidatePool,
+            profilesById,
+            pickupPoint: routeStartPoint,
+            maxCount: 10,
+          });
+          routeOptimized = pickNearestRoute(
+            apiPreferredPool,
+            Math.min(10, apiPreferredPool.length),
+            profilesById,
+            routeStartPoint,
+          );
         }
 
-        const routeHasCheese = routeOptimized.some(hasCheeseBoardMatch);
-        if (!routeHasCheese) {
-          const requiredCheese =
-            cheesePool.find((candidate) => !routeOptimized.some((stop) => stop.id === candidate.id)) ??
-            cheesePool[0];
+        if (prefCheeseBoard) {
+          const cheeseCandidates = candidatePool.filter(hasCheeseBoardMatch);
+          const fallbackCheeseCandidates = wineryCatalog.filter(
+            (winery) => !excludedIds.has(winery.id) && hasCheeseBoardMatch(winery),
+          );
+          const cheesePool = cheeseCandidates.length > 0 ? cheeseCandidates : fallbackCheeseCandidates;
 
-          if (requiredCheese) {
-            const seeded = [...routeOptimized, requiredCheese];
-            const dedupedSeed = Array.from(new Map(seeded.map((entry) => [entry.id, entry])).values());
-            routeOptimized = pickNearestRoute(
-              dedupedSeed,
-              Math.min(10, dedupedSeed.length),
-              profilesById,
-              routeStartPoint,
-            );
+          if (cheesePool.length > 0) {
+            const routeHasCheese = routeOptimized.some(hasCheeseBoardMatch);
+            if (!routeHasCheese) {
+              const requiredCheese =
+                cheesePool.find((candidate) => !routeOptimized.some((stop) => stop.id === candidate.id)) ??
+                cheesePool[0];
 
-            if (!routeOptimized.some(hasCheeseBoardMatch)) {
-              const withoutLast = routeOptimized.slice(0, Math.max(0, 9));
-              routeOptimized = [...withoutLast, requiredCheese];
+              if (requiredCheese) {
+                const seeded = [...routeOptimized, requiredCheese];
+                const dedupedSeed = Array.from(new Map(seeded.map((entry) => [entry.id, entry])).values());
+                routeOptimized = pickNearestRoute(
+                  dedupedSeed,
+                  Math.min(10, dedupedSeed.length),
+                  profilesById,
+                  routeStartPoint,
+                );
+
+                if (!routeOptimized.some(hasCheeseBoardMatch)) {
+                  const withoutLast = routeOptimized.slice(0, Math.max(0, 9));
+                  routeOptimized = [...withoutLast, requiredCheese];
+                }
+              }
             }
           }
         }
-      }
 
-      const preferredRoutePool = routeOptimized.length > 0 ? routeOptimized : apiPreferredPool;
-      setMatchedWineries(preferredRoutePool);
+        return routeOptimized.length > 0 ? routeOptimized : apiPreferredPool;
+      };
 
-      if (preferredRoutePool.length < 2) {
-        setError("Not enough winery matches for this preference set yet. Try relaxing one filter.");
-        return;
-      }
+      // Recommend a single day: build a pool for `baseDate`, then retry a few
+      // date offsets if a day comes back empty. Returns the itinerary options
+      // (Option A / B for single-day), the date that produced them, and the pool.
+      const planSingleDay = async (
+        baseDate: string,
+        excludedIds: Set<string>,
+        withAlternate: boolean,
+      ): Promise<{ options: Recommendation[]; usedDate: string; pool: WineryCatalogItem[] } | null> => {
+        for (let offset = 0; offset < 14; offset += 1) {
+          const candidateDate = shiftIsoDate(baseDate, offset);
+          const pool = buildDayPool(candidateDate, excludedIds);
+          if (pool.length < 2) {
+            continue;
+          }
 
-      let foundOptions: Recommendation[] = [];
-      const requestedDate = previewDate || toIsoDate(7);
-      let usedDate = requestedDate;
+          const response = await recommendItineraries({
+            booking_date: candidateDate,
+            pickup_location: pickupLocationLabel,
+            pickup_place_id: needTransport === "yes" ? pickupPlaceId || undefined : undefined,
+            pickup_latitude: needTransport === "yes" ? requestPickupLatitude : undefined,
+            pickup_longitude: needTransport === "yes" ? requestPickupLongitude : undefined,
+            party_size: groupSize,
+            preferred_start_time: timeWindow.start,
+            preferred_end_time: timeWindow.end,
+            pace: dayPace,
+            preferred_wineries: pool.map((winery) => slugToWineryUuid(winery.id)),
+          });
 
-      for (let offset = 0; offset < 14; offset += 1) {
-        const candidateDate = shiftIsoDate(requestedDate, offset);
-        const response = await recommendItineraries({
-          booking_date: candidateDate,
-          pickup_location:
-            needTransport === "yes"
-              ? pickupAddress.trim() || "Margaret River Visitor Centre"
-              : "Self-drive (no transport required)",
-          pickup_place_id: needTransport === "yes" ? pickupPlaceId || undefined : undefined,
-          pickup_latitude: needTransport === "yes" ? requestPickupLatitude : undefined,
-          pickup_longitude: needTransport === "yes" ? requestPickupLongitude : undefined,
-          party_size: groupSize,
-          preferred_start_time: timeWindow.start,
-          preferred_end_time: timeWindow.end,
-          preferred_wineries: preferredRoutePool.map((winery) => slugToWineryUuid(winery.id)),
-        });
+          if (response.itineraries.length === 0) {
+            continue;
+          }
 
-        if (response.itineraries.length > 0) {
-          foundOptions = [...response.itineraries].sort(
+          let options = [...response.itineraries].sort(
             (a, b) => Number(b.expert_pick) - Number(a.expert_pick) || b.score - a.score,
           );
 
-          if (foundOptions.length === 1) {
-            const primaryStopIds = new Set(foundOptions[0]?.stops.map((stop) => stop.winery_id) ?? []);
-            const alternatePreferredWineries = preferredRoutePool
+          if (withAlternate && options.length === 1) {
+            const primaryStopIds = new Set(options[0]?.stops.map((stop) => stop.winery_id) ?? []);
+            const alternatePreferredWineries = pool
               .filter((winery) => !primaryStopIds.has(slugToWineryUuid(winery.id)))
               .map((winery) => slugToWineryUuid(winery.id));
 
             if (alternatePreferredWineries.length >= 2) {
               const alternateResponse = await recommendItineraries({
                 booking_date: candidateDate,
-                pickup_location:
-                  needTransport === "yes"
-                    ? pickupAddress.trim() || "Margaret River Visitor Centre"
-                    : "Self-drive (no transport required)",
+                pickup_location: pickupLocationLabel,
                 pickup_place_id: needTransport === "yes" ? pickupPlaceId || undefined : undefined,
                 pickup_latitude: needTransport === "yes" ? requestPickupLatitude : undefined,
                 pickup_longitude: needTransport === "yes" ? requestPickupLongitude : undefined,
                 party_size: groupSize,
                 preferred_start_time: timeWindow.start,
                 preferred_end_time: timeWindow.end,
+                pace: dayPace,
                 preferred_wineries: alternatePreferredWineries,
               });
 
-              const alternateOption = alternateResponse.itineraries
-                .sort((a, b) => Number(b.expert_pick) - Number(a.expert_pick) || b.score - a.score)[0];
+              const alternateOption = alternateResponse.itineraries.sort(
+                (a, b) => Number(b.expert_pick) - Number(a.expert_pick) || b.score - a.score,
+              )[0];
 
               if (alternateOption) {
-                foundOptions = [...foundOptions, { ...alternateOption, expert_pick: false, label: "Option B" }];
+                options = [...options, { ...alternateOption, expert_pick: false, label: "Option B" }];
               }
             }
           }
 
-          usedDate = candidateDate;
-          break;
+          return { options, usedDate: candidateDate, pool };
         }
+        return null;
+      };
+
+      const requestedDate = previewDate || toIsoDate(7);
+      const daysRequested = Math.max(1, Math.min(3, tripDays));
+
+      if (daysRequested === 1) {
+        // Single-day flow: unchanged behaviour (one itinerary with Option A/B).
+        const result = await planSingleDay(requestedDate, new Set<string>(), true);
+        if (!result) {
+          setError("No preview schedule found in the next 14 days for this preference set.");
+          return;
+        }
+        setMatchedWineries(result.pool);
+        setPreviewDate(result.usedDate);
+        setRecommendationOptions(result.options);
+        setSelectedRecommendationIndex(0);
+        setMultiDayPlan([]);
+        return;
       }
 
-      if (foundOptions.length === 0) {
+      // Multi-day flow: one real day per requested day, never repeating a winery.
+      const usedWineryIds = new Set<string>();
+      const collectedDays: MultiDayResult[] = [];
+      for (let dayIndex = 0; dayIndex < daysRequested; dayIndex += 1) {
+        const dayBaseDate = shiftIsoDate(requestedDate, dayIndex);
+        const result = await planSingleDay(dayBaseDate, usedWineryIds, false);
+        if (!result) {
+          break;
+        }
+        const dayRecommendation = result.options[0];
+        if (!dayRecommendation) {
+          break;
+        }
+        // Exclude every winery the chosen day actually scheduled so later days
+        // never repeat them.
+        const scheduledUuids = new Set(dayRecommendation.stops.map((stop) => stop.winery_id));
+        for (const winery of result.pool) {
+          if (scheduledUuids.has(slugToWineryUuid(winery.id))) {
+            usedWineryIds.add(winery.id);
+          }
+        }
+        const scheduledPool = result.pool.filter((winery) =>
+          scheduledUuids.has(slugToWineryUuid(winery.id)),
+        );
+        collectedDays.push({
+          dayIndex,
+          date: result.usedDate,
+          recommendation: dayRecommendation,
+          pool: scheduledPool.length > 0 ? scheduledPool : result.pool,
+        });
+      }
+
+      if (collectedDays.length === 0) {
         setError("No preview schedule found in the next 14 days for this preference set.");
         return;
       }
 
-      setPreviewDate(usedDate);
-      setRecommendationOptions(foundOptions);
+      const firstDay = collectedDays[0];
+      // Drive the existing single-day preview state from day one, and store the
+      // combined winery pool so /plan and the booking call see every day's stops.
+      const combinedPool = collectedDays.flatMap((day) => day.pool);
+      const dedupedCombinedPool = Array.from(
+        new Map(combinedPool.map((entry) => [entry.id, entry])).values(),
+      );
+      setMatchedWineries(dedupedCombinedPool);
+      setPreviewDate(firstDay.date);
+      setRecommendationOptions([firstDay.recommendation]);
       setSelectedRecommendationIndex(0);
+      setMultiDayPlan(collectedDays);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to plan trip right now.");
     } finally {
@@ -1004,30 +1086,65 @@ export default function ExplorePage() {
     const uuidToSlug = new Map(
       wineryCatalog.map((winery) => [slugToWineryUuid(winery.id), winery.id] as const),
     );
-    const itinerarySlugs = recommendation.stops
-      .map((stop) => uuidToSlug.get(stop.winery_id))
-      .filter((value): value is string => Boolean(value));
+
+    const slugsForStops = (stops: Recommendation["stops"]) =>
+      stops
+        .map((stop) => uuidToSlug.get(stop.winery_id))
+        .filter((value): value is string => Boolean(value));
+
+    const enrichStops = (stops: Recommendation["stops"]) =>
+      stops.map((stop) => {
+        const remoteProfile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
+        return {
+          ...stop,
+          tasting_price: remoteProfile?.tasting_price,
+        };
+      });
+
+    const isMultiDay = multiDayPlan.length > 1;
+
+    // For multi-day, the top-level stops / matched ids are the *combined* set
+    // across every day so the existing booking + summary + plan code keeps
+    // working with one winery list. The per-day breakdown lives in `days`.
+    const daysPayload: ExploreTourSummaryDay[] | undefined = isMultiDay
+      ? multiDayPlan.map((day) => {
+          const daySlugs = slugsForStops(day.recommendation.stops);
+          return {
+            day_index: day.dayIndex,
+            date: day.date,
+            stops: enrichStops(day.recommendation.stops),
+            matched_winery_ids:
+              daySlugs.length > 0 ? daySlugs : day.pool.map((entry) => entry.id),
+            justification: day.recommendation.justification,
+            label: day.recommendation.label,
+            score: day.recommendation.score,
+          };
+        })
+      : undefined;
+
+    const combinedStops = isMultiDay
+      ? multiDayPlan.flatMap((day) => day.recommendation.stops)
+      : recommendation.stops;
+    const combinedSlugs = isMultiDay
+      ? multiDayPlan.flatMap((day) => slugsForStops(day.recommendation.stops))
+      : slugsForStops(recommendation.stops);
 
     saveExploreTourSummary({
       lead_name: name.trim(),
       lead_email: email.trim(),
       party_size: groupSize,
       pickup_location: pickupLocation,
-      trip_length: tripLength,
+      day_pace: dayPace,
+      trip_days: isMultiDay ? multiDayPlan.length : 1,
       preview_date: previewDate,
       preferred_start_time: timeWindow.start,
       preferred_end_time: timeWindow.end,
       matched_winery_ids:
-        itinerarySlugs.length > 0
-          ? itinerarySlugs
-          : matchedWineries.slice(0, recommendation.stops.length).map((entry) => entry.id),
-      stops: recommendation.stops.map((stop) => {
-        const remoteProfile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
-        return {
-          ...stop,
-          tasting_price: remoteProfile?.tasting_price,
-        };
-      }),
+        combinedSlugs.length > 0
+          ? combinedSlugs
+          : matchedWineries.slice(0, combinedStops.length).map((entry) => entry.id),
+      stops: enrichStops(combinedStops),
+      days: daysPayload,
       justification: recommendation.justification,
       label: recommendation.label,
       score: recommendation.score,
@@ -1056,6 +1173,151 @@ export default function ExplorePage() {
       (entry) => entry.name.trim().toLowerCase() === normalized,
     );
     return match;
+  }
+
+  // Renders one bespoke day card. Used once for the single-day flow and once
+  // per day for multi-day plans (the same visual language stacked N times).
+  function renderItineraryCard(options: {
+    rec: Recommendation;
+    dateValue: string;
+    animationKeyBase: string;
+    attachRef: boolean;
+    dayHeading?: string;
+  }) {
+    const { rec, dateValue, animationKeyBase, attachRef, dayHeading } = options;
+    const chapters = buildItineraryChapters(rec.stops);
+    // Reset the shared animation cursor so each day's reveal starts fresh.
+    itineraryAnimationCursor = 120;
+
+    return (
+      <div
+        ref={attachRef ? itineraryCardRef : undefined}
+        className="bespokeItineraryCard"
+      >
+        <div className="bespokeItineraryBorder" />
+        <div className="bespokeItineraryHeader">
+          <p className="bespokeKicker">{dayHeading ? dayHeading : "Bespoke day arranged for"}</p>
+          <h3>{name || "Your Group"}</h3>
+          <p className="bespokeDateLine">{formatPreviewDate(dateValue)}</p>
+        </div>
+        <div className="bespokeIntro">
+          {(() => {
+            const greetingText = `Dear ${name || "guest"},`;
+            const introText =
+              "We have prepared a polished winery journey shaped around your preferences, pace, and the smoothest travel flow available for the day.";
+            const greetingDelay = reserveItineraryDelay(greetingText, 58, 320);
+            const introDelay = reserveItineraryDelay(introText, 58, 380);
+            return (
+              <>
+                <p>
+                  <AnimatedWords
+                    text={greetingText}
+                    animationKey={`${animationKeyBase}-greeting`}
+                    delayMs={greetingDelay}
+                  />
+                </p>
+                <p>
+                  <AnimatedWords
+                    text={introText}
+                    animationKey={`${animationKeyBase}-intro`}
+                    delayMs={introDelay}
+                  />
+                </p>
+              </>
+            );
+          })()}
+        </div>
+        <div className="bespokeMetaRow">
+          <span>{groupSize} guests</span>
+          <span>{PACE_LABELS[dayPace]} pace</span>
+          <span>transport {needTransport}</span>
+        </div>
+        <div className="bespokeChapterStack">
+          {chapters.map((chapter) => (
+            <section key={chapter.label} className="bespokeChapter">
+              <div className="bespokeChapterHeading">
+                <span />
+                <h4>{chapter.label}</h4>
+                <span />
+              </div>
+              <div className="bespokeStopStack">
+                {chapter.stops.map((stop, chapterIndex) => {
+                  const stopIndex = rec.stops.findIndex(
+                    (entry) =>
+                      entry.winery_id === stop.winery_id &&
+                      entry.arrival_time === stop.arrival_time,
+                  );
+                  const nextStop = stopIndex >= 0 ? rec.stops[stopIndex + 1] : undefined;
+                  const remoteProfile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
+                  const tastingNote = remoteProfile?.tasting_price !== undefined
+                    ? `Tasting from $${remoteProfile.tasting_price}.`
+                    : "Hosted tasting arranged for your visit.";
+                  const cheeseBoardNote = remoteProfile?.offers_cheese_board
+                    ? "A cheeseboard is available here if you would like to linger."
+                    : "";
+                  const travelModeLabel = needTransport === "yes"
+                    ? "chauffeured drive"
+                    : "leisurely drive";
+                  const travelNote = nextStop
+                    ? `${nextStop.drive_minutes} min ${travelModeLabel} to your next stop.`
+                    : "A graceful finish to the day.";
+                  const stopTimeText = formatDisplayTime(stop.arrival_time);
+                  const stopTitleText = stop.winery_name;
+                  const stopBodyText = `Arrive for a curated cellar-door experience and depart at ${formatDisplayTime(stop.departure_time)}. ${tastingNote} ${cheeseBoardNote}`.trim();
+                  const stopTimeDelay = reserveItineraryDelay(stopTimeText, 82, 140);
+                  const stopTitleDelay = reserveItineraryDelay(stopTitleText, 72, 180);
+                  const stopBodyDelay = reserveItineraryDelay(stopBodyText, 58, 240);
+                  const travelDelay = reserveItineraryDelay(travelNote, 52, 280);
+                  return (
+                    <article key={`${stop.winery_id}-${chapterIndex}`} className="bespokeStop">
+                      <p className="bespokeStopTime">
+                        <AnimatedWords
+                          text={stopTimeText}
+                          animationKey={`${animationKeyBase}-${stop.winery_id}-time`}
+                          delayMs={stopTimeDelay}
+                          intervalMs={82}
+                        />
+                      </p>
+                      <h5>
+                        <button
+                          type="button"
+                          className="timelineWineryLink bespokeWineryLink"
+                          onClick={() => setSelectedPreviewWinery(resolveWineryById(stop.winery_id) ?? resolveWinery(stop.winery_name))}
+                        >
+                          <AnimatedWords
+                            text={stopTitleText}
+                            animationKey={`${animationKeyBase}-${stop.winery_id}-title`}
+                            delayMs={stopTitleDelay}
+                            intervalMs={72}
+                            className="bespokeAnimatedTitle"
+                          />
+                        </button>
+                      </h5>
+                      <p className="bespokeStopBody">
+                        <AnimatedWords
+                          text={stopBodyText}
+                          animationKey={`${animationKeyBase}-${stop.winery_id}-body`}
+                          delayMs={stopBodyDelay}
+                        />
+                      </p>
+                      <p className="bespokeTravelNote">
+                        <AnimatedWords
+                          text={travelNote}
+                          animationKey={`${animationKeyBase}-${stop.winery_id}-travel`}
+                          delayMs={travelDelay}
+                          intervalMs={52}
+                        />
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
+        <p className="bespokeSignature">Prepared with care by Tailor Moments Concierge.</p>
+      </div>
+    );
   }
 
   return (
@@ -1091,8 +1353,10 @@ export default function ExplorePage() {
                 setVisitDate={setPreviewDate}
                 groupSize={groupSize}
                 setGroupSize={setGroupSize}
-                tripLength={tripLength}
-                setTripLength={setTripLength}
+                dayPace={dayPace}
+                setDayPace={setDayPace}
+                tripDays={tripDays}
+                setTripDays={setTripDays}
                 needTransport={needTransport}
                 setNeedTransport={setNeedTransport}
                 pickupAddress={pickupAddress}
@@ -1129,7 +1393,7 @@ export default function ExplorePage() {
             {isPreferencesCollapsed ? (
               <div className="explorePreferenceSummary">
                 <p>
-                  <strong>{name || "Guest"}</strong> - {groupSize} guests - {tripLength} - transport {needTransport} - {selectedWineStyles.length} wine styles - {selectedExperiences.length} experiences - {formatPreviewDate(previewDate)}
+                  <strong>{name || "Guest"}</strong> - {groupSize} guests - {PACE_LABELS[dayPace]} pace - {tripDays === 1 ? "1 day" : `${tripDays} days`} - transport {needTransport} - {selectedWineStyles.length} wine styles - {selectedExperiences.length} experiences - {formatPreviewDate(previewDate)}
                 </p>
               </div>
             ) : (
@@ -1293,146 +1557,36 @@ export default function ExplorePage() {
                 )
               ) : (
                 <div className="recommendationStack">
-                  {(() => {
-                    itineraryAnimationCursor = 120;
-                    return null;
-                  })()}
-                  <div ref={itineraryCardRef} className="bespokeItineraryCard">
-                    <div className="bespokeItineraryBorder" />
-                    <div className="bespokeItineraryHeader">
-                      <p className="bespokeKicker">Bespoke day arranged for</p>
-                      <h3>{name || "Your Group"}</h3>
-                      <p className="bespokeDateLine">
-                        {formatPreviewDate(previewDate)}
-                        {tripLength === "multi-day" ? " Â· day one preview" : ""}
-                      </p>
-                    </div>
-                    <div className="bespokeIntro">
-                      {(() => {
-                        const greetingText = `Dear ${name || "guest"},`;
-                        const introText = "We have prepared a polished winery journey shaped around your preferences, pace, and the smoothest travel flow available for the day.";
-                        const greetingDelay = reserveItineraryDelay(greetingText, 58, 320);
-                        const introDelay = reserveItineraryDelay(introText, 58, 380);
-                        return (
-                          <>
-                      <p>
-                        <AnimatedWords
-                          text={greetingText}
-                          animationKey={`${itineraryAnimationKey}-greeting`}
-                          delayMs={greetingDelay}
-                        />
-                      </p>
-                      <p>
-                        <AnimatedWords
-                          text={introText}
-                          animationKey={`${itineraryAnimationKey}-intro`}
-                          delayMs={introDelay}
-                        />
-                      </p>
-                          </>
-                        );
-                      })()}
-                    </div>
-                    <div className="bespokeMetaRow">
-                      <span>{groupSize} guests</span>
-                      <span>{tripLength.replace("-", " ")}</span>
-                      <span>transport {needTransport}</span>
-                    </div>
-                    <div className="bespokeChapterStack">
-                      {itineraryChapters.map((chapter) => (
-                        <section key={chapter.label} className="bespokeChapter">
-                          <div className="bespokeChapterHeading">
-                            <span />
-                            <h4>{chapter.label}</h4>
-                            <span />
-                          </div>
-                          <div className="bespokeStopStack">
-                            {chapter.stops.map((stop, chapterIndex) => {
-                              const stopIndex = recommendation.stops.findIndex(
-                                (entry) =>
-                                  entry.winery_id === stop.winery_id &&
-                                  entry.arrival_time === stop.arrival_time,
-                              );
-                              const nextStop = stopIndex >= 0 ? recommendation.stops[stopIndex + 1] : undefined;
-                              const remoteProfile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
-                              const tastingNote = remoteProfile?.tasting_price !== undefined
-                                ? `Tasting from $${remoteProfile.tasting_price}.`
-                                : "Hosted tasting arranged for your visit.";
-                              const cheeseBoardNote = remoteProfile?.offers_cheese_board
-                                ? "A cheeseboard is available here if you would like to linger."
-                                : "";
-                              const travelModeLabel = needTransport === "yes"
-                                ? "chauffeured drive"
-                                : "leisurely drive";
-                              const travelNote = nextStop
-                                ? `${nextStop.drive_minutes} min ${travelModeLabel} to your next stop.`
-                                : "A graceful finish to the day.";
-                              const stopTimeText = formatDisplayTime(stop.arrival_time);
-                              const stopTitleText = stop.winery_name;
-                              const stopBodyText = `Arrive for a curated cellar-door experience and depart at ${formatDisplayTime(stop.departure_time)}. ${tastingNote} ${cheeseBoardNote}`.trim();
-                              const stopTimeDelay = reserveItineraryDelay(stopTimeText, 82, 140);
-                              const stopTitleDelay = reserveItineraryDelay(stopTitleText, 72, 180);
-                              const stopBodyDelay = reserveItineraryDelay(stopBodyText, 58, 240);
-                              const travelDelay = reserveItineraryDelay(travelNote, 52, 280);
-                              return (
-                                <article key={`${stop.winery_id}-${chapterIndex}`} className="bespokeStop">
-                                  <p className="bespokeStopTime">
-                                    <AnimatedWords
-                                      text={stopTimeText}
-                                      animationKey={`${itineraryAnimationKey}-${stop.winery_id}-time`}
-                                      delayMs={stopTimeDelay}
-                                      intervalMs={82}
-                                    />
-                                  </p>
-                                  <h5>
-                                    <button
-                                      type="button"
-                                      className="timelineWineryLink bespokeWineryLink"
-                                      onClick={() => setSelectedPreviewWinery(resolveWineryById(stop.winery_id) ?? resolveWinery(stop.winery_name))}
-                                    >
-                                      <AnimatedWords
-                                        text={stopTitleText}
-                                        animationKey={`${itineraryAnimationKey}-${stop.winery_id}-title`}
-                                        delayMs={stopTitleDelay}
-                                        intervalMs={72}
-                                        className="bespokeAnimatedTitle"
-                                      />
-                                    </button>
-                                  </h5>
-                                  <p className="bespokeStopBody">
-                                    <AnimatedWords
-                                      text={stopBodyText}
-                                      animationKey={`${itineraryAnimationKey}-${stop.winery_id}-body`}
-                                      delayMs={stopBodyDelay}
-                                    />
-                                  </p>
-                                  <p className="bespokeTravelNote">
-                                    <AnimatedWords
-                                      text={travelNote}
-                                      animationKey={`${itineraryAnimationKey}-${stop.winery_id}-travel`}
-                                      delayMs={travelDelay}
-                                      intervalMs={52}
-                                    />
-                                  </p>
-                                </article>
-                              );
-                            })}
-                          </div>
-                        </section>
-                      ))}
-                    </div>
-                    <p className="bespokeSignature">Prepared with care by Tailor Moments Concierge.</p>
-                    <div className="bespokeActionsRow">
-                      <button
-                        type="button"
-                        className="buttonGhost bespokeReplayButton"
-                        onClick={() => setItineraryReplaySeed((value) => value + 1)}
-                      >
-                        Replay animation
-                      </button>
-                    </div>
+                  {multiDayPlan.length > 1 ? (
+                    multiDayPlan.map((day) => (
+                      <div key={`day-${day.dayIndex}`} className="multiDaySection">
+                        {renderItineraryCard({
+                          rec: day.recommendation,
+                          dateValue: day.date,
+                          animationKeyBase: `${itineraryAnimationKey}-day-${day.dayIndex}`,
+                          attachRef: day.dayIndex === 0,
+                          dayHeading: `Day ${day.dayIndex + 1} Â· ${formatPreviewDate(day.date)}`,
+                        })}
+                      </div>
+                    ))
+                  ) : (
+                    renderItineraryCard({
+                      rec: recommendation,
+                      dateValue: previewDate,
+                      animationKeyBase: itineraryAnimationKey,
+                      attachRef: true,
+                    })
+                  )}
+                  <div className="bespokeActionsRow">
+                    <button
+                      type="button"
+                      className="buttonGhost bespokeReplayButton"
+                      onClick={() => setItineraryReplaySeed((value) => value + 1)}
+                    >
+                      Replay animation
+                    </button>
                   </div>
-                  {recommendationOptions.length > 1 ? (
+                  {multiDayPlan.length <= 1 && recommendationOptions.length > 1 ? (
                     <div className="itineraryOptionToggle">
                       <button
                         type="button"

@@ -5,7 +5,7 @@ import { SectionCard } from "@/components/section-card";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { pickupOptions, wineries as legacyWineries } from "@/lib/demo-data";
 import {
-  getSuggestedWindowFromTripLength,
+  getSuggestedTimeWindow,
   loadExplorePreferences,
   saveExplorePreferences,
 } from "@/lib/explore-preferences";
@@ -133,7 +133,7 @@ export function LiveBookingFlow({
       );
     }
     if (preferredStartTime === "10:00" && preferredEndTime === "17:00") {
-      const window = getSuggestedWindowFromTripLength(saved.tripLength);
+      const window = getSuggestedTimeWindow();
       setPreferredStartTime(window.start);
       setPreferredEndTime(window.end);
     }
