@@ -68,7 +68,7 @@ export function AppShell({
   return (
     <div className="app-shell">
       <header className="topbar">
-        <Link href="https://booking.swagritech.com.au/" className="brand">
+        <Link href="/" className="brand">
           <div className="brandBadge">
             <Image
               src="/brand/TM_logo_white-beta.png"

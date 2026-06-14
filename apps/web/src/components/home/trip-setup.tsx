@@ -290,7 +290,7 @@ export function TripSetup({
             {groupSize > 20 ? (
               <>
                 For groups larger than 20, please{" "}
-                <Link href="mailto:sean@swagritech.com.au" className="textLinkUnderline">
+                <Link href="mailto:hello@tailormoments.com.au" className="textLinkUnderline">
                   get in touch
                 </Link>
                 {" - we'll arrange something special."}

@@ -29,13 +29,13 @@ export function getOpenAIApiKey() {
 }
 
 export function getMagicLinkBaseUrl(tokenType: ActionTokenType) {
-  const siteBase = getEnv("TM_SITE_BASE_URL", "https://booking.swagritech.com.au");
+  const siteBase = getEnv("TM_SITE_BASE_URL", "https://tailormoments.com.au");
   const path = tokenType === "winery_approve" ? "approve" : tokenType === "transporter_accept" ? "accept" : "calendar";
   return `${siteBase}/${path}`;
 }
 
 export function getPasswordResetBaseUrl() {
-  const siteBase = getEnv("TM_SITE_BASE_URL", "https://booking.swagritech.com.au");
+  const siteBase = getEnv("TM_SITE_BASE_URL", "https://tailormoments.com.au");
   return getEnv("TM_PASSWORD_RESET_BASE_URL", `${siteBase}/partner/reset-password`);
 }
 
