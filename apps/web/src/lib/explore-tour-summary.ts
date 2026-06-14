@@ -16,6 +16,12 @@ export type ExploreTourSummary = {
   preferred_end_time: string;
   matched_winery_ids: string[];
   stops: ExploreTourSummaryStop[];
+  // The AI expert-pick commentary for this itinerary, carried through so the
+  // /explore/summary page can show the "Why we chose this for you" block (the
+  // /plan page calls recommend live; the summary page renders from this saved object).
+  justification?: string;
+  label?: string;
+  score?: number;
   generated_at: string;
 };
 

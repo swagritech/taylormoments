@@ -1024,6 +1024,9 @@ export default function ExplorePage() {
           tasting_price: remoteProfile?.tasting_price,
         };
       }),
+      justification: recommendation.justification,
+      label: recommendation.label,
+      score: recommendation.score,
       generated_at: new Date().toISOString(),
     });
 
