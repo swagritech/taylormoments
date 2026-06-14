@@ -6,6 +6,7 @@ import type {
   WineryAvailability,
 } from "../domain/models.js";
 import { makeId } from "../lib/crypto.js";
+import { enhanceWithAiJustifications } from "./recommendation-ai.js";
 import {
   buildTravelTimeMatrix,
   estimateBaselineTravelMinutes,
@@ -766,14 +767,15 @@ export async function rankItinerariesWithAi(candidates: ItineraryOption[]): Prom
     return [];
   }
 
-  return candidates.map((candidate, index) => ({
+  // Mark the expert pick deterministically, then (best-effort) replace the top
+  // pick's justification with a real OpenAI-generated one. If no key is set or
+  // the call fails/times out, the deterministic justifications stand unchanged.
+  const ranked = candidates.map((candidate, index) => ({
     ...candidate,
     expertPick: index === 0,
-    justification:
-      index === 0
-        ? "Expert pick for the smoothest day, strongest partner match, and easiest confirmation path."
-        : candidate.justification,
   }));
+
+  return enhanceWithAiJustifications(ranked);
 }
 
 export async function recommendItineraries(params: {

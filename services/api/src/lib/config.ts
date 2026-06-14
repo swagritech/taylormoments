@@ -24,6 +24,10 @@ export function getOpenAIModel() {
   return getEnv("TM_OPENAI_MODEL", "gpt-4o-mini");
 }
 
+export function getOpenAIApiKey() {
+  return getEnv("TM_OPENAI_API_KEY", "").trim();
+}
+
 export function getMagicLinkBaseUrl(tokenType: ActionTokenType) {
   const siteBase = getEnv("TM_SITE_BASE_URL", "https://booking.swagritech.com.au");
   const path = tokenType === "winery_approve" ? "approve" : tokenType === "transporter_accept" ? "accept" : "calendar";
