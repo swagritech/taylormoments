@@ -2,9 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, type ReactNode } from "react";
 import { WorkflowStatus } from "@/components/workflow-status";
 import { useAuth } from "@/lib/auth-state";
+import { clearExplorePreferences, hasExplorePreferences } from "@/lib/explore-preferences";
+import { clearExploreTourSummary } from "@/lib/explore-tour-summary";
 
 type AppShellProps = {
   eyebrow: string;
@@ -54,7 +57,23 @@ export function AppShell({
   navMode = "public",
 }: AppShellProps) {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [hasSavedPlan, setHasSavedPlan] = useState(false);
+
+  // Show "Start over" only on the public flow once the visitor has a saved trip,
+  // so they can clear their answers and begin a fresh search.
+  useEffect(() => {
+    setHasSavedPlan(hasExplorePreferences());
+  }, []);
+
+  function handleStartOver() {
+    clearExplorePreferences();
+    clearExploreTourSummary();
+    setHasSavedPlan(false);
+    setMobileMenuOpen(false);
+    router.push("/");
+  }
   const navItems = navMode === "partner"
     ? getPartnerNavItems(user?.role)
     : user?.role === "customer"
@@ -107,6 +126,16 @@ export function AppShell({
               ))}
             </nav>
             <div className={`ctaRow authRow ${mobileMenuOpen ? "\u2715" : "\u2630"}`}>
+              {navMode === "public" && hasSavedPlan ? (
+                <button
+                  type="button"
+                  className="buttonGhost"
+                  onClick={handleStartOver}
+                  title="Clear your answers and plan a new day"
+                >
+                  Start over
+                </button>
+              ) : null}
               {user ? (
                 <>
                   {user.role !== "customer" ? (

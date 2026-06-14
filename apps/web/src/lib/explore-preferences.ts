@@ -100,6 +100,24 @@ export function saveExplorePreferences(preferences: ExplorePreferences) {
   }
 }
 
+export function hasExplorePreferences() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  return window.localStorage.getItem(EXPLORE_PREFERENCES_KEY) !== null;
+}
+
+export function clearExplorePreferences() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.localStorage.removeItem(EXPLORE_PREFERENCES_KEY);
+  } catch {
+    // Ignore storage write failures.
+  }
+}
+
 // The booking density is now driven by the backend `pace` field, so the time
 // window is a fixed full day regardless of pace/length.
 export function getSuggestedTimeWindow() {
