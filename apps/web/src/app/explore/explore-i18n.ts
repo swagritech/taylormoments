@@ -111,6 +111,36 @@ export type ExploreCopy = {
     rainChance: string;
     dayHeading: string;
   };
+  summary: {
+    pageTitle: string;
+    pageIntro: string;
+    noSummaryTitle: string;
+    noSummaryDesc: string;
+    backToExplore: string;
+    itinTitle: string;
+    previewMeta: string;
+    departAt: string;
+    timeTbd: string;
+    tastingFeeTbd: string;
+    whyDay: string;
+    contactTitle: string;
+    contactName: string;
+    contactNamePh: string;
+    contactEmail: string;
+    contactEmailPh: string;
+    subtotalLabel: string;
+    pricedNote: string;
+    transportNote: string;
+    customise: string;
+    bookTour: string;
+    booking: string;
+    bookingCreated: string;
+    mapTitle: string;
+    mapNote: string;
+    mapMissing: string;
+    needContact: string;
+    bookingFailed: string;
+  };
   pace: PaceCopy;
   wineStyles: Record<string, { label: string; desc: string }>;
   experiences: Record<string, { label: string; desc: string }>;
@@ -233,6 +263,36 @@ const en: ExploreCopy = {
     weatherTypical: "Typical for this time of year",
     rainChance: "{n}% chance of rain",
     dayHeading: "Day {n}",
+  },
+  summary: {
+    pageTitle: "Tour summary",
+    pageIntro: "Review your itinerary and pricing before booking.",
+    noSummaryTitle: "No tour summary yet",
+    noSummaryDesc: "Craft an itinerary in Explore first.",
+    backToExplore: "Back to Explore",
+    itinTitle: "Itinerary and tasting fees",
+    previewMeta: "{date} · {n} guests",
+    departAt: "Depart {time}",
+    timeTbd: "Time to be confirmed during scheduling.",
+    tastingFeeTbd: "Tasting fee TBD",
+    whyDay: "Why we've chosen this day",
+    contactTitle: "Your details",
+    contactName: "Name",
+    contactNamePh: "Your name",
+    contactEmail: "Email",
+    contactEmailPh: "you@example.com",
+    subtotalLabel: "Tasting subtotal",
+    pricedNote: "{priced} priced stop(s), {missing} stop(s) without a published tasting price.",
+    transportNote: "Transport fees and special winery experiences are confirmed at booking.",
+    customise: "Customise itinerary",
+    bookTour: "Book tour",
+    booking: "Booking…",
+    bookingCreated: "Booking created. Reference {ref}.",
+    mapTitle: "Your winery map",
+    mapNote: "The house pin marks your starting location; numbered pins follow the stop order.",
+    mapMissing: "{n} stop(s) are missing coordinates and aren't shown on the map yet.",
+    needContact: "Please add your name and email before booking.",
+    bookingFailed: "Unable to create booking.",
   },
   pace: {
     relaxed: { label: "Relaxed", note: "A gentle pace · two cellar doors with room to breathe" },
@@ -401,6 +461,36 @@ const zhHans: ExploreCopy = {
     rainChance: "{n}% 降雨概率",
     dayHeading: "第 {n} 天",
   },
+  summary: {
+    pageTitle: "行程概览",
+    pageIntro: "预订前请查看你的行程与价格。",
+    noSummaryTitle: "尚无行程概览",
+    noSummaryDesc: "请先在「探索」中定制一份行程。",
+    backToExplore: "返回探索",
+    itinTitle: "行程与品鉴费用",
+    previewMeta: "{date} · {n} 位宾客",
+    departAt: "{time} 离开",
+    timeTbd: "时间将于排程时确认。",
+    tastingFeeTbd: "品鉴费待定",
+    whyDay: "我们为你选择这一天的理由",
+    contactTitle: "你的信息",
+    contactName: "称呼",
+    contactNamePh: "你的称呼",
+    contactEmail: "邮箱",
+    contactEmailPh: "you@example.com",
+    subtotalLabel: "品鉴小计",
+    pricedNote: "{priced} 站已标价，{missing} 站尚无公开品鉴价。",
+    transportNote: "接送费用与特别体验将于预订时确认。",
+    customise: "调整行程",
+    bookTour: "预订行程",
+    booking: "预订中…",
+    bookingCreated: "预订成功。编号 {ref}。",
+    mapTitle: "你的酒庄地图",
+    mapNote: "房屋图标标示你的出发点；编号图标按停靠顺序排列。",
+    mapMissing: "{n} 站缺少坐标，暂未在地图上显示。",
+    needContact: "预订前请填写你的称呼与邮箱。",
+    bookingFailed: "无法创建预订。",
+  },
   pace: {
     relaxed: { label: "悠闲", note: "从容的节奏 · 两家酒庄，留足余裕" },
     balanced: { label: "尽兴体验", note: "舒适的一整日 · 约三家酒庄" },
@@ -567,6 +657,36 @@ const vi: ExploreCopy = {
     weatherTypical: "Thường thấy vào thời điểm này",
     rainChance: "{n}% khả năng mưa",
     dayHeading: "Ngày {n}",
+  },
+  summary: {
+    pageTitle: "Tổng quan hành trình",
+    pageIntro: "Xem lại hành trình và giá trước khi đặt.",
+    noSummaryTitle: "Chưa có tổng quan hành trình",
+    noSummaryDesc: "Hãy kiến tạo một hành trình trong phần Khám phá trước.",
+    backToExplore: "Quay lại Khám phá",
+    itinTitle: "Hành trình và phí nếm thử",
+    previewMeta: "{date} · {n} khách",
+    departAt: "Rời đi {time}",
+    timeTbd: "Thời gian sẽ được xác nhận khi sắp lịch.",
+    tastingFeeTbd: "Phí nếm thử sẽ xác định sau",
+    whyDay: "Lý do chúng tôi chọn ngày này cho bạn",
+    contactTitle: "Thông tin của bạn",
+    contactName: "Tên",
+    contactNamePh: "Tên của bạn",
+    contactEmail: "Email",
+    contactEmailPh: "you@example.com",
+    subtotalLabel: "Tạm tính nếm thử",
+    pricedNote: "{priced} điểm có giá, {missing} điểm chưa công bố phí nếm thử.",
+    transportNote: "Phí đưa đón và trải nghiệm đặc biệt được xác nhận khi đặt chỗ.",
+    customise: "Điều chỉnh hành trình",
+    bookTour: "Đặt hành trình",
+    booking: "Đang đặt…",
+    bookingCreated: "Đã tạo đặt chỗ. Mã {ref}.",
+    mapTitle: "Bản đồ hầm rượu của bạn",
+    mapNote: "Biểu tượng ngôi nhà đánh dấu điểm xuất phát; các số theo thứ tự điểm dừng.",
+    mapMissing: "{n} điểm thiếu tọa độ và chưa hiển thị trên bản đồ.",
+    needContact: "Vui lòng thêm tên và email trước khi đặt.",
+    bookingFailed: "Không thể tạo đặt chỗ.",
   },
   pace: {
     relaxed: { label: "Thong thả", note: "Nhịp nhẹ nhàng · hai hầm rượu, rộng rãi thời gian" },
