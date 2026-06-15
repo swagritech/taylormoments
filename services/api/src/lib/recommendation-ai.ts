@@ -3,8 +3,15 @@ import type { ItineraryOption, SupportedLocale } from "../domain/models.js";
 
 const LOCALE_LANGUAGE: Record<SupportedLocale, string> = {
   en: "English",
-  "zh-Hans": "Simplified Chinese (for mainland Chinese travellers)",
+  "zh-Hans": "Simplified Chinese (简体中文)",
   vi: "Vietnamese",
+};
+
+// Extra guidance for non-English so the model writes like a native, not a translator.
+const LOCALE_VOICE: Partial<Record<SupportedLocale, string>> = {
+  "zh-Hans":
+    " Write as a native Mandarin speaker for affluent mainland-Chinese travellers — graceful, idiomatic 简体中文 with natural rhythm. Do NOT translate word-for-word from English or produce stiff, translated-sounding text; rephrase freely so it reads as if originally written in Chinese. Keep winery names and 'Margaret River' in their original English.",
+  vi: " Write as a native Vietnamese speaker — natural, idiomatic Vietnamese, never a literal translation. Keep winery names and 'Margaret River' in English.",
 };
 
 // Best-effort AI justification for the expert-pick itinerary. This runs on the
@@ -65,6 +72,7 @@ export async function generateExpertJustification(
     return null;
   }
   const language = LOCALE_LANGUAGE[locale] ?? LOCALE_LANGUAGE.en;
+  const voice = LOCALE_VOICE[locale] ?? "";
   const guestLine = guestContext ? `\n\nAbout the guest: ${guestContext}` : "";
 
   const controller = new AbortController();
@@ -85,7 +93,7 @@ export async function generateExpertJustification(
           {
             role: "system",
             content:
-              `You are a Margaret River wine-tour concierge for Tailor Moments. Write your reply in ${language}. In 1-2 warm, concrete sentences, explain why this curated day suits the guest. When the guest's occasion or tastes are given, connect the day to them naturally (e.g. a honeymoon, a love of organic wines). Use ONLY the facts provided for each winery (and the arrival times) — do NOT invent wine varieties, ratings, awards, prices, or descriptors not in the provided facts; if a winery has no facts listed, just refer to it by name. Never contradict the facts given.`,
+              `You are a Margaret River wine-tour concierge for Tailor Moments. Write your reply in ${language}.${voice} In 1-2 warm, concrete sentences, explain why this curated day suits the guest. When the guest's occasion or tastes are given, connect the day to them naturally (e.g. a honeymoon, a love of organic wines). Use ONLY the facts provided for each winery (and the arrival times) — do NOT invent wine varieties, ratings, awards, prices, or descriptors not in the provided facts; if a winery has no facts listed, just refer to it by name. Never contradict the facts given.`,
           },
           { role: "user", content: `${buildItinerarySummary(itinerary, factsById)}${guestLine}` },
         ],

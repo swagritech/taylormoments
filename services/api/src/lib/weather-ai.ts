@@ -3,8 +3,15 @@ import type { DayWeather, SupportedLocale } from "../domain/models.js";
 
 const LOCALE_LANGUAGE: Record<SupportedLocale, string> = {
   en: "English",
-  "zh-Hans": "Simplified Chinese (for mainland Chinese travellers)",
+  "zh-Hans": "Simplified Chinese (简体中文)",
   vi: "Vietnamese",
+};
+
+// Native-voice guidance so non-English output reads naturally, not like a translation.
+const LOCALE_VOICE: Partial<Record<SupportedLocale, string>> = {
+  "zh-Hans":
+    " Write as a native Mandarin speaker for affluent mainland-Chinese travellers — graceful, idiomatic 简体中文 with natural rhythm, NOT a word-for-word translation from English.",
+  vi: " Write as a native Vietnamese speaker — natural, idiomatic Vietnamese, never a literal translation.",
 };
 
 // Best-effort warm "concierge voice" + translation layer over the deterministic
@@ -74,6 +81,7 @@ async function requestWeatherCopy(
   apiKey: string,
 ): Promise<Map<string, { summary: string; clothing: string[] }> | null> {
   const language = LOCALE_LANGUAGE[locale] ?? LOCALE_LANGUAGE.en;
+  const voice = LOCALE_VOICE[locale] ?? "";
   const payload = {
     days: days.map((day) => ({
       date: day.date,
@@ -106,7 +114,7 @@ async function requestWeatherCopy(
             role: "system",
             content:
               `You are a warm, gracious Margaret River wine-tour concierge for Tailor Moments. ` +
-              `Write everything in ${language}. You are given factual weather data and plain clothing tips ` +
+              `Write everything in ${language}.${voice} You are given factual weather data and plain clothing tips ` +
               `for one or more touring days. For each day: rewrite "summary" as ONE warm, welcoming sentence, ` +
               `and rewrite each clothing tip in a warmer concierge voice. You MUST keep the same practical ` +
               `meaning and the same facts: do not change any temperature or rain numbers, do not invent new ` +
