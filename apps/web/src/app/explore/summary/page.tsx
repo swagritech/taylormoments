@@ -321,14 +321,45 @@ export default function ExploreSummaryPage() {
     weather: NonNullable<typeof summary>["weather"];
   };
 
+  const needTransport = summary?.need_transport ?? "yes";
+
+  function renderDrive(minutes: number, key: string, fromOrigin: boolean) {
+    if (!minutes || minutes <= 0) {
+      return null;
+    }
+    const template = fromOrigin
+      ? needTransport === "yes"
+        ? t.result.driveFromYes
+        : t.result.driveFromNo
+      : needTransport === "yes"
+        ? t.result.driveYes
+        : t.result.driveNo;
+    return (
+      <div className="drive" key={`drive-${key}`}>
+        {fillTemplate(template, { n: minutes })}
+      </div>
+    );
+  }
+
   function renderDay(day: SummaryDay, multi: boolean) {
     const rows: ReactNode[] = [];
     let lunchPlaced = false;
+    // The first stop's drive_minutes is the leg from the pickup/start to it.
+    const firstLeg = day.stops[0]?.drive_minutes ?? 0;
+    const originRow = renderDrive(firstLeg, `${day.index}-origin`, true);
+    if (originRow) {
+      rows.push(originRow);
+    }
     day.stops.forEach((stop, index) => {
       rows.push(renderStop(stop, `${day.index}-${index}`));
       if (day.lunch && !lunchPlaced && day.lunch.winery_id === stop.winery_id) {
         rows.push(renderLunch(day.lunch, `${day.index}`));
         lunchPlaced = true;
+      }
+      const nextLeg = day.stops[index + 1]?.drive_minutes ?? 0;
+      const betweenRow = renderDrive(nextLeg, `${day.index}-${index}-next`, false);
+      if (betweenRow) {
+        rows.push(betweenRow);
       }
     });
     if (day.lunch && !lunchPlaced) {

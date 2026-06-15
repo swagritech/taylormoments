@@ -28,6 +28,8 @@ export type ExploreTourSummary = {
   lead_email: string;
   party_size: number;
   pickup_location: string;
+  // "yes" = chauffeured, "no" = self-drive. Drives the drive-leg wording on the summary.
+  need_transport?: "yes" | "no";
   day_pace: ExplorePreferences["dayPace"];
   trip_days: number;
   preview_date: string;

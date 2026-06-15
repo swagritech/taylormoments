@@ -1044,6 +1044,7 @@ export default function ExplorePage() {
       lead_email: email.trim(),
       party_size: groupSize,
       pickup_location: pickupLocation,
+      need_transport: needTransport,
       day_pace: dayPace,
       trip_days: isMultiDay ? multiDayPlan.length : 1,
       preview_date: previewDate,
