@@ -1,8 +1,7 @@
 ﻿"use client";
 
-import { Fragment, startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
 import {
   fetchWeatherForDates,
   formatDisplayTime,
@@ -24,7 +23,16 @@ import {
   type ExploreYesNo,
 } from "@/lib/explore-preferences";
 import { saveExploreTourSummary, type ExploreTourSummaryDay } from "@/lib/explore-tour-summary";
-import { TripSetup } from "@/components/home/trip-setup";
+import { getLocale, setLocale, type AppLocale } from "@/lib/locale";
+import {
+  EXPLORE_I18N,
+  fillTemplate,
+  intlForLocale,
+  scriptForLocale,
+  type StepId,
+} from "./explore-i18n";
+import { Card, LangSelect, Pill, RowCard, Wordmark } from "./quiz-atoms";
+import "./explore-flow.css";
 
 type DayPace = ExploreDayPace;
 type YesNo = ExploreYesNo;
@@ -52,14 +60,6 @@ type MultiDayResult = {
   recommendation: Recommendation;
   // The catalog wineries selected for this day (used for matched-id handoff).
   pool: WineryCatalogItem[];
-};
-
-type AnimatedWordsProps = {
-  text: string;
-  animationKey: string;
-  delayMs?: number;
-  intervalMs?: number;
-  className?: string;
 };
 
 const WINE_STYLE_OPTIONS = [
@@ -124,12 +124,6 @@ function toTimeWindow() {
   return { start: "09:00", end: "17:00" };
 }
 
-const PACE_LABELS: Record<DayPace, string> = {
-  relaxed: "Relaxed",
-  balanced: "Full experience",
-  maximise: "Maximise",
-};
-
 function toIsoDate(dayOffset = 7) {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
@@ -171,85 +165,6 @@ function buildItineraryChapters(stops: Recommendation["stops"]): ItineraryChapte
   return chapterOrder
     .map((label) => ({ label, stops: grouped.get(label) ?? [] }))
     .filter((chapter) => chapter.stops.length > 0);
-}
-
-function formatPreviewDate(value: string) {
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-  return parsed.toLocaleDateString("en-AU", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function AnimatedWords({
-  text,
-  animationKey,
-  delayMs = 0,
-  intervalMs = 28,
-  className,
-}: AnimatedWordsProps) {
-  const words = text.trim().split(/\s+/).filter(Boolean);
-  const [visibleCount, setVisibleCount] = useState(words.length);
-
-  useEffect(() => {
-    if (words.length === 0) {
-      return;
-    }
-
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-
-    let count = 0;
-    const resetId = window.setTimeout(() => {
-      startTransition(() => {
-        setVisibleCount(0);
-      });
-    }, 0);
-    let intervalId: number | undefined;
-    const timeoutId = window.setTimeout(() => {
-      intervalId = window.setInterval(() => {
-        count += 1;
-        startTransition(() => {
-          setVisibleCount(count);
-        });
-        if (count >= words.length && intervalId !== undefined) {
-          window.clearInterval(intervalId);
-        }
-      }, intervalMs);
-    }, delayMs);
-
-    return () => {
-      window.clearTimeout(resetId);
-      window.clearTimeout(timeoutId);
-      if (intervalId !== undefined) {
-        window.clearInterval(intervalId);
-      }
-    };
-  }, [animationKey, delayMs, intervalMs, text, words.length]);
-
-  if (words.length === 0) {
-    return null;
-  }
-
-  return (
-    <span className={className}>
-      {words.map((word, index) => (
-        <span
-          key={`${animationKey}-${index}-${word}`}
-          className={`wordRevealToken ${index < visibleCount ? "visible" : ""}`}
-        >
-          {word}
-          {index < words.length - 1 ? " " : ""}
-        </span>
-      ))}
-    </span>
-  );
 }
 
 function toSearchProfile(
@@ -496,19 +411,14 @@ export default function ExplorePage() {
   const router = useRouter();
   const initialPreferences = useMemo(() => loadExplorePreferences(), []);
   const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-  const previewRef = useRef<HTMLDivElement | null>(null);
-  const itineraryCardRef = useRef<HTMLDivElement | null>(null);
   const [name, setName] = useState(initialPreferences?.name ?? "");
-  const [email, setEmail] = useState(initialPreferences?.email ?? "");
+  const [email] = useState(initialPreferences?.email ?? "");
   const [groupSize, setGroupSize] = useState(initialPreferences?.groupSize ?? 4);
   const [needTransport, setNeedTransport] = useState<YesNo>(initialPreferences?.needTransport ?? "yes");
   const [pickupAddress, setPickupAddress] = useState(initialPreferences?.pickupAddress ?? "");
   const [pickupPlaceId, setPickupPlaceId] = useState(initialPreferences?.pickupPlaceId ?? "");
   const [pickupLatitude, setPickupLatitude] = useState<number | undefined>(initialPreferences?.pickupLatitude);
   const [pickupLongitude, setPickupLongitude] = useState<number | undefined>(initialPreferences?.pickupLongitude);
-  // Trip basics (date/group/transport/pickup) are captured up front via <TripSetup />.
-  // Returning visitors who already saved a travel date skip straight to the quiz.
-  const [tripReady, setTripReady] = useState<boolean>(() => Boolean(initialPreferences?.previewDate));
   const [dayPace, setDayPace] = useState<DayPace>(initialPreferences?.dayPace ?? "balanced");
   const [tripDays, setTripDays] = useState<number>(initialPreferences?.tripDays ?? 1);
   const [selectedWineStyles, setSelectedWineStyles] = useState<WineStyleId[]>(() => {
@@ -567,13 +477,7 @@ export default function ExplorePage() {
     ),
   );
   const [accessibilityOther, setAccessibilityOther] = useState(initialPreferences?.accessibilityOther ?? "");
-  const [showDietary, setShowDietary] = useState(false);
-  const [showAccessibility, setShowAccessibility] = useState(false);
-  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [requesting, setRequesting] = useState(false);
-  const [isRouteEntering, setIsRouteEntering] = useState(false);
-  const [isPanelExiting, setIsPanelExiting] = useState(false);
-  const [isPanelEntering, setIsPanelEntering] = useState(false);
   const [matchedWineries, setMatchedWineries] = useState<WineryCatalogItem[]>(
     () =>
       (initialPreferences?.matchedWineryIds ?? [])
@@ -588,17 +492,18 @@ export default function ExplorePage() {
   // Weather + clothing guidance keyed by touring date (best-effort; may be empty).
   const [weatherByDate, setWeatherByDate] = useState<Record<string, DayWeather>>({});
   const [error, setError] = useState<string | null>(null);
-  const [hasPlanned, setHasPlanned] = useState(false);
-  const [isPreferencesCollapsed, setIsPreferencesCollapsed] = useState(false);
   const [selectedPreviewWinery, setSelectedPreviewWinery] = useState<WineryCatalogItem | null>(null);
   const [profilesById, setProfilesById] = useState<Record<string, WineryListResponse["wineries"][number]>>({});
-  const [itineraryReplaySeed, setItineraryReplaySeed] = useState(0);
-  const wineStyleValidationError = submitAttempted && selectedWineStyles.length === 0
-    ? "Pick at least one wine style â€” even 'Surprise me' works perfectly."
-    : null;
-  const experienceInfoMessage = submitAttempted && selectedExperiences.length === 0
-    ? "No preference is fine â€” we'll curate based on your other choices."
-    : null;
+  // Localized 4-chapter wizard state. Locale is shared with the homepage via the
+  // tm_locale store; it seeds the AI commentary + weather language and the per-script
+  // typography (data-script on the .tm-flow root).
+  const [locale, setLocaleState] = useState<AppLocale>("en");
+  const [wizardStep, setWizardStep] = useState(0);
+  const [wizardAttempted, setWizardAttempted] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+  useEffect(() => {
+    setLocaleState(getLocale());
+  }, []);
   const includeLunch: YesNo = selectedExperiences.some((entry) =>
     ["winery_lunch", "cheese_wine", "wine_chocolate"].includes(entry),
   )
@@ -619,29 +524,6 @@ export default function ExplorePage() {
 
   const timeWindow = useMemo(() => toTimeWindow(), []);
   const recommendation = recommendationOptions[selectedRecommendationIndex] ?? null;
-  const itineraryAnimationKey = recommendation ? `${recommendation.itinerary_id}-${itineraryReplaySeed}` : "idle";
-  let itineraryAnimationCursor = 90;
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const transitionFlag = window.sessionStorage.getItem("tm_explore_route_fade_in");
-    if (transitionFlag !== "1") {
-      return;
-    }
-    window.sessionStorage.removeItem("tm_explore_route_fade_in");
-    setIsRouteEntering(true);
-    const timer = window.setTimeout(() => setIsRouteEntering(false), 260);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  function reserveItineraryDelay(text: string, intervalMs = 32, pauseMs = 180) {
-    const delay = itineraryAnimationCursor;
-    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
-    itineraryAnimationCursor += wordCount * intervalMs + pauseMs;
-    return delay;
-  }
 
   useEffect(() => {
     const payload: ExplorePreferences = {
@@ -719,31 +601,6 @@ export default function ExplorePage() {
     };
   }, []);
 
-  useEffect(() => {
-    const target = recommendation ? itineraryCardRef.current : previewRef.current;
-    if (!hasPlanned || !target) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      const scrollTargetToCenter = () => {
-        const rect = target.getBoundingClientRect();
-        const absoluteTop = window.scrollY + rect.top;
-        const centeredTop = Math.max(0, absoluteTop - (window.innerHeight - rect.height) / 2 - 18);
-        window.scrollTo({ top: centeredTop, behavior: "smooth" });
-      };
-
-      const rafOne = window.requestAnimationFrame(() => {
-        const rafTwo = window.requestAnimationFrame(() => {
-          scrollTargetToCenter();
-        });
-        window.setTimeout(() => window.cancelAnimationFrame(rafTwo), 250);
-      });
-      window.setTimeout(() => window.cancelAnimationFrame(rafOne), 250);
-    }, 220);
-
-    return () => window.clearTimeout(timer);
-  }, [hasPlanned, recommendation, itineraryReplaySeed]);
 
   // Best-effort weather lookup; merges results into state keyed by date so the
   // itinerary card and summary can show conditions + what to wear. Never throws.
@@ -762,28 +619,16 @@ export default function ExplorePage() {
   }
 
   async function handlePlanTrip() {
-    setSubmitAttempted(true);
     if (selectedWineStyles.length === 0) {
       setError(null);
       return;
     }
-    const runStepTransition = !hasPlanned;
-    if (runStepTransition) {
-      setIsPanelExiting(true);
-      await new Promise<void>((resolve) => window.setTimeout(resolve, 180));
-      setIsPanelExiting(false);
-      setIsPanelEntering(true);
-      window.setTimeout(() => setIsPanelEntering(false), 260);
-    }
-    setHasPlanned(true);
-    setIsPreferencesCollapsed(true);
     setError(null);
     setRequesting(true);
     setRecommendationOptions([]);
     setSelectedRecommendationIndex(0);
     setMultiDayPlan([]);
     setWeatherByDate({});
-    setItineraryReplaySeed(0);
 
     try {
       let requestPickupLatitude = pickupLatitude;
@@ -1202,25 +1047,119 @@ export default function ExplorePage() {
     return match;
   }
 
-  // A compact weather + what-to-wear panel for one touring date. Many of our
-  // guests travel from overseas and won't know the local climate, so we show the
-  // temperature range, the chance of rain (a real forecast when close, the
-  // seasonal average otherwise), and concrete clothing guidance.
+  // ── Localized wizard + concierge result ──────────────────────────────────
+  const t = EXPLORE_I18N[locale];
+  const script = scriptForLocale(locale);
+  const intlTag = intlForLocale(locale);
+  const stepIds: StepId[] = ["trip", "palate", "occasion", "care"];
+
+  function formatFlowDate(iso: string) {
+    const parsed = new Date(`${iso}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) {
+      return iso;
+    }
+    try {
+      return parsed.toLocaleDateString(intlTag, { weekday: "long", day: "numeric", month: "long" });
+    } catch {
+      return parsed.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
+    }
+  }
+
+  function chapterLabelLocalized(label: ItineraryChapter["label"]) {
+    if (label === "Morning") return t.result.morning;
+    if (label === "Afternoon") return t.result.afternoon;
+    return t.result.evening;
+  }
+
+  // Per-step validation; errors only surface after a submit attempt and clear on edit.
+  const stepErrors: Record<string, string> = {};
+  if (wizardStep === 0) {
+    if (!previewDate) stepErrors.date = t.errors.date;
+    else if (previewDate < toIsoDate(0)) stepErrors.date = t.errors.datePast;
+    if (groupSize < 1) stepErrors.group = t.errors.group;
+    if (needTransport === "yes" && !pickupAddress.trim()) stepErrors.pickup = t.errors.pickup;
+  }
+  if (wizardStep === 1) {
+    if (selectedWineStyles.length === 0) stepErrors.wine = t.errors.wine;
+  }
+  const showErr = wizardAttempted ? stepErrors : {};
+  const canAdvance = Object.keys(stepErrors).length === 0;
+
+  function changeLocale(code: AppLocale) {
+    setLocaleState(code);
+    setLocale(code);
+    // On the result screen, re-run so the AI commentary + weather come back in the
+    // newly chosen language (both read the persisted locale at call time).
+    if (showResult) {
+      void handlePlanTrip();
+    }
+  }
+
+  function craftDay() {
+    setWizardAttempted(false);
+    setShowResult(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    void handlePlanTrip();
+  }
+
+  function nextStep() {
+    if (!canAdvance) {
+      setWizardAttempted(true);
+      return;
+    }
+    setWizardAttempted(false);
+    if (wizardStep >= stepIds.length - 1) {
+      craftDay();
+      return;
+    }
+    setWizardStep(wizardStep + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function prevStep() {
+    setWizardAttempted(false);
+    if (wizardStep > 0) {
+      setWizardStep(wizardStep - 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  function goToStep(index: number) {
+    if (index <= wizardStep) {
+      setWizardAttempted(false);
+      setWizardStep(index);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  function adjustPreferences() {
+    setShowResult(false);
+    setWizardStep(3);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function tastingPriceForStop(stop: Recommendation["stops"][number]): number | undefined {
+    const profile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
+    return profile?.tasting_price;
+  }
+
   function renderWeatherPanel(weather: DayWeather) {
-    const sourceLabel =
-      weather.source === "forecast" ? "Forecast" : "Typical for this time of year";
     return (
-      <div className="bespokeWeather">
-        <div className="bespokeWeatherHead">
-          <span className="bespokeWeatherSummary">{weather.summary}</span>
-          <span className="bespokeWeatherSource">{sourceLabel}</span>
+      <div className="weather">
+        <div className="weather__head">
+          <span className="weather__summary">{weather.summary}</span>
+          <span className="weather__source">
+            {weather.source === "forecast" ? t.result.weatherForecast : t.result.weatherTypical}
+          </span>
         </div>
-        <div className="bespokeWeatherStats">
-          <span>{weather.temp_min_c}&deg; – {weather.temp_max_c}&deg;C</span>
-          <span>{weather.rain_probability_percent}% chance of rain</span>
+        <div className="weather__stats">
+          <span>
+            {weather.temp_min_c}° – {weather.temp_max_c}°C
+          </span>
+          <span>{fillTemplate(t.result.rainChance, { n: weather.rain_probability_percent })}</span>
         </div>
-        <p className="bespokeWeatherWearLabel">What to wear</p>
-        <ul className="bespokeWeatherList">
+        <p className="weather__wearLabel">{t.result.weatherWear}</p>
+        <ul className="weather__list">
           {weather.clothing.map((tip, index) => (
             <li key={index}>{tip}</li>
           ))}
@@ -1229,481 +1168,585 @@ export default function ExplorePage() {
     );
   }
 
-  // Renders one bespoke day card. Used once for the single-day flow and once
-  // per day for multi-day plans (the same visual language stacked N times).
-  function renderItineraryCard(options: {
-    rec: Recommendation;
-    dateValue: string;
-    animationKeyBase: string;
-    attachRef: boolean;
-    dayHeading?: string;
-  }) {
-    const { rec, dateValue, animationKeyBase, attachRef, dayHeading } = options;
+  // One touring day: Morning/Afternoon/Evening chapters with the placed lunch slotted
+  // in chronological position (right after its host winery) and drive rows between
+  // stops, followed by the weather + what-to-wear panel.
+  function renderDayItinerary(rec: Recommendation, weather: DayWeather | undefined, dateValue: string, dayLabel?: string) {
     const chapters = buildItineraryChapters(rec.stops);
-    // Reset the shared animation cursor so each day's reveal starts fresh.
-    itineraryAnimationCursor = 120;
-
+    const flat = rec.stops;
+    const lunch = rec.lunch ?? null;
     return (
-      <div
-        ref={attachRef ? itineraryCardRef : undefined}
-        className="bespokeItineraryCard"
-      >
-        <div className="bespokeItineraryBorder" />
-        <div className="bespokeItineraryHeader">
-          <p className="bespokeKicker">{dayHeading ? dayHeading : "Bespoke day arranged for"}</p>
-          <h3>{name || "Your Group"}</h3>
-          <p className="bespokeDateLine">{formatPreviewDate(dateValue)}</p>
-        </div>
-        <div className="bespokeIntro">
-          {(() => {
-            const greetingText = `Dear ${name || "guest"},`;
-            // The real concierge "why we chose this" — AI-written and grounded in the
-            // actual wineries when a key is configured, otherwise a graceful default.
-            const introText =
-              rec.justification?.trim() ||
-              "We have prepared a polished winery journey shaped around your preferences, pace, and the smoothest travel flow available for the day.";
-            const greetingDelay = reserveItineraryDelay(greetingText, 58, 320);
-            const introDelay = reserveItineraryDelay(introText, 58, 380);
-            return (
-              <>
-                <p>
-                  <AnimatedWords
-                    text={greetingText}
-                    animationKey={`${animationKeyBase}-greeting`}
-                    delayMs={greetingDelay}
-                  />
-                </p>
-                <p className="bespokeWhyLabel">Why we've chosen this for you</p>
-                <p>
-                  <AnimatedWords
-                    text={introText}
-                    animationKey={`${animationKeyBase}-intro`}
-                    delayMs={introDelay}
-                  />
-                </p>
-              </>
-            );
-          })()}
-        </div>
-        <div className="bespokeMetaRow">
-          <span>{groupSize} guests</span>
-          <span>{PACE_LABELS[dayPace]} pace</span>
-          <span>transport {needTransport}</span>
-        </div>
-        {weatherByDate[dateValue] ? renderWeatherPanel(weatherByDate[dateValue]!) : null}
-        <div className="bespokeChapterStack">
-          {chapters.map((chapter) => (
-            <section key={chapter.label} className="bespokeChapter">
-              <div className="bespokeChapterHeading">
-                <span />
-                <h4>{chapter.label}</h4>
-                <span />
-              </div>
-              <div className="bespokeStopStack">
-                {chapter.stops.map((stop, chapterIndex) => {
-                  const stopIndex = rec.stops.findIndex(
-                    (entry) =>
-                      entry.winery_id === stop.winery_id &&
-                      entry.arrival_time === stop.arrival_time,
-                  );
-                  const nextStop = stopIndex >= 0 ? rec.stops[stopIndex + 1] : undefined;
-                  const remoteProfile = profilesById[stop.winery_id] ?? resolveRemoteProfileByName(stop.winery_name);
-                  const tastingNote = remoteProfile?.tasting_price !== undefined
-                    ? `Tasting from $${remoteProfile.tasting_price}.`
-                    : "Hosted tasting arranged for your visit.";
-                  const cheeseBoardNote = remoteProfile?.offers_cheese_board
-                    ? "A cheeseboard is available here if you would like to linger."
-                    : "";
-                  const travelModeLabel = needTransport === "yes"
-                    ? "chauffeured drive"
-                    : "leisurely drive";
-                  const travelNote = nextStop
-                    ? `${nextStop.drive_minutes} min ${travelModeLabel} to your next stop.`
-                    : "A graceful finish to the day.";
-                  const stopTimeText = formatDisplayTime(stop.arrival_time);
-                  const stopTitleText = stop.winery_name;
-                  const stopBodyText = `Arrive for a curated cellar-door experience and depart at ${formatDisplayTime(stop.departure_time)}. ${tastingNote} ${cheeseBoardNote}`.trim();
-                  const stopTimeDelay = reserveItineraryDelay(stopTimeText, 82, 140);
-                  const stopTitleDelay = reserveItineraryDelay(stopTitleText, 72, 180);
-                  const stopBodyDelay = reserveItineraryDelay(stopBodyText, 58, 240);
-                  const travelDelay = reserveItineraryDelay(travelNote, 52, 280);
-                  // Lunch is placed in the gap after the food-capable winery that
-                  // hosts it. Render it as its own interlude directly beneath that stop.
-                  const lunch = rec.lunch && rec.lunch.winery_id === stop.winery_id ? rec.lunch : null;
-                  const lunchTimeText = lunch
-                    ? `${formatDisplayTime(lunch.arrival_time)} - ${formatDisplayTime(lunch.departure_time)}`
-                    : "";
-                  const lunchBodyText = lunch
-                    ? `Settle in for a relaxed lunch at ${lunch.winery_name}. ${lunch.food_description ? `On offer: ${lunch.food_description}.` : ""}`.trim()
-                    : "";
-                  const lunchTimeDelay = lunch ? reserveItineraryDelay(lunchTimeText, 82, 150) : 0;
-                  const lunchBodyDelay = lunch ? reserveItineraryDelay(lunchBodyText, 58, 240) : 0;
-                  return (
-                    <Fragment key={`${stop.winery_id}-${chapterIndex}`}>
-                    <article className="bespokeStop">
-                      <p className="bespokeStopTime">
-                        <AnimatedWords
-                          text={stopTimeText}
-                          animationKey={`${animationKeyBase}-${stop.winery_id}-time`}
-                          delayMs={stopTimeDelay}
-                          intervalMs={82}
-                        />
-                      </p>
-                      <h5>
+      <Fragment key={dateValue}>
+        {dayLabel ? (
+          <div className="itinDay">
+            <span className="itinDay__label">{dayLabel}</span>
+          </div>
+        ) : null}
+        {chapters.map((chapter) => (
+          <section className="chapter" key={`${dateValue}-${chapter.label}`}>
+            <div className="chapter__head">
+              <span className="chapter__label">{chapterLabelLocalized(chapter.label)}</span>
+              <span className="chapter__rule" />
+            </div>
+            {chapter.stops.map((stop) => {
+              const idx = flat.findIndex(
+                (entry) => entry.winery_id === stop.winery_id && entry.arrival_time === stop.arrival_time,
+              );
+              const nextStop = idx >= 0 ? flat[idx + 1] : undefined;
+              const price = tastingPriceForStop(stop);
+              const isLunchHost = Boolean(lunch && lunch.winery_id === stop.winery_id);
+              return (
+                <Fragment key={`${stop.winery_id}-${stop.arrival_time}`}>
+                  <div className="stop">
+                    <div className="stop__time">{formatDisplayTime(stop.arrival_time)}</div>
+                    <div className="stop__body">
+                      <div className="stop__row">
                         <button
                           type="button"
-                          className="timelineWineryLink bespokeWineryLink"
-                          onClick={() => setSelectedPreviewWinery(resolveWineryById(stop.winery_id) ?? resolveWinery(stop.winery_name))}
+                          className="stop__name"
+                          style={{ border: 0, background: "transparent", padding: 0, cursor: "pointer", textAlign: "left" }}
+                          onClick={() =>
+                            setSelectedPreviewWinery(
+                              resolveWineryById(stop.winery_id) ?? resolveWinery(stop.winery_name),
+                            )
+                          }
                         >
-                          <AnimatedWords
-                            text={stopTitleText}
-                            animationKey={`${animationKeyBase}-${stop.winery_id}-title`}
-                            delayMs={stopTitleDelay}
-                            intervalMs={72}
-                            className="bespokeAnimatedTitle"
-                          />
+                          {stop.winery_name}
                         </button>
-                      </h5>
-                      <p className="bespokeStopBody">
-                        <AnimatedWords
-                          text={stopBodyText}
-                          animationKey={`${animationKeyBase}-${stop.winery_id}-body`}
-                          delayMs={stopBodyDelay}
-                        />
+                      </div>
+                      <p className="stop__note">{t.result.stopNote}</p>
+                      <p className="stop__fee">
+                        {price != null ? (
+                          <>
+                            {t.result.tasting} <b>${price}</b> {t.result.pp} · {t.result.depart}{" "}
+                            {formatDisplayTime(stop.departure_time)}
+                          </>
+                        ) : (
+                          <>
+                            {t.result.depart} {formatDisplayTime(stop.departure_time)}
+                          </>
+                        )}
                       </p>
-                      <p className="bespokeTravelNote">
-                        <AnimatedWords
-                          text={travelNote}
-                          animationKey={`${animationKeyBase}-${stop.winery_id}-travel`}
-                          delayMs={travelDelay}
-                          intervalMs={52}
-                        />
-                      </p>
-                    </article>
-                    {lunch ? (
-                      <article className="bespokeStop bespokeLunch">
-                        <p className="bespokeStopTime">
-                          <AnimatedWords
-                            text={lunchTimeText}
-                            animationKey={`${animationKeyBase}-${stop.winery_id}-lunch-time`}
-                            delayMs={lunchTimeDelay}
-                            intervalMs={82}
-                          />
+                    </div>
+                  </div>
+                  {isLunchHost && lunch ? (
+                    <div className="stop stop--lunch">
+                      <div className="stop__time">{formatDisplayTime(lunch.arrival_time)}</div>
+                      <div className="stop__body">
+                        <div className="stop__row">
+                          <span className="stop__name">
+                            {t.result.lunchLabel} · {lunch.winery_name}
+                          </span>
+                        </div>
+                        <p className="stop__note">{lunch.food_description || t.result.lunchNote}</p>
+                        <p className="stop__fee">
+                          {t.result.depart} {formatDisplayTime(lunch.departure_time)}
                         </p>
-                        <h5 className="bespokeLunchTitle">Lunch - {lunch.winery_name}</h5>
-                        <p className="bespokeStopBody">
-                          <AnimatedWords
-                            text={lunchBodyText}
-                            animationKey={`${animationKeyBase}-${stop.winery_id}-lunch-body`}
-                            delayMs={lunchBodyDelay}
-                          />
-                        </p>
-                      </article>
-                    ) : null}
-                    </Fragment>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  {nextStop ? (
+                    <div className="drive">
+                      {fillTemplate(needTransport === "yes" ? t.result.driveYes : t.result.driveNo, {
+                        n: nextStop.drive_minutes,
+                      })}
+                    </div>
+                  ) : null}
+                </Fragment>
+              );
+            })}
+          </section>
+        ))}
+        {weather ? renderWeatherPanel(weather) : null}
+      </Fragment>
+    );
+  }
+
+  // Days to render: the multi-day plan, or the single chosen recommendation.
+  const resultDays =
+    multiDayPlan.length > 1
+      ? multiDayPlan.map((day) => ({ rec: day.recommendation, date: day.date, index: day.dayIndex }))
+      : recommendation
+        ? [{ rec: recommendation, date: previewDate, index: 0 }]
+        : [];
+  const allStops = resultDays.flatMap((day) => day.rec.stops);
+  const subtotal = allStops.reduce((sum, stop) => sum + (tastingPriceForStop(stop) ?? 0), 0) * groupSize;
+  const isMultiDay = resultDays.length > 1;
+
+  // Concierge note — greeting + AI justification (locale-aware, grounded) with a
+  // localized template fallback, then chips echoing the guest's own choices.
+  const greetName = name.trim() || t.rationale.guest;
+  const titleName = name.trim() || t.guestFallback;
+  const groupClause = groupSize === 1 ? t.rationale.groupOne : fillTemplate(t.rationale.groupMany, { n: groupSize });
+  const paceNoun = t.rationale.paceNoun[dayPace];
+  const templateBody = fillTemplate(needTransport === "yes" ? t.rationale.bodyTransport : t.rationale.bodySelf, {
+    pace: paceNoun,
+    group: groupClause,
+    n: allStops.length,
+  });
+  // Prefer the real AI justification when present; otherwise the localized template.
+  const conciergeBody = recommendation?.justification?.trim() || templateBody;
+  const chosenChips = [
+    ...selectedWineStyles.map((id) => t.wineStyles[id]?.label),
+    occasion ? t.occasions[occasion] : null,
+    budgetBand ? t.budgets[budgetBand]?.label : null,
+    ...selectedExperiences.map((id) => t.experiences[id]?.label),
+  ].filter((value): value is string => Boolean(value)).slice(0, 9);
+
+  const progress = (wizardStep / stepIds.length) * 100;
+  const isLastStep = wizardStep === stepIds.length - 1;
+  const curStep = t.steps[stepIds[wizardStep]!];
+
+  function renderResult() {
+    return (
+      <div className="result">
+        <div className="result__bar">
+          <Wordmark />
+          <LangSelect locale={locale} onChange={changeLocale} label={t.ui.language} />
         </div>
-        <p className="bespokeSignature">Prepared with care by Tailor Moments Concierge.</p>
+        <div className="result__inner">
+          <div className="result__hero reveal">
+            <p className="tm-kicker">{t.result.kicker}</p>
+            <h1 className="result__title tm-display">{fillTemplate(t.result.title, { name: titleName })}</h1>
+            <p className="result__em">
+              {formatFlowDate(previewDate)}
+              {isMultiDay ? t.result.dayOnePreview : ""}
+            </p>
+          </div>
+
+          {requesting && resultDays.length === 0 ? (
+            <p className="result__note" style={{ marginTop: 40 }}>
+              {t.ui.loading}
+            </p>
+          ) : resultDays.length === 0 ? (
+            <div style={{ marginTop: 30, textAlign: "center" }}>
+              <p className="result__note">{error ?? t.errors.noPlan}</p>
+              <div className="result__actions">
+                <button type="button" className="btn btn--ghost" onClick={adjustPreferences}>
+                  {t.ui.adjust}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="result__meta">
+                <span className="result__metaItem">
+                  <b>{groupSize}</b>
+                  <span>{t.result.metaGuests}</span>
+                </span>
+                <span className="result__metaItem">
+                  <b>{allStops.length}</b>
+                  <span>{t.result.metaCellar}</span>
+                </span>
+                <span className="result__metaItem">
+                  <b>{t.pace[dayPace].label}</b>
+                  <span>{t.result.metaPace}</span>
+                </span>
+                <span className="result__metaItem">
+                  <b>{needTransport === "yes" ? t.result.private : t.result.selfDrive}</b>
+                  <span>{t.result.metaTransport}</span>
+                </span>
+              </div>
+
+              <div className="concierge reveal">
+                <p className="tm-kicker concierge__kicker">{t.rationale.kicker}</p>
+                <p className="concierge__greeting tm-display">{fillTemplate(t.rationale.greeting, { name: greetName })}</p>
+                <p className="concierge__body">{conciergeBody}</p>
+                {chosenChips.length ? (
+                  <div className="concierge__chosen">
+                    <span className="concierge__chosenLabel">{t.rationale.chipsLabel}</span>
+                    <div className="concierge__chips">
+                      {chosenChips.map((chip, index) => (
+                        <span className="concierge__chip" key={`${chip}-${index}`}>
+                          {chip}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                <p className="concierge__sign">{t.rationale.signoff}</p>
+              </div>
+
+              <div className="itin">
+                {resultDays.map((day) =>
+                  renderDayItinerary(
+                    day.rec,
+                    weatherByDate[day.date],
+                    day.date,
+                    isMultiDay ? fillTemplate(t.result.dayHeading, { n: day.index + 1 }) : undefined,
+                  ),
+                )}
+                <div className="result__footer">
+                  <div className="result__subtotal">
+                    {t.result.subtotal} <b>${subtotal}</b> ·{" "}
+                    {fillTemplate(groupSize === 1 ? t.result.forGuest : t.result.forGuests, { n: groupSize })}
+                  </div>
+                  <button type="button" className="btn btn--primary" onClick={handleOpenTourSummary}>
+                    {t.ui.reviewBook}
+                  </button>
+                </div>
+              </div>
+
+              <p className="result__note">{t.result.note}</p>
+              <div className="result__actions">
+                <button type="button" className="btn btn--ghost" onClick={adjustPreferences}>
+                  {t.ui.adjust}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderTripStep() {
+    return (
+      <div>
+        <div className="field">
+          <label className="field__label" htmlFor="tm-name">{t.fields.name}</label>
+          <input
+            id="tm-name"
+            className="input"
+            value={name}
+            placeholder={t.namePlaceholder}
+            onChange={(event) => setName(event.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <label className="field__label" htmlFor="tm-date">{t.fields.date}</label>
+          <input
+            id="tm-date"
+            type="date"
+            className="input"
+            value={previewDate}
+            min={toIsoDate(0)}
+            onChange={(event) => setPreviewDate(event.target.value)}
+          />
+          {showErr.date ? <p className="errmsg">✕ {showErr.date}</p> : null}
+        </div>
+
+        <div className="field">
+          <label className="field__label">{t.fields.group}</label>
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+            <div className="stepper">
+              <button
+                type="button"
+                className="stepper__btn"
+                disabled={groupSize <= 1}
+                onClick={() => setGroupSize(Math.max(1, groupSize - 1))}
+                aria-label="−"
+              >
+                –
+              </button>
+              <span className="stepper__val">{groupSize}</span>
+              <button
+                type="button"
+                className="stepper__btn"
+                disabled={groupSize >= 20}
+                onClick={() => setGroupSize(Math.min(20, groupSize + 1))}
+                aria-label="+"
+              >
+                +
+              </button>
+            </div>
+            <span className="stepper__unit">{t.fields.groupUnit}</span>
+          </div>
+          {showErr.group ? <p className="errmsg">✕ {showErr.group}</p> : null}
+        </div>
+
+        <div className="field">
+          <label className="field__label">{t.fields.pace}</label>
+          <p className="field__hint">{t.fields.paceHint}</p>
+          <div className="cards cards--list">
+            {(["relaxed", "balanced", "maximise"] as const).map((id) => (
+              <RowCard
+                key={id}
+                selected={dayPace === id}
+                title={t.pace[id].label}
+                note={t.pace[id].note}
+                onClick={() => setDayPace(id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="field__label">{t.fields.days}</label>
+          <p className="field__hint">{t.fields.daysHint}</p>
+          <div className="segmented" role="group" aria-label={t.fields.days}>
+            {[1, 2, 3].map((count) => (
+              <button
+                key={count}
+                type="button"
+                className={`segmented__btn ${tripDays === count ? "is-active" : ""}`}
+                onClick={() => setTripDays(count)}
+              >
+                {count} {t.ui.daysUnit}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="field__label">{t.fields.transport}</label>
+          <div className="segmented" role="group" aria-label={t.fields.transport}>
+            <button
+              type="button"
+              className={`segmented__btn ${needTransport === "yes" ? "is-active" : ""}`}
+              onClick={() => setNeedTransport("yes")}
+            >
+              {t.transport.yes}
+            </button>
+            <button
+              type="button"
+              className={`segmented__btn ${needTransport === "no" ? "is-active" : ""}`}
+              onClick={() => setNeedTransport("no")}
+            >
+              {t.transport.no}
+            </button>
+          </div>
+          <p className="field__hint">{needTransport === "yes" ? t.transport.hintYes : t.transport.hintNo}</p>
+        </div>
+
+        {needTransport === "yes" ? (
+          <div className="field reveal">
+            <label className="field__label" htmlFor="tm-pickup">{t.fields.pickup}</label>
+            <input
+              id="tm-pickup"
+              className="input"
+              value={pickupAddress}
+              placeholder={t.fields.pickupPlaceholder}
+              onChange={(event) => {
+                setPickupAddress(event.target.value);
+                setPickupPlaceId("");
+                setPickupLatitude(undefined);
+                setPickupLongitude(undefined);
+              }}
+            />
+            {showErr.pickup ? <p className="errmsg">✕ {showErr.pickup}</p> : null}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  function renderPalateStep() {
+    return (
+      <div>
+        <div className="field">
+          <label className="field__label">{t.fields.wineStyles}</label>
+          <p className="field__hint">{t.fields.wineStylesHint}</p>
+          <div className="cards cards--2">
+            {WINE_STYLE_OPTIONS.map((option) => (
+              <Card
+                key={option.id}
+                title={t.wineStyles[option.id]?.label ?? option.label}
+                desc={t.wineStyles[option.id]?.desc}
+                selected={selectedWineStyles.includes(option.id)}
+                onClick={() => setSelectedWineStyles((current) => toggleMultiSelect(current, option.id))}
+              />
+            ))}
+          </div>
+          {showErr.wine ? <p className="errmsg">✕ {showErr.wine}</p> : null}
+        </div>
+
+        <div className="field">
+          <label className="field__label">{t.fields.experiences}</label>
+          <p className="field__hint">{t.fields.experiencesHint}</p>
+          <div className="cards cards--2">
+            {EXPERIENCE_OPTIONS.map((option) => (
+              <Card
+                key={option.id}
+                title={t.experiences[option.id]?.label ?? option.label}
+                desc={t.experiences[option.id]?.desc}
+                selected={selectedExperiences.includes(option.id)}
+                onClick={() => setSelectedExperiences((current) => toggleMultiSelect(current, option.id))}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderOccasionStep() {
+    return (
+      <div>
+        <div className="field">
+          <label className="field__label">{t.fields.occasion}</label>
+          <div className="pills">
+            {OCCASION_OPTIONS.map((option) => (
+              <Pill
+                key={option.id}
+                selected={occasion === option.id}
+                onClick={() => setOccasion(occasion === option.id ? "" : option.id)}
+              >
+                {t.occasions[option.id] ?? option.label}
+              </Pill>
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="field__label">{t.fields.budget}</label>
+          <p className="field__hint">{t.fields.budgetHint}</p>
+          <div className="cards cards--list">
+            {BUDGET_OPTIONS.map((option) => (
+              <RowCard
+                key={option.id}
+                selected={budgetBand === option.id}
+                title={t.budgets[option.id]?.label ?? option.label}
+                note={t.budgets[option.id]?.desc}
+                onClick={() => setBudgetBand(budgetBand === option.id ? "" : option.id)}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderCareStep() {
+    return (
+      <div>
+        <div className="field">
+          <label className="field__label">{t.fields.dietary}</label>
+          <p className="field__hint">{t.fields.dietaryHint}</p>
+          <div className="pills">
+            {DIETARY_OPTIONS.map((option) => (
+              <Pill
+                key={option.id}
+                selected={selectedDietaryNeeds.includes(option.id)}
+                onClick={() => setSelectedDietaryNeeds((current) => toggleMultiSelect(current, option.id))}
+              >
+                {t.dietary[option.id] ?? option.label}
+              </Pill>
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="field__label">{t.fields.accessibility}</label>
+          <p className="field__hint">{t.fields.accessibilityHint}</p>
+          <div className="cards cards--2">
+            {ACCESSIBILITY_OPTIONS.map((option) => (
+              <Card
+                key={option.id}
+                title={t.accessibility[option.id]?.label ?? option.label}
+                desc={t.accessibility[option.id]?.desc}
+                selected={selectedAccessibilityNeeds.includes(option.id)}
+                onClick={() => setSelectedAccessibilityNeeds((current) => toggleMultiSelect(current, option.id))}
+              />
+            ))}
+          </div>
+          <input
+            className="input"
+            style={{ marginTop: 4 }}
+            value={accessibilityOther}
+            placeholder={t.fields.accessibilityPlaceholder}
+            onChange={(event) => setAccessibilityOther(event.target.value)}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <AppShell
-      eyebrow="Explore"
-      title="What makes a great day out for you?"
-      intro="No right answers - the more you tell us, the better we can tailor your experience."
-      showWorkflowStatus={false}
-      showPageHeader={false}
-      navMode="public"
-    >
-      <div className={`exploreLayout exploreRouteFade ${isRouteEntering ? "routeEntering" : ""}`}>
-        <div
-          className={`exploreUnifiedPanel ${isPanelExiting ? "exploreStepFadeOut" : ""} ${isPanelEntering ? "exploreStepFadeIn" : ""}`}
-          
-        >
-        <section className="exploreSectionBlock exploreUnifiedHero">
-          <p className="eyebrow">Explore</p>
-          <h1>{tripReady ? "What makes a great day out for you?" : "Plan your Margaret River day, your way"}</h1>
-          <p className="heroCopy">
-            {tripReady
-              ? "No right answers - the more you tell us, the better we can tailor your experience."
-              : "Tell us a little about your trip and we'll find the perfect experiences for you."}
-          </p>
-        </section>
-        {!tripReady ? (
-          <div className="explorePreferencesWrap">
-            <section className="exploreSectionBlock">
-              <TripSetup
-                name={name}
-                setName={setName}
-                visitDate={previewDate}
-                setVisitDate={setPreviewDate}
-                groupSize={groupSize}
-                setGroupSize={setGroupSize}
-                dayPace={dayPace}
-                setDayPace={setDayPace}
-                tripDays={tripDays}
-                setTripDays={setTripDays}
-                needTransport={needTransport}
-                setNeedTransport={setNeedTransport}
-                pickupAddress={pickupAddress}
-                setPickupAddress={setPickupAddress}
-                pickupPlaceId={pickupPlaceId}
-                setPickupPlaceId={setPickupPlaceId}
-                setPickupLatitude={setPickupLatitude}
-                setPickupLongitude={setPickupLongitude}
-                onComplete={() => setTripReady(true)}
+    <div className="tm-flow" lang={locale} data-script={script}>
+      {showResult ? (
+        renderResult()
+      ) : (
+        <div className="flow flow--form">
+          <aside className="aside">
+            <div className="aside__media">
+              <div
+                className="aside__img"
+                style={{ background: "linear-gradient(150deg, #3a4a40 0%, #6f6049 55%, #b89457 120%)" }}
               />
-            </section>
-          </div>
-        ) : null}
-        {tripReady ? (
-        <div className={`explorePreferencesWrap ${hasPlanned ? "compact" : ""}`} >
-          <section className="exploreSectionBlock">
-            <div className="sectionHeader">
-              <div>
-                <h2>What makes a great day out for you?</h2>
-                <p>
-                  {isPreferencesCollapsed
-                    ? "Preferences minimized. Expand to edit and run a new plan."
-                    : "No right answers - the more you tell us, the better we can tailor your experience."}
-                </p>
+              <div className="aside__scrim" />
+            </div>
+            <div className="aside__inner">
+              <div className="aside__top">
+                <Wordmark light />
+                <LangSelect locale={locale} onChange={changeLocale} light label={t.ui.language} />
+              </div>
+              <div className="aside__head">
+                <p className="tm-kicker aside__chapterKicker">{curStep.kicker}</p>
+                <h2 className="aside__chapterTitle">{curStep.title}</h2>
+              </div>
+              <nav className="rail">
+                {stepIds.map((id, index) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`rail__item ${index === wizardStep ? "is-active" : ""} ${index < wizardStep ? "is-done" : ""}`}
+                    disabled={index > wizardStep}
+                    onClick={() => goToStep(index)}
+                  >
+                    <span className="rail__dot">{index < wizardStep ? "✓" : index + 1}</span>
+                    <span className="rail__label">{t.steps[id].label}</span>
+                  </button>
+                ))}
+              </nav>
+              <p className="aside__note">{t.ui.asideNote}</p>
+            </div>
+          </aside>
+
+          <div className="main">
+            <div className="topbar">
+              <Wordmark />
+              <div className="topbar__right">
+                <LangSelect locale={locale} onChange={changeLocale} label={t.ui.language} />
+                <span className="topbar__count">
+                  {curStep.label}
+                  <br />
+                  <b>
+                    {t.ui.step} {wizardStep + 1}
+                  </b>{" "}
+                  {t.ui.of} {stepIds.length}
+                </span>
               </div>
             </div>
-            <div className="explorePreferenceActions">
-              {isPreferencesCollapsed ? (
-                <button type="button" className="buttonGhost" onClick={() => setIsPreferencesCollapsed(false)}>
-                  Expand preferences
+            <div className="topbar__progress">
+              <div className="topbar__progressFill" style={{ width: `${progress}%` }} />
+            </div>
+
+            <div className="content">
+              <div className="step__head reveal" key={stepIds[wizardStep]}>
+                <p className="tm-kicker step__kicker">{curStep.kicker}</p>
+                <h1 className="step__title tm-display">{curStep.title}</h1>
+              </div>
+              <div className="reveal" key={`body-${stepIds[wizardStep]}-${locale}`}>
+                {wizardStep === 0 ? renderTripStep() : null}
+                {wizardStep === 1 ? renderPalateStep() : null}
+                {wizardStep === 2 ? renderOccasionStep() : null}
+                {wizardStep === 3 ? renderCareStep() : null}
+              </div>
+            </div>
+
+            <div className="actionbar">
+              {wizardStep > 0 ? (
+                <button type="button" className="btn btn--text" onClick={prevStep}>
+                  ← {t.ui.back}
                 </button>
-              ) : null}
-            </div>
-            {isPreferencesCollapsed ? (
-              <div className="explorePreferenceSummary">
-                <p>
-                  <strong>{name || "Guest"}</strong> - {groupSize} guests - {PACE_LABELS[dayPace]} pace - {tripDays === 1 ? "1 day" : `${tripDays} days`} - transport {needTransport} - {selectedWineStyles.length} wine styles - {selectedExperiences.length} experiences - {formatPreviewDate(previewDate)}
-                </p>
-              </div>
-            ) : (
-            <div className="formPreview">
-            <div className="field">
-              <label>What kind of wines interest you?</label>
-              <div className="selectorList preferenceCardGrid">
-                {WINE_STYLE_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    className={`selectorCard ${selectedWineStyles.includes(option.id) ? "selected" : ""}`}
-                    onClick={() => setSelectedWineStyles((current) => toggleMultiSelect(current, option.id))}
-                  >
-                    <strong>{option.label}</strong>
-                    <p className="subtle">{option.description}</p>
-                  </button>
-                ))}
-              </div>
-              {wineStyleValidationError ? (
-                    <p className="subtle errorText">{wineStyleValidationError}</p>
-              ) : null}
-            </div>
-
-            <div className="field">
-              <label>Are there any experiences you&rsquo;d love?</label>
-              <div className="selectorList preferenceCardGrid">
-                {EXPERIENCE_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    className={`selectorCard ${selectedExperiences.includes(option.id) ? "selected" : ""}`}
-                    onClick={() => setSelectedExperiences((current) => toggleMultiSelect(current, option.id))}
-                  >
-                    <strong>{option.label}</strong>
-                  </button>
-                ))}
-              </div>
-              {experienceInfoMessage ? <p className="subtle">{experienceInfoMessage}</p> : null}
-            </div>
-
-            <div className="field">
-              <label>What&rsquo;s the occasion?</label>
-              <div className="choiceRow">
-                {OCCASION_OPTIONS.map((option) => (
-                  <label key={option.id} className="choicePill">
-                    <input type="radio" name="occasion" checked={occasion === option.id} onChange={() => setOccasion(option.id)} />
-                    {option.label}
-                  </label>
-                ))}
-                <label className="choicePill">
-                  <input type="radio" name="occasion" checked={occasion === ""} onChange={() => setOccasion("")} />
-                  No preference
-                </label>
-              </div>
-            </div>
-
-            <div className="field">
-              <label>What&rsquo;s your rough budget per person?</label>
-              <div className="selectorList preferenceCardGrid">
-                {BUDGET_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    className={`selectorCard ${budgetBand === option.id ? "selected" : ""}`}
-                    onClick={() => setBudgetBand(option.id)}
-                  >
-                    <strong>{option.label}</strong>
-                    <p className="subtle">{option.description}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="field">
-              <label>Any dietary requirements we should know about?</label>
-              <button type="button" className="buttonGhost" onClick={() => setShowDietary((value) => !value)}>
-                {showDietary ? "Hide dietary options" : "Add dietary preferences"}
-              </button>
-              {showDietary ? (
-                <div className="choiceRow">
-                  {DIETARY_OPTIONS.map((option) => (
-                    <label key={option.id} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={selectedDietaryNeeds.includes(option.id)}
-                        onChange={() => setSelectedDietaryNeeds((current) => toggleMultiSelect(current, option.id))}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="field">
-              <label>Any accessibility needs?</label>
-              <button type="button" className="buttonGhost" onClick={() => setShowAccessibility((value) => !value)}>
-                {showAccessibility ? "Hide accessibility options" : "Add accessibility preferences"}
-              </button>
-              {showAccessibility ? (
-                <div className="formPreview">
-                  <div className="choiceRow">
-                    {ACCESSIBILITY_OPTIONS.map((option) => (
-                      <label key={option.id} className="choicePill">
-                        <input
-                          type="checkbox"
-                          checked={selectedAccessibilityNeeds.includes(option.id)}
-                          onChange={() => setSelectedAccessibilityNeeds((current) => toggleMultiSelect(current, option.id))}
-                        />
-                        {option.label}
-                      </label>
-                    ))}
-                  </div>
-                  <input
-                    className="inputLike inputField"
-                    value={accessibilityOther}
-                    onChange={(event) => setAccessibilityOther(event.target.value)}
-                    placeholder="Other accessibility notes (optional)"
-                  />
-                </div>
-              ) : null}
-            </div>
-
-              <button type="button" className="buttonPrimary fullWidthButton" onClick={handlePlanTrip} disabled={requesting}>
-                {requesting ? "Planning..." : "Plan my trip"}
-              </button>
-            </div>
-            )}
-          </section>
-        </div>
-        ) : null}
-
-        {tripReady && hasPlanned ? (
-          <div ref={previewRef} className="explorePreviewWrap" >
-            <section className="exploreSectionBlock">
-              <div className="sectionHeader">
-                <div>
-                  <h2>Schedule preview</h2>
-                  <p>Closest matching wineries with efficient travel flow.</p>
-                </div>
-              </div>
-              {!recommendation ? (
-                requesting ? (
-                  <div className="itineraryLoadingCard" aria-live="polite">
-                    <div className="itineraryLoadingGlow" />
-                    <p className="itineraryLoadingEyebrow">Tailor Moments Concierge Desk</p>
-                    <h3>Preparing your bespoke itinerary</h3>
-                    <p className="subtle">Reviewing partner availability, shaping the travel flow, and arranging a polished recommendation for {name || "you"}.</p>
-                    <div className="itineraryLoadingLines">
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="emptyStateCard">
-                    <h3>Preview appears here</h3>
-                    <p className="subtle">We are checking matches and travel-efficient routing for your preferences.</p>
-                  </div>
-                )
               ) : (
-                <div className="recommendationStack">
-                  {multiDayPlan.length > 1 ? (
-                    multiDayPlan.map((day) => (
-                      <div key={`day-${day.dayIndex}`} className="multiDaySection">
-                        {renderItineraryCard({
-                          rec: day.recommendation,
-                          dateValue: day.date,
-                          animationKeyBase: `${itineraryAnimationKey}-day-${day.dayIndex}`,
-                          attachRef: day.dayIndex === 0,
-                          dayHeading: `Day ${day.dayIndex + 1} Â· ${formatPreviewDate(day.date)}`,
-                        })}
-                      </div>
-                    ))
-                  ) : (
-                    renderItineraryCard({
-                      rec: recommendation,
-                      dateValue: previewDate,
-                      animationKeyBase: itineraryAnimationKey,
-                      attachRef: true,
-                    })
-                  )}
-                  <div className="bespokeActionsRow">
-                    <button
-                      type="button"
-                      className="buttonGhost bespokeReplayButton"
-                      onClick={() => setItineraryReplaySeed((value) => value + 1)}
-                    >
-                      Replay animation
-                    </button>
-                  </div>
-                  {multiDayPlan.length <= 1 && recommendationOptions.length > 1 ? (
-                    <div className="itineraryOptionToggle">
-                      <button
-                        type="button"
-                        className="buttonGhost"
-                        onClick={() => {
-                          setSelectedRecommendationIndex((value) => (value === 0 ? 1 : 0));
-                          setItineraryReplaySeed((value) => value + 1);
-                        }}
-                      >
-                        {selectedRecommendationIndex === 0 ? "Show Option B" : "Return to Option A"}
-                      </button>
-                    </div>
-                  ) : null}
-                  <button type="button" className="buttonPrimary fullWidthButton" onClick={handleOpenTourSummary}>
-                    Tour summary
-                  </button>
-                </div>
+                <span className="actionbar__meta">{t.ui.takes}</span>
               )}
-
-              {error ? <div className="callout errorCallout">{error}</div> : null}
-            </section>
+              <span className="actionbar__spacer" />
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={nextStep}
+                disabled={wizardAttempted && !canAdvance}
+              >
+                {isLastStep ? t.ui.craft : t.ui.continue}
+              </button>
+            </div>
           </div>
-        ) : null}
         </div>
-      </div>
+      )}
 
       {selectedPreviewWinery ? (
         (() => {
@@ -1713,61 +1756,65 @@ export default function ExplorePage() {
           const experiencesText = experienceSummary(remoteProfile, "");
           const displayAddress = remoteProfile?.address ?? "";
           return (
-        <div className="modalBackdrop" role="dialog" aria-modal="true" aria-label={`${selectedPreviewWinery.name} details`}>
-          <div className="modalCard">
-            <button type="button" className="modalClose" onClick={() => setSelectedPreviewWinery(null)} aria-label="Close winery details">
-              X
-            </button>
-            <div className="catalogRow">
-              <div className="catalogMedia">
-                <div className="catalogImage">
-                  <span>{selectedPreviewWinery.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span>
-                </div>
-                <div className="catalogMeta">
-                  <h3>{selectedPreviewWinery.name}</h3>
-                  {displayAddress ? <p className="subtle">{displayAddress}</p> : null}
-                  <p className="ratingLine">
-                    <strong>{selectedPreviewWinery.rating.toFixed(1)} stars</strong> Â· {selectedPreviewWinery.selectedByCount} guests shortlisted
-                  </p>
-                  <p className="subtle">
-                    Organic: <strong>{selectedPreviewWinery.organicStatus}</strong>
-                  </p>
-                  {remoteProfile?.tasting_price !== undefined ? (
-                    <p className="subtle">
-                      Tasting: <strong>${remoteProfile.tasting_price}</strong>
-                    </p>
-                  ) : null}
-                  {remoteProfile?.offers_cheese_board ? (
-                    <p className="subtle">Cheese board available</p>
-                  ) : null}
-                  <div className="status available">Live booking available</div>
-                </div>
-              </div>
-              <div className="catalogSummary">
-                {summaryText ? <p>{summaryText}</p> : null}
-                <div className="catalogBullets">
-                  {experiencesText ? (
-                    <p>
-                      <strong>Experiences:</strong> {experiencesText}
-                    </p>
-                  ) : null}
-                  {knownForText ? (
-                    <p>
-                      <strong>Known for:</strong> {knownForText}
-                    </p>
-                  ) : null}
-                  <p>
-                    <strong>Established:</strong> {selectedPreviewWinery.established}
-                  </p>
+            <div
+              className="modalBackdrop"
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${selectedPreviewWinery.name} details`}
+            >
+              <div className="modalCard">
+                <button
+                  type="button"
+                  className="modalClose"
+                  onClick={() => setSelectedPreviewWinery(null)}
+                  aria-label="Close winery details"
+                >
+                  X
+                </button>
+                <div className="catalogRow">
+                  <div className="catalogMedia">
+                    <div className="catalogImage">
+                      <span>
+                        {selectedPreviewWinery.name
+                          .split(" ")
+                          .map((part) => part[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </span>
+                    </div>
+                    <div className="catalogMeta">
+                      <h3>{selectedPreviewWinery.name}</h3>
+                      {displayAddress ? <p className="subtle">{displayAddress}</p> : null}
+                      {remoteProfile?.tasting_price !== undefined ? (
+                        <p className="subtle">
+                          Tasting: <strong>${remoteProfile.tasting_price}</strong>
+                        </p>
+                      ) : null}
+                      {remoteProfile?.offers_cheese_board ? <p className="subtle">Cheese board available</p> : null}
+                      <div className="status available">Live booking available</div>
+                    </div>
+                  </div>
+                  <div className="catalogSummary">
+                    {summaryText ? <p>{summaryText}</p> : null}
+                    <div className="catalogBullets">
+                      {experiencesText ? (
+                        <p>
+                          <strong>Experiences:</strong> {experiencesText}
+                        </p>
+                      ) : null}
+                      {knownForText ? (
+                        <p>
+                          <strong>Known for:</strong> {knownForText}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
           );
         })()
       ) : null}
-    </AppShell>
+    </div>
   );
 }
-

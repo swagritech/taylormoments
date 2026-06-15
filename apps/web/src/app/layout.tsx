@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import { Providers } from "@/components/providers";
-import { Cinzel, Cormorant_Garamond, Inter } from "next/font/google";
+import {
+  Cinzel,
+  Cormorant_Garamond,
+  Inter,
+  Noto_Serif,
+  Noto_Sans_SC,
+  Noto_Serif_SC,
+} from "next/font/google";
 import "./globals.css";
 
 const display = Cinzel({
@@ -24,6 +31,30 @@ const sans = Inter({
   preload: false,
 });
 
+// Vietnamese display face. Noto Serif renders stacked diacritics (ắ/ế) correctly
+// at every weight; we route the vi display/heading type to it with NO Georgia or
+// generic-serif fallback ahead of it (those break VN shaping). See the design
+// handoff ROLLOUT_NUANCES — this is the documented Vietnamese trap.
+const notoSerifVi = Noto_Serif({
+  variable: "--font-noto-serif",
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600"],
+  preload: false,
+});
+
+// Simplified Chinese faces (serif for display, sans for body/UI).
+const notoSerifSc = Noto_Serif_SC({
+  variable: "--font-noto-serif-sc",
+  weight: ["400", "500", "600"],
+  preload: false,
+});
+
+const notoSansSc = Noto_Sans_SC({
+  variable: "--font-noto-sans-sc",
+  weight: ["300", "400", "500", "600"],
+  preload: false,
+});
+
 export const metadata: Metadata = {
   title: "Tailor Moments | Your Way",
   description:
@@ -37,7 +68,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${display.variable} ${editorial.variable} ${sans.variable}`}>
+      <body
+        className={`${display.variable} ${editorial.variable} ${sans.variable} ${notoSerifVi.variable} ${notoSerifSc.variable} ${notoSansSc.variable}`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>
