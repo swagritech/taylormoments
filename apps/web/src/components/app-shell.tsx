@@ -110,7 +110,7 @@ export function AppShell({
             </button>
             <nav
               id="primary-mobile-menu"
-              className={`topnav ${mobileMenuOpen ? "\u2715" : "\u2630"}`}
+              className={`topnav ${mobileMenuOpen ? "mobileOpen" : ""}`}
               aria-label="Primary navigation"
             >
               {navItems.map((item) => (
@@ -119,7 +119,7 @@ export function AppShell({
                 </Link>
               ))}
             </nav>
-            <div className={`ctaRow authRow ${mobileMenuOpen ? "\u2715" : "\u2630"}`}>
+            <div className={`ctaRow authRow ${mobileMenuOpen ? "mobileOpen" : ""}`}>
               {navMode === "public" ? (
                 <button
                   type="button"
