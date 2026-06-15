@@ -18,12 +18,15 @@ import {
 
 type PlannedStop = {
   winery: Winery;
-  slot: WineryAvailability;
   driveMinutes: number;
   arrivalMinutes: number;
   departureMinutes: number;
 };
-type WinerySlotGroup = { winery: Winery; slots: WineryAvailability[] };
+// A winery treated as an open booking window for the day, derived from its
+// availability slots: openStart = earliest a tasting can begin, latestStart = the
+// last time one can begin. With the catalog's near-all-day availability this gives
+// the scheduler freedom to order stops by driving efficiency rather than by slot.
+type WineryWindow = { winery: Winery; openStart: number; latestStart: number };
 // A placed lunch: which winery hosts it and the time window it occupies (usually the
 // gap after that winery's tasting). null when the day has nowhere sensible for lunch.
 type RouteLunch = {
@@ -76,11 +79,25 @@ const LUNCH_WINDOW_START = 11 * 60 + 30;
 const LUNCH_WINDOW_END = 14 * 60;
 const DEFAULT_TASTING_DURATION_MINUTES = 45;
 const CANDIDATE_BUILD_TIME_BUDGET_MS = 1200;
-const MAX_GROUP_SUBSETS_TO_EVALUATE = 10;
-const MAX_SLOT_COMBINATIONS_PER_SUBSET = 24;
-const MAX_TOTAL_COMBINATIONS = 240;
-const MAX_PERMUTATIONS_PER_SELECTION = 18;
+// One candidate set per subset now (no slot enumeration), so we can evaluate more.
+const MAX_GROUP_SUBSETS_TO_EVALUATE = 40;
+// Each subset's optimal visiting order is found by exact permutation; 4! = 24, so
+// this fully explores up to a 4-stop day.
+const MAX_PERMUTATIONS_PER_SELECTION = 24;
 const MAX_FEASIBLE_ROUTES_TO_SCORE = 60;
+// Breathing room between consecutive stops, and the lunch break at the food venue,
+// by pace. The day starts near dayStart (no dead morning) and ends when it ends —
+// a relaxed 2-winery day is simply shorter, not stretched to fill the window.
+const BREATHING_GAP_BY_PACE: Record<SchedulePace, number> = {
+  relaxed: 35,
+  balanced: 20,
+  maximise: 8,
+};
+const LUNCH_BREAK_BY_PACE: Record<SchedulePace, number> = {
+  relaxed: 105,
+  balanced: 75,
+  maximise: 45,
+};
 
 const pickupPoints: Array<{ key: string; point: Point }> = [
   { key: "margaret river visitor centre", point: { lat: -33.952, lon: 115.075 } },
@@ -98,7 +115,7 @@ function isPastDeadline(deadlineMs?: number) {
   return typeof deadlineMs === "number" && Date.now() > deadlineMs;
 }
 
-function scoreCandidate(winery: Winery, availability: WineryAvailability, partySize: number) {
+function scoreCandidate(winery: Winery, partySize: number) {
   const capacityFactor = Math.max(0, winery.capacity - partySize);
   const confirmationBoost = winery.confirmationMode === "auto_confirm" ? 8 : 0;
   return 70 + Math.min(20, capacityFactor) + confirmationBoost;
@@ -259,52 +276,12 @@ function evaluateSelectedRouteTravelQuality(params: {
   };
 }
 
-function buildSlotCombinations(
-  slotGroups: WinerySlotGroup[],
-  maxCombinations = 180,
-) {
-  const combinations: Array<Array<{ winery: Winery; slot: WineryAvailability }>> = [];
-
-  function walk(
-    index: number,
-    current: Array<{ winery: Winery; slot: WineryAvailability }>,
-    minStartMinutes: number,
-  ) {
-    if (combinations.length >= maxCombinations) {
-      return;
-    }
-
-    if (index >= slotGroups.length) {
-      combinations.push([...current]);
-      return;
-    }
-
-    const group = slotGroups[index];
-    if (!group) {
-      return;
-    }
-
-    for (const slot of group.slots) {
-      // Only pick a slot that starts after the previous winery's slot has finished,
-      // so the chosen (winery, slot) picks can actually sequence into a time-ordered
-      // route. The old depth-first enumeration spent its whole budget on combinations
-      // that clustered multiple wineries at the same early time — which can never form
-      // a valid multi-stop day, so 3-4 stop itineraries were never found.
-      if (toTimeValue(slot.startTime) < minStartMinutes) {
-        continue;
-      }
-      current.push({ winery: group.winery, slot });
-      walk(index + 1, current, toTimeValue(slot.startTime) + DEFAULT_TASTING_DURATION_MINUTES);
-      current.pop();
-
-      if (combinations.length >= maxCombinations) {
-        return;
-      }
-    }
-  }
-
-  walk(0, [], 0);
-  return combinations;
+// Collapse a winery's open availability slots into a single bookable window.
+function deriveWineryWindow(winery: Winery, slots: WineryAvailability[]): WineryWindow {
+  const starts = slots.map((slot) => toTimeValue(slot.startTime));
+  const openStart = Math.min(...starts);
+  const latestStart = Math.max(...starts);
+  return { winery, openStart, latestStart };
 }
 
 const LUNCH_OFFER_RE = /lunch|restaurant|degustation|dining|feast|tapas|long table|grazing|kitchen|caf[eé]|bistro|share plates?/i;
@@ -384,67 +361,123 @@ function computeRouteLunch(stops: PlannedStop[], dayEnd: number): RouteLunch | n
   return best ? { winery: best.winery, startMinutes: best.startMinutes, endMinutes: best.endMinutes } : null;
 }
 
-function buildFeasibleRoute(params: {
+// Schedule a GIVEN visiting order. The order is chosen elsewhere to minimise drive;
+// here we lay it out across the day. Because cellar doors are effectively open all
+// day, earliest-feasible packing would finish a relaxed 2-stop day by lunchtime, so
+// we deliberately SPREAD the stops across the available hours (more for relaxed,
+// less for maximise) and anchor a real lunch break at a midday food venue. Returns
+// null if the order can't physically fit the day window.
+function scheduleOrderedRoute(params: {
   request: RecommendItineraryRequest;
-  selection: Array<{ winery: Winery; slot: WineryAvailability }>;
+  order: WineryWindow[];
   travelTimes: TravelTimeMatrix;
 }): FeasibleRoute | null {
-  const { request, selection, travelTimes } = params;
+  const { request, order, travelTimes } = params;
   const dayStart = toTimeValue(request.preferred_start_time ?? DEFAULT_DAY_START);
   const dayEnd = toTimeValue(request.preferred_end_time ?? DEFAULT_DAY_END);
+  const pace = request.pace ?? "balanced";
+  const n = order.length;
+  if (n === 0) {
+    return null;
+  }
+
+  // Drive legs (pickup → s0 → … → sN-1 → pickup) and tasting durations.
+  const legs: number[] = [];
+  let node = "pickup";
+  for (const window of order) {
+    legs.push(travelTimes.getMinutes(node, window.winery.wineryId));
+    node = window.winery.wineryId;
+  }
+  const returnLeg = travelTimes.getMinutes(node, "pickup");
+  const tastings = order.map((window) => resolveTastingDurationMinutes(window.winery));
+  const driveTotal = legs.reduce((sum, value) => sum + value, 0) + returnLeg;
+  const minimalSpan = driveTotal + tastings.reduce((sum, value) => sum + value, 0);
+  if (dayStart + minimalSpan > dayEnd) {
+    return null; // Doesn't fit even packed tight.
+  }
+
+  // The lunch venue: the food-capable stop nearest the middle of the route, so the
+  // break lands around midday rather than at the very start or end.
+  let foodIdx = -1;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  const middle = (n - 1) / 2;
+  for (let i = 0; i < n; i += 1) {
+    if (offersAnyFood(order[i]!.winery)) {
+      const distance = Math.abs(i - middle);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        foodIdx = i;
+      }
+    }
+  }
+
+  // Desired gaps: a breathing gap between consecutive stops + a lunch break after the
+  // food venue. The day starts near dayStart (no gap before the first stop). If the
+  // desired gaps don't fit the day window, scale them down proportionally so the route
+  // stays feasible rather than being rejected.
+  const desiredBreathing = BREATHING_GAP_BY_PACE[pace];
+  const desiredLunch = foodIdx >= 0 ? LUNCH_BREAK_BY_PACE[pace] : 0;
+  const desiredGapTotal = desiredBreathing * Math.max(0, n - 1) + desiredLunch;
+  const slack = Math.max(0, dayEnd - dayStart - minimalSpan);
+  const scale = desiredGapTotal > slack && desiredGapTotal > 0 ? slack / desiredGapTotal : 1;
+  const breathingGap = Math.floor(desiredBreathing * scale);
+  const lunchBreak = Math.floor(desiredLunch * scale);
 
   let currentTime = dayStart;
-  let currentNodeId = "pickup";
-  let totalDriveMinutes = 0;
+  node = "pickup";
   let totalIdleMinutes = 0;
   const stops: PlannedStop[] = [];
 
-  for (const item of selection) {
-    const slotStart = toTimeValue(item.slot.startTime);
-    const slotWindowEnd = toTimeValue(item.slot.endTime);
-    const tastingDurationMinutes = resolveTastingDurationMinutes(item.winery, item.slot);
-    const slotDeparture = slotStart + tastingDurationMinutes;
-    const drive = travelTimes.getMinutes(currentNodeId, item.winery.wineryId);
-    const earliestArrival = roundUpToNearestQuarterHour(currentTime + drive);
-
-    if (earliestArrival > slotStart || slotDeparture > slotWindowEnd || slotDeparture > dayEnd) {
+  for (let i = 0; i < n; i += 1) {
+    const window = order[i]!;
+    const leg = legs[i]!;
+    // No gap before the first stop (start the day promptly); a breathing gap before
+    // the rest; plus the lunch break right after the food venue.
+    let gap = i === 0 ? 0 : breathingGap;
+    if (foodIdx >= 0 && i === foodIdx + 1) {
+      gap += lunchBreak;
+    }
+    let arrival = roundUpToNearestQuarterHour(currentTime + leg + gap);
+    const earliest = roundUpToNearestQuarterHour(currentTime + leg);
+    // A forced wait is only when we'd arrive before the winery opens — that's the
+    // unproductive idle the scorer should penalise. The breathing/lunch gaps are
+    // intentional spread, NOT counted here.
+    if (earliest < window.openStart) {
+      totalIdleMinutes += window.openStart - earliest;
+    }
+    if (arrival < window.openStart) {
+      arrival = window.openStart;
+    }
+    if (arrival > window.latestStart) {
+      // Can't sit past this winery's last start; pull the gap back to its window.
+      if (earliest > window.latestStart) {
+        return null;
+      }
+      arrival = window.latestStart;
+    }
+    if (arrival < earliest) {
+      arrival = earliest;
+    }
+    const departure = arrival + tastings[i]!;
+    if (departure > dayEnd) {
       return null;
     }
-    if (slotStart > earliestArrival) {
-      totalIdleMinutes += slotStart - earliestArrival;
-    }
-
-    totalDriveMinutes += drive;
     stops.push({
-      winery: item.winery,
-      slot: item.slot,
-      driveMinutes: drive,
-      arrivalMinutes: slotStart,
-      departureMinutes: slotDeparture,
+      winery: window.winery,
+      driveMinutes: leg,
+      arrivalMinutes: arrival,
+      departureMinutes: departure,
     });
-
-    currentTime = slotDeparture;
-    currentNodeId = item.winery.wineryId;
+    currentTime = departure;
+    node = window.winery.wineryId;
   }
 
-  const returnDrive = travelTimes.getMinutes(currentNodeId, "pickup");
-  if (currentTime + returnDrive > dayEnd) {
+  if (currentTime + returnLeg > dayEnd) {
     return null;
   }
-  totalDriveMinutes += returnDrive;
 
-  // Place lunch at a food-capable winery whose following gap lands around midday.
-  // A relaxed lunch window is a strong PREFERENCE, not a hard requirement (rejecting
-  // every route without one was a primary cause of "no feasible routes"). Routes
-  // without a lunch are still valid; they just score lower (see scoreRoute).
   const lunch = computeRouteLunch(stops, dayEnd);
-
-  return {
-    stops,
-    totalDriveMinutes,
-    totalIdleMinutes,
-    lunch,
-  };
+  return { stops, totalDriveMinutes: driveTotal, totalIdleMinutes, lunch };
 }
 
 // Pace tuning. stopReward lowers objectiveCost per stop (higher = pack more in);
@@ -460,11 +493,15 @@ const PACE_WEIGHTS: Record<SchedulePace, {
   targetStops: number;
   idleWeight: number;
   lunchBonus: number;
+  // How strongly to penalise a day with NO lunch venue. High for relaxed (a long
+  // lunch is the point) so a lunch route trumps a slightly shorter no-lunch one —
+  // exactly the "lunch may have to trump efficiency" trade-off.
+  lunchMissPenalty: number;
   scoreStopBonus: number;
 }> = {
-  relaxed: { targetStops: 2, idleWeight: 0.25, lunchBonus: 10, scoreStopBonus: 2 },
-  balanced: { targetStops: 3, idleWeight: 0.3, lunchBonus: 5, scoreStopBonus: 4 },
-  maximise: { targetStops: MAX_STOPS_PER_DAY, idleWeight: 0.2, lunchBonus: 3, scoreStopBonus: 8 },
+  relaxed: { targetStops: 2, idleWeight: 0.25, lunchBonus: 10, lunchMissPenalty: 24, scoreStopBonus: 2 },
+  balanced: { targetStops: 3, idleWeight: 0.3, lunchBonus: 5, lunchMissPenalty: 14, scoreStopBonus: 4 },
+  maximise: { targetStops: MAX_STOPS_PER_DAY, idleWeight: 0.2, lunchBonus: 3, lunchMissPenalty: 6, scoreStopBonus: 8 },
 };
 
 function scoreRoute(params: {
@@ -474,10 +511,8 @@ function scoreRoute(params: {
   const { request, route } = params;
   const weights = PACE_WEIGHTS[request.pace ?? "balanced"];
   const candidateScore =
-    route.stops.reduce(
-      (sum, stop) => sum + scoreCandidate(stop.winery, stop.slot, request.party_size),
-      0,
-    ) / route.stops.length;
+    route.stops.reduce((sum, stop) => sum + scoreCandidate(stop.winery, request.party_size), 0) /
+    route.stops.length;
 
   const qualityBonus = Math.max(0, (candidateScore - 70) * 0.18);
   const acceptableDriveMinutes = route.stops.length * ACCEPTABLE_DRIVE_MINUTES_PER_STOP;
@@ -489,7 +524,7 @@ function scoreRoute(params: {
   // A longer lunch window scores better, which matters most for the relaxed pace.
   const lunchMinutes = route.lunch ? route.lunch.endMinutes - route.lunch.startMinutes : 0;
   const lunchBonus = route.lunch ? weights.lunchBonus + Math.min(6, lunchMinutes / 20) : 0;
-  const lunchPenalty = route.lunch ? 0 : 8;
+  const lunchPenalty = route.lunch ? 0 : weights.lunchMissPenalty;
   const score = Math.max(
     55,
     Math.min(99, Math.round(80 + stopBonus + qualityBonus + lunchBonus - drivePenalty - idlePenalty)),
@@ -509,16 +544,20 @@ function scoreRoute(params: {
   return { score, objectiveCost };
 }
 
+// Find the lowest-cost VISITING ORDER for a fixed set of wineries by trying every
+// permutation (exact TSP for our small day sizes), scheduling each, and keeping the
+// best. Because stops are no longer pinned to slot times, this genuinely minimises
+// driving rather than just sorting by slot.
 function findBestPermutationForSelection(params: {
   request: RecommendItineraryRequest;
-  selection: Array<{ winery: Winery; slot: WineryAvailability }>;
+  selection: WineryWindow[];
   travelTimes: TravelTimeMatrix;
   deadlineMs?: number;
   maxPermutations?: number;
 }): { bestRoute: EvaluatedRoute | null; permutationsTested: number } {
   const { request, selection, travelTimes, deadlineMs, maxPermutations } = params;
   const remaining = [...selection];
-  const current: Array<{ winery: Winery; slot: WineryAvailability }> = [];
+  const current: WineryWindow[] = [];
   let permutationsTested = 0;
   let bestRoute: EvaluatedRoute | null = null;
 
@@ -532,9 +571,9 @@ function findBestPermutationForSelection(params: {
 
     if (current.length === selection.length) {
       permutationsTested += 1;
-      const route = buildFeasibleRoute({
+      const route = scheduleOrderedRoute({
         request,
-        selection: [...current],
+        order: [...current],
         travelTimes,
       });
       if (!route) {
@@ -584,17 +623,18 @@ function findBestPermutationForSelection(params: {
 
 function buildRelaxedFallbackItinerary(params: {
   request: RecommendItineraryRequest;
-  slotGroups: WinerySlotGroup[];
+  windows: WineryWindow[];
   targetStops?: number;
   travelTimes: TravelTimeMatrix;
 }): ItineraryOption | null {
-  const { request, slotGroups, targetStops, travelTimes } = params;
+  const { request, windows, targetStops, travelTimes } = params;
   const dayStart = toTimeValue(request.preferred_start_time ?? DEFAULT_DAY_START);
   const dayEnd = toTimeValue(request.preferred_end_time ?? DEFAULT_DAY_END);
 
-  const selectedGroups = [...slotGroups]
-    .sort((a, b) => b.slots.length - a.slots.length)
-    .slice(0, Math.min(targetStops ?? MAX_STOPS_PER_DAY, MAX_STOPS_PER_DAY));
+  const selectedGroups = [...windows].slice(
+    0,
+    Math.min(targetStops ?? MAX_STOPS_PER_DAY, MAX_STOPS_PER_DAY),
+  );
 
   if (selectedGroups.length === 0) {
     return null;
@@ -633,8 +673,7 @@ function buildRelaxedFallbackItinerary(params: {
       continue;
     }
 
-    const representativeSlot = nextGroup.slots[0];
-    const slotDurationMinutes = resolveTastingDurationMinutes(nextGroup.winery, representativeSlot);
+    const slotDurationMinutes = resolveTastingDurationMinutes(nextGroup.winery);
 
     const arrivalMinutes = roundUpToNearestQuarterHour(currentTime + nextDrive);
     const departureMinutes = arrivalMinutes + slotDurationMinutes;
@@ -676,19 +715,24 @@ function buildRelaxedFallbackItinerary(params: {
 
 const MAX_SUBSETS_PER_STOP_COUNT = 12;
 
-function buildGroupSubsets(slotGroups: WinerySlotGroup[]) {
-  const maxSize = Math.min(MAX_STOPS_PER_DAY, slotGroups.length);
+function buildGroupSubsets(windows: WineryWindow[]) {
+  const maxSize = Math.min(MAX_STOPS_PER_DAY, windows.length);
   const minSize = Math.min(MIN_STOPS_PER_DAY, maxSize);
 
-  // Generate up to MAX_SUBSETS_PER_STOP_COUNT subsets for EACH stop count (min..max).
-  // Previously the search generated only the largest size first and stopped at a
-  // shared cap, so for any pool bigger than ~4 wineries it produced ONLY 4-stop
-  // subsets — the hardest to schedule — and never tried 2- or 3-stop days. That
-  // starved feasible routes and forced the heuristic fallback every time.
-  const bySize = new Map<number, WinerySlotGroup[][]>();
+  // Order the pool so food-capable wineries come first. The candidate subsets are
+  // generated greedily from the front, so this makes most subsets include a lunch
+  // venue — letting the scorer's lunch preference actually find one to reward.
+  const ordered = [...windows].sort(
+    (a, b) => Number(offersAnyFood(b.winery)) - Number(offersAnyFood(a.winery)),
+  );
+
+  // Generate up to MAX_SUBSETS_PER_STOP_COUNT subsets for EACH stop count (min..max),
+  // then interleave so a truncated evaluation still sees a mix of 2-, 3- and 4-stop
+  // options instead of all of one size.
+  const bySize = new Map<number, WineryWindow[][]>();
   for (let size = maxSize; size >= minSize; size -= 1) {
-    const sized: WinerySlotGroup[][] = [];
-    const walk = (start: number, current: WinerySlotGroup[]) => {
+    const sized: WineryWindow[][] = [];
+    const walk = (start: number, current: WineryWindow[]) => {
       if (sized.length >= MAX_SUBSETS_PER_STOP_COUNT) {
         return;
       }
@@ -696,12 +740,12 @@ function buildGroupSubsets(slotGroups: WinerySlotGroup[]) {
         sized.push([...current]);
         return;
       }
-      for (let index = start; index < slotGroups.length; index += 1) {
-        const group = slotGroups[index];
-        if (!group) {
+      for (let index = start; index < ordered.length; index += 1) {
+        const window = ordered[index];
+        if (!window) {
           continue;
         }
-        current.push(group);
+        current.push(window);
         walk(index + 1, current);
         current.pop();
         if (sized.length >= MAX_SUBSETS_PER_STOP_COUNT) {
@@ -713,9 +757,7 @@ function buildGroupSubsets(slotGroups: WinerySlotGroup[]) {
     bySize.set(size, sized);
   }
 
-  // Interleave stop counts (fuller days first within each round) so a truncated
-  // evaluation still gets a mix of 2-, 3- and 4-stop options instead of all 4-stop.
-  const subsets: WinerySlotGroup[][] = [];
+  const subsets: WineryWindow[][] = [];
   for (let round = 0; ; round += 1) {
     let added = false;
     for (let size = maxSize; size >= minSize; size -= 1) {
@@ -731,7 +773,7 @@ function buildGroupSubsets(slotGroups: WinerySlotGroup[]) {
   }
 
   if (subsets.length === 0) {
-    return [slotGroups];
+    return [ordered];
   }
   return subsets;
 }
@@ -795,14 +837,16 @@ export function buildCandidateItineraries(params: {
     entries.sort((a, b) => toTimeValue(a.startTime) - toTimeValue(b.startTime));
   }
 
-  const slotGroups = filteredWineries
-    .map((winery) => ({
-      winery,
-      slots: slotsByWineryId.get(winery.wineryId) ?? [],
-    }))
-    .filter((entry) => entry.slots.length > 0);
+  // Collapse each winery's slots into a single open window so the scheduler can
+  // order stops by driving efficiency rather than by slot time.
+  const wineryWindows = filteredWineries
+    .map((winery) => {
+      const slots = slotsByWineryId.get(winery.wineryId) ?? [];
+      return slots.length > 0 ? deriveWineryWindow(winery, slots) : null;
+    })
+    .filter((entry): entry is WineryWindow => entry !== null);
 
-  if (slotGroups.length === 0) {
+  if (wineryWindows.length === 0) {
     return {
       itineraries: [],
       diagnostics,
@@ -810,7 +854,8 @@ export function buildCandidateItineraries(params: {
     };
   }
 
-  const groupSubsets = buildGroupSubsets(slotGroups);
+  // Each candidate set is scheduled in its optimal (lowest-drive) visiting order.
+  const groupSubsets = buildGroupSubsets(wineryWindows);
   const limitedSubsets = groupSubsets.slice(0, MAX_GROUP_SUBSETS_TO_EVALUATE);
   const searchDeadlineMs = Date.now() + CANDIDATE_BUILD_TIME_BUDGET_MS;
   const scoredRoutes: EvaluatedRoute[] = [];
@@ -818,35 +863,23 @@ export function buildCandidateItineraries(params: {
   for (const subset of limitedSubsets) {
     if (
       isPastDeadline(searchDeadlineMs) ||
-      diagnostics.combinationsTested >= MAX_TOTAL_COMBINATIONS ||
       scoredRoutes.length >= MAX_FEASIBLE_ROUTES_TO_SCORE
     ) {
       break;
     }
 
-    const combinations = buildSlotCombinations(subset, MAX_SLOT_COMBINATIONS_PER_SUBSET);
-    for (const selection of combinations) {
-      if (
-        isPastDeadline(searchDeadlineMs) ||
-        diagnostics.combinationsTested >= MAX_TOTAL_COMBINATIONS ||
-        scoredRoutes.length >= MAX_FEASIBLE_ROUTES_TO_SCORE
-      ) {
-        break;
-      }
+    diagnostics.combinationsTested += 1;
+    const permutationResult = findBestPermutationForSelection({
+      request,
+      selection: subset,
+      travelTimes,
+      deadlineMs: searchDeadlineMs,
+      maxPermutations: MAX_PERMUTATIONS_PER_SELECTION,
+    });
+    diagnostics.permutationsTested += permutationResult.permutationsTested;
 
-      diagnostics.combinationsTested += 1;
-      const permutationResult = findBestPermutationForSelection({
-        request,
-        selection,
-        travelTimes,
-        deadlineMs: searchDeadlineMs,
-        maxPermutations: MAX_PERMUTATIONS_PER_SELECTION,
-      });
-      diagnostics.permutationsTested += permutationResult.permutationsTested;
-
-      if (permutationResult.bestRoute) {
-        scoredRoutes.push(permutationResult.bestRoute);
-      }
+    if (permutationResult.bestRoute) {
+      scoredRoutes.push(permutationResult.bestRoute);
     }
   }
   diagnostics.feasibleRoutesFound = scoredRoutes.length;
@@ -859,7 +892,7 @@ export function buildCandidateItineraries(params: {
         : 3;
   const targetStopCount = Math.min(
     paceTargetStops,
-    preferredSet.size > 0 ? preferredSet.size : slotGroups.length,
+    preferredSet.size > 0 ? preferredSet.size : wineryWindows.length,
   );
 
   // Rank ALL feasible routes by the pace-aware objective cost (which already encodes
@@ -876,7 +909,7 @@ export function buildCandidateItineraries(params: {
   if (feasibleOptions.length === 0) {
     const fallback = buildRelaxedFallbackItinerary({
       request,
-      slotGroups,
+      windows: wineryWindows,
       targetStops: targetStopCount,
       travelTimes,
     });
@@ -907,8 +940,8 @@ export function buildCandidateItineraries(params: {
       stops: route.stops.map((stop) => ({
         wineryId: stop.winery.wineryId,
         wineryName: stop.winery.name,
-        arrivalTime: toLocalIso(stop.slot.serviceDate, toClockValue(stop.arrivalMinutes)),
-        departureTime: toLocalIso(stop.slot.serviceDate, toClockValue(stop.departureMinutes)),
+        arrivalTime: toLocalIso(request.booking_date, toClockValue(stop.arrivalMinutes)),
+        departureTime: toLocalIso(request.booking_date, toClockValue(stop.departureMinutes)),
         driveMinutes: stop.driveMinutes,
       })),
       lunch: route.lunch
