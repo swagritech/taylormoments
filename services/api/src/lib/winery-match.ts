@@ -237,6 +237,9 @@ export function selectPreferredPool(params: {
     .filter(
       (winery) =>
         winery.active &&
+        // Only match within the featured set — the wineries we actually present and
+        // have enriched. As more wineries are enriched + featured, they enter the pool.
+        winery.catalogFeatured &&
         availableIds.has(winery.wineryId) &&
         !excludeIds.has(winery.wineryId) &&
         (region ? winery.region === region : true) &&

@@ -415,12 +415,22 @@ export async function recommendItineraries(payload: {
   pickup_longitude?: number;
   party_size: number;
   preferred_region?: string;
-  preferred_wineries: string[];
+  preferred_wineries?: string[];
   preferred_start_time?: string;
   preferred_end_time?: string;
   pace?: "relaxed" | "balanced" | "maximise";
   locale?: AppLocale;
   skip_justification?: boolean;
+  preferences?: {
+    wine_styles?: string[];
+    experiences?: string[];
+    occasion?: string;
+    budget?: string;
+    dietary?: string[];
+    accessibility?: string[];
+    include_lunch?: boolean;
+  };
+  exclude_winery_ids?: string[];
 }) {
   const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/itinerary/recommend`, {
     method: "POST",

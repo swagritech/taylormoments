@@ -38,17 +38,6 @@ type DayPace = ExploreDayPace;
 type YesNo = ExploreYesNo;
 type Vibe = ExploreVibe;
 
-type SearchProfile = {
-  hasLunchExperience: boolean;
-  organicFriendly: boolean;
-  hasSpecialExperience: boolean;
-  hasCheeseBoard: boolean;
-  openDays: string[];
-  minAdvanceDays: number;
-  vibeTag: "popular" | "lesser-known";
-  transportSuitable: boolean;
-};
-
 type ItineraryChapter = {
   label: "Morning" | "Afternoon" | "Evening";
   stops: Recommendation["stops"];
@@ -165,239 +154,6 @@ function buildItineraryChapters(stops: Recommendation["stops"]): ItineraryChapte
   return chapterOrder
     .map((label) => ({ label, stops: grouped.get(label) ?? [] }))
     .filter((chapter) => chapter.stops.length > 0);
-}
-
-function toSearchProfile(
-  winery: WineryCatalogItem,
-  remoteProfile?: WineryListResponse["wineries"][number],
-): SearchProfile {
-  const remoteOfferNames = (remoteProfile?.unique_experience_offers ?? [])
-    .map((entry) => entry?.name ?? "")
-    .join(" ");
-  const profileDescription = remoteProfile?.description ?? "";
-  const profileFamousFor = remoteProfile?.famous_for ?? "";
-  const combinedText = `${remoteOfferNames} ${profileDescription} ${profileFamousFor}`.toLowerCase();
-  const styleSet = new Set(remoteProfile?.wine_styles ?? []);
-  const signalSet = new Set(remoteProfile?.winery_signals ?? []);
-
-  const hasStyle = (style: string) => styleSet.has(style);
-  const hasSignal = (signal: string) => signalSet.has(signal);
-  const openDays = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].filter((day) => hasSignal(day));
-  const advanceDaysMap: Record<string, number> = {
-    same_day: 0,
-    "24_hours": 1,
-    "48_hours": 2,
-    "72_hours": 3,
-    "1_week": 7,
-    "2_weeks": 14,
-  };
-  const minAdvanceDays = Object.entries(advanceDaysMap)
-    .filter(([signal]) => hasSignal(signal))
-    .map(([, days]) => days)
-    .sort((a, b) => b - a)[0] ?? 0;
-  const hasAnyFoodSignal =
-    hasSignal("winery_lunch") ||
-    hasSignal("cheese_board") ||
-    hasSignal("charcuterie_board") ||
-    hasSignal("picnic_on_estate") ||
-    hasSignal("wine_chocolate") ||
-    hasSignal("cooking_class") ||
-    hasSignal("vegetarian") ||
-    hasSignal("vegan") ||
-    hasSignal("dairy_free") ||
-    hasSignal("gluten_free") ||
-    hasSignal("gluten_free_strict") ||
-    hasSignal("nut_free") ||
-    hasSignal("halal") ||
-    hasSignal("kosher");
-  const noFoodPolicy = hasSignal("no_food");
-
-  return {
-    hasLunchExperience:
-      !noFoodPolicy &&
-      (
-      hasSignal("winery_lunch") ||
-      hasSignal("cheese_board") ||
-      hasSignal("charcuterie_board") ||
-      hasSignal("picnic_on_estate") ||
-      hasSignal("wine_chocolate") ||
-      hasAnyFoodSignal ||
-      combinedText.includes("lunch") ||
-      combinedText.includes("degustation") ||
-      combinedText.includes("pairing") ||
-      combinedText.includes("platter")
-      ),
-    organicFriendly:
-      hasStyle("Organic & Biodynamic") ||
-      hasStyle("Natural & Minimal Intervention") ||
-      hasSignal("certified_organic") ||
-      hasSignal("regenerative") ||
-      combinedText.includes("organic") ||
-      combinedText.includes("biodynamic") ||
-      combinedText.includes("natural"),
-    hasSpecialExperience:
-      hasStyle("Small batch & Boutique") ||
-      hasStyle("Family-owned Estate") ||
-      hasStyle("Internationally awarded") ||
-      hasSignal("guided_tasting") ||
-      hasSignal("private_tasting_room") ||
-      hasSignal("barrel_tasting") ||
-      hasSignal("sunset_tasting") ||
-      hasSignal("vineyard_walk") ||
-      hasSignal("cellar_tour") ||
-      hasSignal("blending_experience") ||
-      hasSignal("harvest_experience") ||
-      hasSignal("cooking_class") ||
-      hasSignal("accommodation") ||
-      hasSignal("corporate_events") ||
-      hasSignal("wedding_venue") ||
-      hasSignal("wheelchair_pathways") ||
-      hasSignal("wheelchair_tasting") ||
-      hasSignal("accessible_bathroom") ||
-      hasSignal("step_free_entry") ||
-      hasSignal("accessible_parking") ||
-      hasSignal("minibus_access") ||
-      hasSignal("hearing_loop") ||
-      hasSignal("large_print") ||
-      hasSignal("seated_tasting") ||
-      hasSignal("quiet_space") ||
-      hasSignal("halliday_5star") ||
-      hasSignal("gold_medals") ||
-      hasSignal("trophy_winner") ||
-      hasSignal("press_featured") ||
-      hasSignal("small_production") ||
-      hasSignal("asian_pairing") ||
-      hasSignal("hosted_asian_groups") ||
-      hasSignal("mandarin_staff") ||
-      hasSignal("vietnamese_staff") ||
-      combinedText.includes("tour") ||
-      combinedText.includes("private") ||
-      combinedText.includes("behind the scenes") ||
-      combinedText.includes("masterclass"),
-    hasCheeseBoard:
-      (remoteProfile?.offers_cheese_board ?? false) || hasSignal("cheese_board"),
-    openDays,
-    minAdvanceDays,
-    vibeTag: hasStyle("Well known Margaret River Name")
-      ? "popular"
-      : hasStyle("Lesser known (off the beaten track)")
-        ? "lesser-known"
-        : winery.selectedByCount >= 500
-          ? "popular"
-          : "lesser-known",
-    transportSuitable: true,
-  };
-}
-
-function haversineKm(
-  from: { latitude: number; longitude: number },
-  to: { latitude: number; longitude: number },
-) {
-  const toRadians = (value: number) => (value * Math.PI) / 180;
-  const earthRadiusKm = 6371;
-  const deltaLat = toRadians(to.latitude - from.latitude);
-  const deltaLon = toRadians(to.longitude - from.longitude);
-  const lat1 = toRadians(from.latitude);
-  const lat2 = toRadians(to.latitude);
-  const a =
-    Math.sin(deltaLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return earthRadiusKm * c;
-}
-
-function resolveCatalogOrRemotePoint(
-  winery: WineryCatalogItem,
-  remoteProfile?: WineryListResponse["wineries"][number],
-) {
-  if (
-    remoteProfile?.latitude !== undefined &&
-    remoteProfile?.longitude !== undefined &&
-    Number.isFinite(remoteProfile.latitude) &&
-    Number.isFinite(remoteProfile.longitude)
-  ) {
-    return { latitude: remoteProfile.latitude, longitude: remoteProfile.longitude };
-  }
-
-  return { latitude: winery.latitude, longitude: winery.longitude };
-}
-
-function pickNearestRoute(
-  wineries: WineryCatalogItem[],
-  maxStops: number,
-  profilesById: Record<string, WineryListResponse["wineries"][number]>,
-  startPoint?: { latitude: number; longitude: number },
-) {
-  const selected: WineryCatalogItem[] = [];
-  const pool = [...wineries];
-  let current = startPoint ?? { latitude: -33.952, longitude: 115.075 };
-
-  while (pool.length > 0 && selected.length < maxStops) {
-    let bestIndex = 0;
-    let bestDistance = Number.MAX_VALUE;
-
-    for (let index = 0; index < pool.length; index += 1) {
-      const winery = pool[index];
-      if (!winery) {
-        continue;
-      }
-      const point = resolveCatalogOrRemotePoint(
-        winery,
-        profilesById[slugToWineryUuid(winery.id)],
-      );
-      const distance = haversineKm(current, point);
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        bestIndex = index;
-      }
-    }
-
-    const next = pool.splice(bestIndex, 1)[0];
-    if (!next) {
-      break;
-    }
-    selected.push(next);
-    current = resolveCatalogOrRemotePoint(next, profilesById[slugToWineryUuid(next.id)]);
-  }
-
-  return selected;
-}
-
-const ACCEPTABLE_PICKUP_DRIVE_MINUTES = 30;
-const AVERAGE_LOCAL_DRIVE_SPEED_KMH = 50;
-const ACCEPTABLE_PICKUP_RADIUS_KM =
-  (AVERAGE_LOCAL_DRIVE_SPEED_KMH * ACCEPTABLE_PICKUP_DRIVE_MINUTES) / 60;
-
-function buildPreferredPoolFromPickup(params: {
-  wineries: WineryCatalogItem[];
-  profilesById: Record<string, WineryListResponse["wineries"][number]>;
-  pickupPoint?: { latitude: number; longitude: number };
-  maxCount: number;
-}) {
-  const { wineries, profilesById, pickupPoint, maxCount } = params;
-  if (!pickupPoint) {
-    return [...wineries].sort((a, b) => b.rating - a.rating).slice(0, maxCount);
-  }
-
-  const withDistance = wineries
-    .map((winery) => {
-      const point = resolveCatalogOrRemotePoint(
-        winery,
-        profilesById[slugToWineryUuid(winery.id)],
-      );
-      const distanceKm = haversineKm(pickupPoint, point);
-      return { winery, distanceKm };
-    })
-    .sort((left, right) => {
-      if (left.distanceKm !== right.distanceKm) {
-        return left.distanceKm - right.distanceKm;
-      }
-      return right.winery.rating - left.winery.rating;
-    });
-
-  const nearby = withDistance.filter((entry) => entry.distanceKm <= ACCEPTABLE_PICKUP_RADIUS_KM);
-  const source = nearby.length >= 4 ? nearby : withDistance;
-  return source.slice(0, maxCount).map((entry) => entry.winery);
 }
 
 function toggleMultiSelect<T extends string>(values: T[], value: T) {
@@ -670,148 +426,34 @@ export default function ExplorePage() {
         }
       }
 
-      const hasCheeseBoardMatch = (winery: WineryCatalogItem) =>
-        toSearchProfile(winery, profilesById[slugToWineryUuid(winery.id)]).hasCheeseBoard;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
       const pickupLocationLabel =
         needTransport === "yes"
           ? pickupAddress.trim() || "Margaret River Visitor Centre"
           : pickupAddress.trim() || "Self-drive (no transport required)";
 
-      // The route origin. For self-drivers this is now their starting address (when
-      // given), so the planner measures travel times and biases the winery pool from
-      // where they actually begin — regardless of transport mode.
-      const routeStartPoint =
-        requestPickupLatitude !== undefined && requestPickupLongitude !== undefined
-          ? { latitude: requestPickupLatitude, longitude: requestPickupLongitude }
-          : undefined;
-
-      // Build the preferred winery pool for a single touring day. `excludedIds`
-      // are catalog ids already used on earlier days (multi-day) so a day never
-      // repeats a winery. `dateValue` drives the open-day / advance-notice filter.
-      const buildDayPool = (dateValue: string, excludedIds: Set<string>) => {
-        const requestDate = new Date(`${dateValue}T00:00:00`);
-        const weekdayMap = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-        const requestedWeekday = weekdayMap[requestDate.getDay()] ?? "mon";
-        const bookingDate = new Date(requestDate);
-        bookingDate.setHours(0, 0, 0, 0);
-        const daysAhead = Math.max(
-          0,
-          Math.floor((bookingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
-        );
-
-        const filterByPreferences = (includeVibePreference: boolean) =>
-          wineryCatalog.filter((winery) => {
-            if (excludedIds.has(winery.id)) {
-              return false;
-            }
-            const profile = toSearchProfile(winery, profilesById[slugToWineryUuid(winery.id)]);
-            if (profile.openDays.length > 0 && !profile.openDays.includes(requestedWeekday)) {
-              return false;
-            }
-            if (daysAhead < profile.minAdvanceDays) {
-              return false;
-            }
-            if (includeLunch === "yes" && !profile.hasLunchExperience) {
-              return false;
-            }
-            if (prefOrganic && !profile.organicFriendly) {
-              return false;
-            }
-            if (prefSpecialExperience && !profile.hasSpecialExperience) {
-              return false;
-            }
-            if (includeVibePreference && vibe && profile.vibeTag !== vibe) {
-              return false;
-            }
-            if (needTransport === "yes" && !profile.transportSuitable) {
-              return false;
-            }
-            return true;
-          });
-
-        let candidatePool = filterByPreferences(true);
-        let apiPreferredPool = buildPreferredPoolFromPickup({
-          wineries: candidatePool,
-          profilesById,
-          pickupPoint: routeStartPoint,
-          maxCount: 10,
-        });
-        let routeOptimized = pickNearestRoute(
-          apiPreferredPool,
-          Math.min(10, apiPreferredPool.length),
-          profilesById,
-          routeStartPoint,
-        );
-
-        if (routeOptimized.length < 2 && vibe) {
-          candidatePool = filterByPreferences(false);
-          apiPreferredPool = buildPreferredPoolFromPickup({
-            wineries: candidatePool,
-            profilesById,
-            pickupPoint: routeStartPoint,
-            maxCount: 10,
-          });
-          routeOptimized = pickNearestRoute(
-            apiPreferredPool,
-            Math.min(10, apiPreferredPool.length),
-            profilesById,
-            routeStartPoint,
-          );
-        }
-
-        if (prefCheeseBoard) {
-          const cheeseCandidates = candidatePool.filter(hasCheeseBoardMatch);
-          const fallbackCheeseCandidates = wineryCatalog.filter(
-            (winery) => !excludedIds.has(winery.id) && hasCheeseBoardMatch(winery),
-          );
-          const cheesePool = cheeseCandidates.length > 0 ? cheeseCandidates : fallbackCheeseCandidates;
-
-          if (cheesePool.length > 0) {
-            const routeHasCheese = routeOptimized.some(hasCheeseBoardMatch);
-            if (!routeHasCheese) {
-              const requiredCheese =
-                cheesePool.find((candidate) => !routeOptimized.some((stop) => stop.id === candidate.id)) ??
-                cheesePool[0];
-
-              if (requiredCheese) {
-                const seeded = [...routeOptimized, requiredCheese];
-                const dedupedSeed = Array.from(new Map(seeded.map((entry) => [entry.id, entry])).values());
-                routeOptimized = pickNearestRoute(
-                  dedupedSeed,
-                  Math.min(10, dedupedSeed.length),
-                  profilesById,
-                  routeStartPoint,
-                );
-
-                if (!routeOptimized.some(hasCheeseBoardMatch)) {
-                  const withoutLast = routeOptimized.slice(0, Math.max(0, 9));
-                  routeOptimized = [...withoutLast, requiredCheese];
-                }
-              }
-            }
-          }
-        }
-
-        return routeOptimized.length > 0 ? routeOptimized : apiPreferredPool;
+      // The quiz answers are sent raw; the backend scores every available winery and
+      // selects the pool itself (soft matching, single source of truth). No frontend
+      // hard-filtering of the catalog any more.
+      const preferences = {
+        wine_styles: selectedWineStyles,
+        experiences: selectedExperiences,
+        occasion: occasion || undefined,
+        budget: budgetBand || undefined,
+        dietary: selectedDietaryNeeds,
+        accessibility: selectedAccessibilityNeeds,
+        include_lunch: includeLunch === "yes",
       };
+      const uuidToCatalog = new Map(
+        wineryCatalog.map((winery) => [slugToWineryUuid(winery.id), winery] as const),
+      );
 
-      // Recommend a single day: build a pool for `baseDate`, then retry a few
-      // date offsets if a day comes back empty. Returns the itinerary options
-      // (Option A / B for single-day), the date that produced them, and the pool.
-      const planSingleDay = async (
-        baseDate: string,
-        excludedIds: Set<string>,
-        withAlternate: boolean,
-      ): Promise<{ options: Recommendation[]; usedDate: string; pool: WineryCatalogItem[] } | null> => {
+      // Recommend a single day, retrying forward date offsets if a day comes back
+      // empty. `excludedUuids` are wineries used on earlier days (multi-day). Returns
+      // the backend's itinerary options, the date used, the catalog items for the
+      // chosen wineries, and their UUIDs.
+      const planSingleDay = async (baseDate: string, excludedUuids: Set<string>) => {
         for (let offset = 0; offset < 14; offset += 1) {
           const candidateDate = shiftIsoDate(baseDate, offset);
-          const pool = buildDayPool(candidateDate, excludedIds);
-          if (pool.length < 2) {
-            continue;
-          }
-
           const response = await recommendItineraries({
             booking_date: candidateDate,
             pickup_location: pickupLocationLabel,
@@ -822,7 +464,8 @@ export default function ExplorePage() {
             preferred_start_time: timeWindow.start,
             preferred_end_time: timeWindow.end,
             pace: dayPace,
-            preferred_wineries: pool.map((winery) => slugToWineryUuid(winery.id)),
+            preferences,
+            exclude_winery_ids: excludedUuids.size > 0 ? [...excludedUuids] : undefined,
             // Keep planning fast: skip the slow AI justification here. The real
             // concierge justification is fetched once for the chosen day below.
             skip_justification: true,
@@ -832,50 +475,25 @@ export default function ExplorePage() {
             continue;
           }
 
-          let options = [...response.itineraries].sort(
+          const options = [...response.itineraries].sort(
             (a, b) => Number(b.expert_pick) - Number(a.expert_pick) || b.score - a.score,
           );
-
-          if (withAlternate && options.length === 1) {
-            const primaryStopIds = new Set(options[0]?.stops.map((stop) => stop.winery_id) ?? []);
-            const alternatePreferredWineries = pool
-              .filter((winery) => !primaryStopIds.has(slugToWineryUuid(winery.id)))
-              .map((winery) => slugToWineryUuid(winery.id));
-
-            if (alternatePreferredWineries.length >= 2) {
-              const alternateResponse = await recommendItineraries({
-                booking_date: candidateDate,
-                pickup_location: pickupLocationLabel,
-                pickup_place_id: pickupPlaceId || undefined,
-                pickup_latitude: requestPickupLatitude,
-                pickup_longitude: requestPickupLongitude,
-                party_size: groupSize,
-                preferred_start_time: timeWindow.start,
-                preferred_end_time: timeWindow.end,
-                pace: dayPace,
-                preferred_wineries: alternatePreferredWineries,
-                skip_justification: true,
-              });
-
-              const alternateOption = alternateResponse.itineraries.sort(
-                (a, b) => Number(b.expert_pick) - Number(a.expert_pick) || b.score - a.score,
-              )[0];
-
-              if (alternateOption) {
-                options = [...options, { ...alternateOption, expert_pick: false, label: "Option B" }];
-              }
-            }
-          }
-
-          return { options, usedDate: candidateDate, pool };
+          const chosenUuids = options[0]?.stops.map((stop) => stop.winery_id) ?? [];
+          const pool = chosenUuids
+            .map((id) => uuidToCatalog.get(id))
+            .filter((entry): entry is WineryCatalogItem => Boolean(entry));
+          return { options, usedDate: candidateDate, pool, chosenUuids };
         }
         return null;
       };
 
       // Fetch the real (slow) AI justification once for the chosen day and patch it
       // into the concierge note — progressive enhancement so planning never blocks on
-      // OpenAI. Until it arrives (or if it fails), the localized template note shows.
-      const refreshJustification = async (dateValue: string, pool: WineryCatalogItem[]) => {
+      // OpenAI. Pinning the exact chosen wineries keeps the justification on-itinerary.
+      const refreshJustification = async (dateValue: string, wineryUuids: string[]) => {
+        if (wineryUuids.length === 0) {
+          return;
+        }
         try {
           const response = await recommendItineraries({
             booking_date: dateValue,
@@ -887,7 +505,7 @@ export default function ExplorePage() {
             preferred_start_time: timeWindow.start,
             preferred_end_time: timeWindow.end,
             pace: dayPace,
-            preferred_wineries: pool.map((winery) => slugToWineryUuid(winery.id)),
+            preferred_wineries: wineryUuids,
           });
           const justification = response.itineraries[0]?.justification;
           if (justification) {
@@ -904,8 +522,8 @@ export default function ExplorePage() {
       const daysRequested = Math.max(1, Math.min(3, tripDays));
 
       if (daysRequested === 1) {
-        // Single-day flow: unchanged behaviour (one itinerary with Option A/B).
-        const result = await planSingleDay(requestedDate, new Set<string>(), true);
+        // Single-day flow.
+        const result = await planSingleDay(requestedDate, new Set<string>());
         if (!result) {
           setError("No preview schedule found in the next 14 days for this preference set.");
           return;
@@ -920,16 +538,16 @@ export default function ExplorePage() {
         setSelectedRecommendationIndex(0);
         setMultiDayPlan([]);
         void loadWeatherForDates([result.usedDate]);
-        void refreshJustification(result.usedDate, result.pool);
+        void refreshJustification(result.usedDate, result.chosenUuids);
         return;
       }
 
       // Multi-day flow: one real day per requested day, never repeating a winery.
-      const usedWineryIds = new Set<string>();
+      const usedWineryUuids = new Set<string>();
       const collectedDays: MultiDayResult[] = [];
       for (let dayIndex = 0; dayIndex < daysRequested; dayIndex += 1) {
         const dayBaseDate = shiftIsoDate(requestedDate, dayIndex);
-        const result = await planSingleDay(dayBaseDate, usedWineryIds, false);
+        const result = await planSingleDay(dayBaseDate, usedWineryUuids);
         if (!result) {
           break;
         }
@@ -937,22 +555,15 @@ export default function ExplorePage() {
         if (!dayRecommendation) {
           break;
         }
-        // Exclude every winery the chosen day actually scheduled so later days
-        // never repeat them.
-        const scheduledUuids = new Set(dayRecommendation.stops.map((stop) => stop.winery_id));
-        for (const winery of result.pool) {
-          if (scheduledUuids.has(slugToWineryUuid(winery.id))) {
-            usedWineryIds.add(winery.id);
-          }
+        // Exclude every winery this day actually scheduled so later days never repeat them.
+        for (const uuid of result.chosenUuids) {
+          usedWineryUuids.add(uuid);
         }
-        const scheduledPool = result.pool.filter((winery) =>
-          scheduledUuids.has(slugToWineryUuid(winery.id)),
-        );
         collectedDays.push({
           dayIndex,
           date: result.usedDate,
           recommendation: dayRecommendation,
-          pool: scheduledPool.length > 0 ? scheduledPool : result.pool,
+          pool: result.pool,
         });
       }
 
@@ -974,7 +585,10 @@ export default function ExplorePage() {
       setSelectedRecommendationIndex(0);
       setMultiDayPlan(collectedDays);
       void loadWeatherForDates(collectedDays.map((day) => day.date));
-      void refreshJustification(firstDay.date, firstDay.pool);
+      void refreshJustification(
+        firstDay.date,
+        firstDay.recommendation.stops.map((stop) => stop.winery_id),
+      );
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to plan trip right now.");
     } finally {
