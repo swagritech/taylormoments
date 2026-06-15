@@ -1,0 +1,1897 @@
+[
+  {
+    "id": "36716a04-29bc-98e3-1fcd-f2e7602e02e7",
+    "db_name": "3 Oceans",
+    "winery": "3 Oceans Wine Company",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Lesser known (off the beaten track)"
+    ],
+    "winery_signals": [
+      "winery_lunch",
+      "cheese_board",
+      "child_friendly",
+      "corporate_events",
+      "vegetarian",
+      "gluten_free",
+      "wheelchair_access",
+      "cellar_door_tasting",
+      "accessible_parking"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Cellar Door 10am-5pm; cafe Breakfast 9-11:30am, Lunch 12-3pm, daily (excluding Christmas, New Year & Good Friday) per third-party listings. The winery's own website does not state hours.",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "3 Oceans Wine Company Winery & Cafe",
+      "price_hint": ""
+    },
+    "description": "3 Oceans is a family estate in the Margaret River region producing a small range of wines (the Explorers and Lost Dogs ranges) from its own vineyards in Margaret River and Frankland River. The large Cowaramup venue (the former Palandri winery) houses a cellar door and a family-friendly winery cafe, and hosts live music events through the year.",
+    "famous_for": "A large cellar door and winery cafe (known for its \"Wine Platter for two\") alongside its own Explorers and Lost Dogs estate wine ranges.",
+    "confidence": "medium",
+    "sources": [
+      "https://www.3oceanswine.com.au",
+      "https://3oceanswine.com.au/pages/about",
+      "https://3oceanswine.com.au/pages/events",
+      "https://www.westernaustralia.com/us/foodanddrink/3-oceans-wine-company/5f9a1791a8870de46ff57b22",
+      "https://www.agfg.com.au/restaurant/3-oceans-wine-copalandri-winery-cellar-store-cafe-6736",
+      "https://www.tripadvisor.com.au/Restaurant_Review-g982750-d2550226-Reviews-3_Oceans_Wine_Company_Winery_Cafe-Cowaramup_Margaret_River_Region_Western_Austral.html"
+    ]
+  },
+  {
+    "id": "d83fd6d2-8bdd-989f-53e2-4e4d641d6f71",
+    "db_name": "Aravina Estate",
+    "winery": "Aravina Estate",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name"
+    ],
+    "winery_signals": [
+      "view_stunning",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "winery_lunch",
+      "cheese_board",
+      "child_friendly",
+      "wheelchair_access",
+      "accessible_parking",
+      "minibus_parking",
+      "minibus_access",
+      "corporate_events",
+      "wedding_venue"
+    ],
+    "opening_hours_note": "Cellar door / restaurant: Mon-Tue 11am-4pm, Wed-Sun 11am-5pm; food service 11:30am-3pm daily. Open 7 days, closed Dec 25 & 26.",
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "lunch": {
+      "tier": "restaurant",
+      "name": "The Restaurant at Aravina Estate",
+      "price_hint": ""
+    },
+    "description": "Aravina Estate is a family-run Margaret River winery near Yallingup with a cellar door, sit-down restaurant overlooking the lake and vineyards, and its own 8 Waves Brewing Co. taphouse. Cellar door staff guide visitors through a tasting of six estate-grown wines, with the option of a tasting matched to a multi-course meal.",
+    "famous_for": "Estate-grown wines paired with lakeside vineyard dining and an on-site craft brewery and surf gallery.",
+    "confidence": "medium",
+    "sources": [
+      "https://www.aravinaestate.com.au",
+      "http://www.aravinaestate.com/Contact",
+      "https://shop.aravinaestate.com/pages/award-winning-food",
+      "https://aravinaestate.com/pages/open-hours",
+      "https://doorexplorer.com/winery/aravina-estate"
+    ]
+  },
+  {
+    "id": "af6a0bbf-f27a-5a9c-5d10-5123a1e4665b",
+    "db_name": "Ashbrook Estate",
+    "winery": "Ashbrook Estate",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "White Wine Specialist",
+      "Well known Margaret River Name",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "multi_generation",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "garden_picnic",
+      "trophy_winner",
+      "press_featured"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat"
+    ],
+    "opening_hours_note": "Cellar sales and tasting open 11.00am - 4.00pm Monday to Saturday. Closed Good Friday, Christmas Day, Boxing Day and New Year's Day.",
+    "lunch": {
+      "tier": "none",
+      "name": "",
+      "price_hint": ""
+    },
+    "description": "A quiet, family-owned and operated estate at Wilyabrup running for over 40 consecutive vintages, offering relaxed, guided cellar door tastings of premium handcrafted single-vineyard wines from 100% estate-grown fruit. Picnic facilities are available on site.",
+    "famous_for": "Elegant, understated estate-grown Margaret River whites (Riesling, Semillon, Sauvignon Blanc, Verdelho, Chardonnay) and trophy-winning wines praised by James Halliday.",
+    "confidence": "high",
+    "sources": [
+      "https://www.ashbrookwines.com.au",
+      "https://ashbrookwines.com.au/contact/",
+      "https://www.margaretriver.com.au/wineries-wine-region/ashbrook-estate"
+    ]
+  },
+  {
+    "id": "31378e5f-07d1-217b-36e6-af243908afda",
+    "db_name": "Bettenay's",
+    "winery": "Bettenay's (Bettenays Margaret River)",
+    "wine_styles": [
+      "Natural & Minimal Intervention",
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Lesser known (off the beaten track)"
+    ],
+    "winery_signals": [
+      "winery_lunch",
+      "wine_chocolate",
+      "cheese_board",
+      "charcuterie_board",
+      "accommodation",
+      "guided_tasting",
+      "cellar_door_tasting",
+      "multi_generation",
+      "small_production"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Cellar door open 7 days a week 10am - 5pm (closed Christmas Day). Lakeside Bistro 11am - 3pm: 2 or 3 course chef-select menu Fri-Sun; specials board and platters Mon-Thu.",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Bettenays Lakeside Bistro",
+      "price_hint": ""
+    },
+    "description": "A family-owned single-vineyard estate established by Greg and Terri Bettenay in 1989, Bettenays pairs premium wines made with minimum intervention alongside its famous Margaret River nougat, all produced onsite. Visitors can enjoy complimentary nougat tastings with a viewing window into the nougat kitchen, plus a lakeside bistro for lunch.",
+    "famous_for": "Their famous Margaret River nougat (all produced onsite) paired with estate wines",
+    "confidence": "high",
+    "sources": [
+      "https://bettenaysmargaretriver.com.au/",
+      "https://bettenaysmargaretriver.com.au/pages/cellar-door",
+      "https://bettenaysmargaretriver.com.au/pages/restaurant",
+      "https://bettenaysmargaretriver.rezdy.com/400649/nougat-wine-matching-includes-grazing-board"
+    ]
+  },
+  {
+    "id": "017d1fc8-1afd-10bd-1b80-0f751c7a3085",
+    "db_name": "Blind Corner",
+    "winery": "Blind Corner",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Natural & Minimal Intervention",
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Lesser known (off the beaten track)"
+    ],
+    "winery_signals": [
+      "view_stunning",
+      "certified_organic",
+      "regenerative",
+      "small_production",
+      "dog_friendly",
+      "child_friendly",
+      "cellar_door_tasting",
+      "seated_tasting"
+    ],
+    "open_days": [
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat"
+    ],
+    "opening_hours_note": "Seasonal — Bar Nature open summer (Dec until Easter). Stated trading hours: Tuesday-Saturday 11-5pm (closed Sundays & Mondays); Bar Nature opening listed 11am-6pm daily over peak summer. Closed to the public outside the summer season / by appointment.",
+    "lunch": {
+      "tier": "none",
+      "name": "Bar Nature snacks",
+      "price_hint": ""
+    },
+    "description": "Blind Corner is a certified Organic and Biodynamic family winery in Quindalup (Margaret River's northern end), started 20 years ago by Ben and Naomi Gould, making minimal-intervention wines including sparkling, white, orange/skin-contact, red and preservative-free styles. Their seasonal Bar Nature is a casual, family- and dog-friendly wine and beer haven with vineyard views toward the Yallingup ridge, pouring organic wines and small-batch organic beer brewed on site alongside snacks.",
+    "famous_for": "Certified Organic and Biodynamic, minimal-intervention 'natural' wines and regenerative farming, with an on-site microbrewery and the casual Bar Nature cellar door.",
+    "confidence": "medium",
+    "sources": [
+      "https://www.blindcorner.com.au",
+      "https://www.blindcorner.com.au/pages/events",
+      "https://perthisok.com/eat-drink/blind-corner-bar-nature-quindalup/"
+    ]
+  },
+  {
+    "id": "fa2f4f97-b0f9-2886-4ad6-6711ab28781d",
+    "db_name": "Brown Hill",
+    "winery": "Brown Hill",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Small batch & Boutique",
+      "Red Wine Specialist",
+      "Lesser known (off the beaten track)"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "seated_tasting",
+      "guided_tasting",
+      "private_tasting_room",
+      "barrel_tasting",
+      "multi_generation",
+      "small_production",
+      "no_food"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Open 7 days a week, 10am-5pm",
+    "lunch": {
+      "tier": "none",
+      "name": "",
+      "price_hint": ""
+    },
+    "description": "Brown Hill Estate is a boutique, family-owned winery in Rosa Brook, run hands-on by the Bailey family from a rustic green-shed cellar door built inside the working winery, so visitors can watch winemaking happen year-round. Seated tastings are guided by a family member through the estate's three ranges of handpicked, hand-sorted, estate-grown wines.",
+    "famous_for": "Affordable, quality red wines (shiraz and cabernet) from a single estate vineyard, with wines named after famous Kalgoorlie gold mines",
+    "confidence": "high",
+    "sources": [
+      "https://www.brownhillestate.com.au/",
+      "https://www.brownhillestate.com.au/visit-us/",
+      "https://www.brownhillestate.com.au/margaret-river-small-family-winery-trail/",
+      "https://winecompanion.com.au/wineries/western-australia/margaret-river/brown-hill-estate"
+    ]
+  },
+  {
+    "id": "bf7e6df5-5101-2569-ee7f-489c107f935e",
+    "db_name": "Cape Mentelle",
+    "winery": "Cape Mentelle",
+    "wine_styles": [
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "Internationally awarded",
+      "Estate-grown fruit only"
+    ],
+    "winery_signals": [
+      "historic_estate",
+      "garden_picnic",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "private_tasting_room",
+      "cellar_tour",
+      "vineyard_walk",
+      "trophy_winner",
+      "close_to_town"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Cellar door open daily 10am - 5pm",
+    "lunch": {
+      "tier": "none",
+      "name": "",
+      "price_hint": ""
+    },
+    "description": "Cape Mentelle is a pioneering Margaret River cellar door at 331 Wallcliffe Road, open daily, with a relaxed garden setting offering swings, picnic tables and traditional French petanque lanes. Tastings range from a tasting-room experience to a private walking tour through the winemaking process ending in the rammed-earth Cabernet Cellar with a tutored wine and food pairing.",
+    "famous_for": "A founding Margaret River winery known for its benchmark Cabernet Sauvignon (Jimmy Watson Trophy winner)",
+    "confidence": "medium",
+    "sources": [
+      "https://www.capementelle.com.au/",
+      "https://www.capementelle.com.au/Cellar-Door/Visiting-Us",
+      "https://www.capementelle.com.au/Cellar-Door/Tours-and-Tastings"
+    ]
+  },
+  {
+    "id": "75208f29-0dc6-1580-78e6-9aa982e6a4a9",
+    "db_name": "Churchview",
+    "winery": "Churchview Estate",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Lesser known (off the beaten track)",
+      "Certified Organic"
+    ],
+    "winery_signals": [
+      "historic_estate",
+      "garden_picnic",
+      "dog_friendly",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "seated_tasting",
+      "cheese_board",
+      "charcuterie_board",
+      "picnic_on_estate",
+      "byo_food",
+      "multi_generation",
+      "certified_organic",
+      "small_production"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat"
+    ],
+    "opening_hours_note": "Open Monday to Saturday, 10am-5pm",
+    "lunch": {
+      "tier": "platters",
+      "name": "Build-your-own grazing board / ploughman's lunch (cheeses, meats, chutneys, crackers); BYO picnic also welcome on the veranda or grassed areas",
+      "price_hint": ""
+    },
+    "description": "Churchview Estate is a boutique, family-owned, certified-organic single vineyard at Metricup, where you taste through rare and premium wines in a heritage period cottage looking out over the vines. Built from the ground up in 1999 by father-and-son Spike and Raymond Fokkema, it grows 16 varieties across 56 hectares of estate vineyard.",
+    "famous_for": "Certified-organic, estate-grown single-vineyard wines tasted in a heritage period cottage named for the nearby St Johns Anglican Church",
+    "confidence": "high",
+    "sources": [
+      "https://www.churchview.com.au",
+      "https://www.churchview.com.au/pages/cellar-door",
+      "https://www.churchview.com.au/pages/our-story",
+      "https://www.churchview.com.au/pages/our-principles"
+    ]
+  },
+  {
+    "id": "22222222-2222-2222-2222-222222222222",
+    "db_name": "Cullen Wines",
+    "winery": "Cullen Wines",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "seated_tasting",
+      "guided_tasting",
+      "private_tasting_room",
+      "winery_lunch",
+      "vineyard_walk",
+      "vegetarian",
+      "gluten_free",
+      "certified_organic",
+      "regenerative",
+      "female_winemaker",
+      "multi_generation"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Wine tastings 10:00am - 4.30pm, 7 days a week (cellar door). Restaurant operates select days/seasons.",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Cullen Wines Biodynamic Wine Room",
+      "price_hint": "Four-course set menu; seated tastings from $30pp"
+    },
+    "description": "Family-owned, third-generation biodynamic and carbon-neutral estate founded in 1971, where seated tastings of estate Cabernet Sauvignon and Chardonnay take place in the Biodynamic Wine Room. Over 90% of the restaurant's set-menu ingredients are grown in their on-site biodynamic garden.",
+    "famous_for": "Pioneering biodynamic Margaret River winemaking and its iconic Diana Madeline (Cabernet) and Kevin John (Chardonnay) wines.",
+    "confidence": "high",
+    "sources": [
+      "https://www.cullenwines.com.au",
+      "https://www.cullenwines.com.au/pages/dining",
+      "https://www.cullenwines.com.au/pages/experiences",
+      "https://www.cullenwines.com.au/pages/bio-wine-room",
+      "https://www.margaretriver.com/things-to-do/eat-drink/wineries/cullen-wines/"
+    ]
+  },
+  {
+    "id": "de8c34be-f131-04ad-2fbd-3013cfbd396b",
+    "db_name": "Deep Woods",
+    "winery": "Deep Woods Estate",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "garden_picnic",
+      "byo_food",
+      "cheese_board",
+      "trophy_winner",
+      "gold_medals",
+      "press_featured",
+      "halliday_5star"
+    ],
+    "open_days": [
+      "mon",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Cellar door open six days a week from 10.00am to 5.00pm; closed Tuesdays. Open on WA public holidays falling on a Monday; closed Good Friday, Anzac Day, Christmas Day, Boxing Day, New Year's Day. (The cellar-door page instead states open seven days 10.30am-5pm; the dedicated opening-hours page is treated as authoritative.)",
+    "lunch": {
+      "tier": "platters",
+      "name": "The Art of Grazing gourmet platters (preorder) plus BYO picnic on the lawn",
+      "price_hint": ""
+    },
+    "description": "Operating since 1987 amid the jarrah and marri forests of Yallingup, Deep Woods Estate offers relaxed tastings of its award-winning wines, with guests welcome to bring their own picnic to enjoy on the lawn with a glass of estate wine. Led by celebrated chief winemaker Julian Langworthy, it is renowned for its Reserve Chardonnay and Cabernet Sauvignon.",
+    "famous_for": "Award-winning Reserve Chardonnay and Cabernet Sauvignon, and being one of Western Australia's most decorated wineries (chief winemaker Julian Langworthy, 2019 Halliday Australian Winemaker of the Year)",
+    "confidence": "high",
+    "sources": [
+      "https://www.deepwoods.wine",
+      "https://www.deepwoods.wine/pages/cellar-door",
+      "https://www.deepwoods.wine/pages/opening-hours",
+      "https://www.deepwoods.wine/pages/our-story"
+    ]
+  },
+  {
+    "id": "b4e8b6a2-851b-de47-31f3-68e53a0494e9",
+    "db_name": "Edwards Wines",
+    "winery": "Edwards Wines",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "intimate_welcome",
+      "wheelchair_access",
+      "dog_friendly",
+      "cellar_door_tasting",
+      "winery_lunch",
+      "wine_chocolate",
+      "private_tasting_room",
+      "multi_generation",
+      "small_production"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Open daily 10:30am - 5pm",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Miss Chow's",
+      "price_hint": ""
+    },
+    "description": "Family-owned and operated since 1991, Edwards Wines pours estate-grown wines daily at its Cowaramup cellar door, where the restored 1943 Tiger Moth 'Matilda' takes pride of place. Visitors can taste alongside gourmet local platters or a handmade chocolate pairing, with an on-site restaurant, Miss Chow's, overlooking the vines.",
+    "famous_for": "Estate-grown hand-crafted wines and the Matilda Tiger Moth story; founder Brian Edwards' historic flight from England to Australia.",
+    "confidence": "high",
+    "sources": [
+      "https://www.edwardswines.com.au",
+      "https://www.edwardswines.com.au/visit-us/",
+      "https://www.edwardswines.com.au/about-us/"
+    ]
+  },
+  {
+    "id": "1b5e3afb-da62-c8a2-c13c-f259f5c1039d",
+    "db_name": "Evoi Wines",
+    "winery": "Evoi Wines",
+    "wine_styles": [
+      "Small batch & Boutique",
+      "White Wine Specialist",
+      "Internationally awarded",
+      "Wines only available at cellar door"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "guided_tasting",
+      "cellar_tour",
+      "child_friendly",
+      "halliday_5star",
+      "small_production"
+    ],
+    "open_days": [
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "\"Opening Hours are 10.00am to 5.00pm, Wednesday to Sunday.\" (visit page; site home/listings also state 10am-5pm)",
+    "lunch": {
+      "tier": "none",
+      "name": "",
+      "price_hint": ""
+    },
+    "description": "Evoi Wines is a boutique Margaret River winery at 529 Osmington Rd, Bramley, founded in 2007 by hands-on winemaker Nigel Ludlow, who began with two barrels of Chardonnay. The cellar door sits on a working vineyard with expansive lawns and children's play equipment, and pours small batch Reserve wines available only on site.",
+    "famous_for": "Boutique, Chardonnay-focused wines from a 5 Red Star Halliday-rated winery; named Western Australian Winery of the Year at the 2015 Melbourne International Wine Show and recognised in Gourmet Traveller's Cellar Door Awards.",
+    "confidence": "medium",
+    "sources": [
+      "https://www.evoiwines.com",
+      "https://www.evoiwines.com/visit-evoi-winery-margaret-river",
+      "https://www.evoiwines.com/about-us"
+    ]
+  },
+  {
+    "id": "83a42af6-841d-a94d-07b9-83bb07c1d443",
+    "db_name": "Fermoy Estate",
+    "winery": "Fermoy Estate",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "guided_tasting",
+      "seated_tasting",
+      "winery_lunch",
+      "charcuterie_board",
+      "dog_friendly",
+      "accommodation",
+      "trophy_winner",
+      "press_featured"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Open daily, 11am-5pm (closed Good Friday, Christmas Day & Boxing Day)",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Elliott's at Fermoy",
+      "price_hint": ""
+    },
+    "description": "Family-owned estate established in 1985 in Wilyabrup, Margaret River, with a 14-hectare estate vineyard, offering relaxed guided cellar door tastings of up to five wines at $15 per guest. The dog-friendly cellar door pours wines by the glass alongside local grazing, with a summer seasonal bistro (Elliott's at Fermoy) and on-site accommodation at The Lodge.",
+    "famous_for": "Cabernet Sauvignon and Chardonnay; its Reserve Cabernet Sauvignon won Decanter World Wine Awards 'Best in Show' (2024) and 'Platinum' (2025).",
+    "confidence": "high",
+    "sources": [
+      "https://www.fermoy.com.au",
+      "https://www.fermoy.com.au/pages/visit",
+      "https://www.fermoy.com.au/pages/about",
+      "https://www.fermoy.com.au/blogs/news/best-in-show-at-the-decanter-world-wine-awards",
+      "https://www.fermoy.com.au/blogs/news/platinum-at-the-decanter-world-wine-awards"
+    ]
+  },
+  {
+    "id": "33333333-3333-3333-3333-333333333333",
+    "db_name": "Fraser Gallop",
+    "winery": "Fraser Gallop Estate",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Small batch & Boutique",
+      "Well known Margaret River Name",
+      "Internationally awarded",
+      "Red Wine Specialist",
+      "White Wine Specialist"
+    ],
+    "winery_signals": [
+      "intimate_welcome",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "vineyard_walk",
+      "cellar_tour",
+      "cheese_board",
+      "wedding_venue",
+      "corporate_events",
+      "halliday_5star",
+      "trophy_winner",
+      "small_production",
+      "female_winemaker",
+      "multi_generation"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Cellar door open daily from 11am to 4pm (closed on some public holidays). Tasting fees apply, fully redeemable on purchase.",
+    "lunch": {
+      "tier": "platters",
+      "name": "Cheese platter (included with the seasonal Wines & Vines Tour)",
+      "price_hint": ""
+    },
+    "description": "Founded in 1999 by Nigel Gallop in Margaret River's Wilyabrup valley, Fraser Gallop Estate is a single-vineyard, dry-farmed estate making precise, estate-grown wines under winemaker Ellin Tritt. The cellar door offers curated tastings daily, plus a seasonal Wines & Vines Tour exploring the gardens and vineyard blocks by solar-powered buggy with a cheese platter.",
+    "famous_for": "Single-vineyard, estate-grown Wilyabrup wines prized for precision and purity, including the Parterre Chardonnay (Decanter World Wine Awards Best in Show) and Palladian Cabernet Sauvignon, with a 5-Star James Halliday rating.",
+    "confidence": "high",
+    "sources": [
+      "https://www.frasergallopestate.com.au",
+      "https://www.frasergallopestate.com.au/visit/",
+      "https://www.frasergallopestate.com.au/about/",
+      "https://www.frasergallopestate.com.au/wines-vines/"
+    ]
+  },
+  {
+    "id": "c60a5b7c-8a29-51e8-4c23-0a945033ad64",
+    "db_name": "Glenarty Road",
+    "winery": "Glenarty Road",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Natural & Minimal Intervention",
+      "Small batch & Boutique",
+      "Lesser known (off the beaten track)",
+      "Sparkling & Method traditionnelle Specialist"
+    ],
+    "winery_signals": [
+      "historic_estate",
+      "regenerative",
+      "multi_generation",
+      "winery_lunch",
+      "guided_tasting",
+      "seated_tasting",
+      "charcuterie_board",
+      "cheese_board",
+      "vineyard_walk",
+      "child_friendly",
+      "gluten_free",
+      "vegetarian",
+      "press_featured",
+      "small_production"
+    ],
+    "opening_hours_note": "Wine bar 10am-5pm Wednesday to Monday (closed Tuesday); grazing snacks 11:30am-2:30pm; restaurant 11:30am-2:30pm Wednesday to Monday",
+    "open_days": [
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun",
+      "mon"
+    ],
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Farm to Table Dining (Paddock to Plate / Every Acre Feast / Farm Feast)",
+      "price_hint": "$115-$175pp set menus; Junior Feast $45 (6+); wine flights $35-$49"
+    },
+    "description": "Glenarty Road is a five-generation family farm in Karridale (southern Margaret River) offering paddock-to-plate dining, estate-grown wines made with a hands-off, natural approach, and a wine bar serving house-made charcuterie, cheese and freshly baked bread. Experiences range from a $15 traditional tasting to garden walks, regenerative farm tours, and a roaming vino-in-the-vines feast.",
+    "famous_for": "Farm-to-table regenerative dining — named Australia's Best Destination Dining (Gourmet Traveller, 2023)",
+    "confidence": "high",
+    "sources": [
+      "https://www.glenartyroad.com.au/",
+      "https://www.glenartyroad.com.au/cellar-door",
+      "https://www.glenartyroad.com.au/farm-to-table-dining",
+      "https://www.glenartyroad.com.au/experiences"
+    ]
+  },
+  {
+    "id": "6878ef0b-b794-39dc-dfec-d6d7200d28e7",
+    "db_name": "Gralyn Estate",
+    "winery": "Gralyn Estate",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Small batch & Boutique",
+      "Red Wine Specialist",
+      "Fortified & Dessert Wines",
+      "Internationally awarded",
+      "Wines only available at cellar door",
+      "Well known Margaret River Name"
+    ],
+    "winery_signals": [
+      "historic_estate",
+      "view_stunning",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "cellar_tour",
+      "barrel_tasting",
+      "cheese_board",
+      "charcuterie_board",
+      "dog_friendly",
+      "wheelchair_access",
+      "accessible_parking",
+      "corporate_events",
+      "wedding_venue",
+      "multi_generation",
+      "trophy_winner",
+      "small_production"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Open daily 10:30am - 4:30pm. Closed Christmas Day, Good Friday and Anzac Day (until midday).",
+    "lunch": {
+      "tier": "platters",
+      "name": "Charcuterie and cheese selections (premium tasting experience)",
+      "price_hint": ""
+    },
+    "description": "Gralyn Estate is a second-generation, family-owned winery on Caves Road in Wilyabrup, opened in 1975 and home to Margaret River's first cellar door, with a modern tasting room overlooking the vines. Visitors can taste the full range of premium single-vineyard wines free of charge, and the owners host limited 90-minute premium experiences taking guests from grape to glass and into the original underground cellar to taste museum wines dating back to 1980.",
+    "famous_for": "Premium single-vineyard reds and rare aged fortified wines available only at the cellar door; trophy-winning Artizan fortifieds.",
+    "confidence": "high",
+    "sources": [
+      "https://gralyn.com.au",
+      "https://gralyn.com.au/pages/visit-gralyn-estate",
+      "https://gralyn.com.au/pages/faq"
+    ]
+  },
+  {
+    "id": "bc30ab2c-95ed-c658-29dd-6d74521e7184",
+    "db_name": "Hamelin Bay",
+    "winery": "Hamelin Bay",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name"
+    ],
+    "winery_signals": [
+      "view_stunning",
+      "winery_lunch",
+      "cheese_board",
+      "charcuterie_board",
+      "vegetarian",
+      "gluten_free",
+      "child_friendly",
+      "cellar_door_tasting",
+      "multi_generation"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Open daily 10.30am-4.30pm for wine tasting; small bites and platters daily 11am-4pm; full lunch service Thursday-Sunday 12 noon-2.30pm. Closed Christmas Day, Boxing Day, New Year's Day and Good Friday.",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Hamelin Bay Cellar Door Restaurant",
+      "price_hint": ""
+    },
+    "description": "Established in 1992, Hamelin Bay's contemporary cellar door opens onto al fresco decking and lawns with a stunning vista of vines, valley, lake and forest over the Five Ashes vineyard. The on-site restaurant serves seasonal lunches built on the freshest local ingredients, Thursday to Sunday, alongside cheese and charcuterie platters daily.",
+    "famous_for": "Estate wines from the Five Ashes vineyard (Cabernet Sauvignon, Chardonnay, Sauvignon Blanc, Semillon and Shiraz), enjoyed with a vineyard-view restaurant lunch.",
+    "confidence": "high",
+    "sources": [
+      "https://hbwines.com.au/",
+      "https://hbwines.com.au/cellar-door/",
+      "https://hbwines.com.au/restaurant/",
+      "https://hbwines.com.au/about-us/"
+    ]
+  },
+  {
+    "id": "d5df22ab-333e-2eed-e6e1-0c46091d5198",
+    "db_name": "Hayshed Hill",
+    "winery": "Hay Shed Hill",
+    "wine_styles": [
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "seated_tasting",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "blending_experience",
+      "wine_chocolate",
+      "winery_lunch",
+      "dog_friendly",
+      "vegan",
+      "corporate_events",
+      "wedding_venue",
+      "trophy_winner",
+      "halliday_5star"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Open daily 10am to 5pm. Closed Good Friday, Christmas, Boxing Day, and New Year's Day (ANZAC Day 2026: 12pm-5pm). Restaurant (Rustico) open Mon-Sun 11am-5pm.",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Rustico at Hay Shed Hill",
+      "price_hint": ""
+    },
+    "description": "Hay Shed Hill is a renowned Wilyabrup cellar door in the Margaret River region, open daily for seated tastings of its estate Chardonnay and Cabernet Sauvignon, with curated experiences including a wine blending session and a wine & chocolate pairing. Its on-site restaurant, Rustico, serves an award-winning shared tapas degustation paired with the estate's wines.",
+    "famous_for": "Chardonnay and Cabernet Sauvignon; named a Top 5 Red Star Winery in the 2025 Halliday Wine Companion.",
+    "confidence": "high",
+    "sources": [
+      "https://hayshedhill.com.au",
+      "https://hayshedhill.com.au/pages/visit-our-cellar-door",
+      "https://hayshedhill.com.au/pages/privatewineexperiences",
+      "https://www.rusticotapas.com.au",
+      "https://www.rusticotapas.com.au/hay-shed-hill-menus",
+      "https://rusticotapas.com.au/hay-shed-hill-menus"
+    ]
+  },
+  {
+    "id": "d1bf0d17-ae35-b32c-7f8a-be3b7ff4c043",
+    "db_name": "House of Cards",
+    "winery": "House of Cards",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Estate-grown fruit only",
+      "Family-owned Estate",
+      "Small batch & Boutique",
+      "Certified Organic",
+      "Well known Margaret River Name"
+    ],
+    "winery_signals": [
+      "view_stunning",
+      "certified_organic",
+      "small_production",
+      "intimate_welcome",
+      "cheese_board",
+      "child_friendly",
+      "dog_friendly",
+      "winery_lunch",
+      "multi_generation",
+      "seated_tasting",
+      "cellar_door_tasting",
+      "private_tasting_room"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Cellar door open 7 days a week, 10am - 5pm. Closed Christmas Eve, Christmas Day, Boxing Day & Good Friday. Chow's Table restaurant open Wednesday - Sunday 12pm - 3pm.",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Chow's Table",
+      "price_hint": ""
+    },
+    "description": "House of Cards is a certified-organic, single-vineyard winery on iconic Caves Road at the northern end of Margaret River, owned and run by Travis and Elizabeth Wray, where you can enjoy a personal $15 tasting of handcrafted wines while overlooking the natural landscape. On site, Chow's Table serves modern Chinese and Malay family-style lunches and there's a cheese-platter offering plus a playground for kids.",
+    "famous_for": "100% certified-organic, handcrafted single-vineyard wines (bold reds to sparkling whites) from estate fruit",
+    "confidence": "high",
+    "sources": [
+      "https://www.houseofcardswine.com.au/",
+      "https://www.houseofcardswine.com.au/cellar-door",
+      "https://www.houseofcardswine.com.au/chows-table",
+      "https://www.houseofcardswine.com.au/our-story"
+    ]
+  },
+  {
+    "id": "67b423d3-54e3-48fa-3357-6b29bc976ccd",
+    "db_name": "Howard Park",
+    "winery": "Howard Park",
+    "wine_styles": [
+      "Well known Margaret River Name",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Sparkling & Method traditionnelle Specialist",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "intimate_welcome",
+      "garden_picnic",
+      "child_friendly",
+      "dog_friendly",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "private_tasting_room",
+      "seated_tasting",
+      "sunset_tasting",
+      "cheese_board",
+      "charcuterie_board",
+      "corporate_events",
+      "halliday_5star",
+      "press_featured"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Open daily 10am–5pm",
+    "lunch": {
+      "tier": "platters",
+      "name": "Regional picnic / grazing platters (Cambray Cheese, Margaret River Venison, The Farm House, Margaret River Cracker Co.)",
+      "price_hint": ""
+    },
+    "description": "Howard Park's distinctive Cowaramup cellar door is an architecturally designed, Feng Shui-inspired space set among native bushland, with garden lawns, picnic blankets and lawn games where families and dogs are welcome outdoors. Its private Wine Chapel offers an intimate seated experience among chandeliers crafted from 45-year-old vines, paired with local cheese and charcuterie.",
+    "famous_for": "Méthode traditionnelle sparkling and estate wines spanning Margaret River and the Great Southern, with a 5-Star Halliday rating and the luxury private Wine Chapel.",
+    "confidence": "high",
+    "sources": [
+      "https://howardparkwines.com.au",
+      "https://howardparkwines.com.au/visit/cellar-door/",
+      "https://howardparkwines.com.au/visit/wine-chapel",
+      "https://howardparkwines.com.au/visit/events/"
+    ]
+  },
+  {
+    "id": "8023295f-0fda-e61e-8ff9-cf418ffe0f7d",
+    "db_name": "Leeuwin Estate",
+    "winery": "Leeuwin Estate",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "White Wine Specialist",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "guided_tasting",
+      "seated_tasting",
+      "winery_lunch",
+      "historic_estate",
+      "press_featured",
+      "trophy_winner",
+      "multi_generation"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Cellar door open 7 days for tastings, 10:00 AM to 5:00 PM",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Leeuwin Restaurant (Three-Course Seasonal Menu / Six-Course Tasting Menu)",
+      "price_hint": ""
+    },
+    "description": "Leeuwin Estate is a family-owned Margaret River winery established in 1973 by Denis and Tricia Horgan and now run by three generations of the founding family, built around \"The Art of Fine Wine\" with an art gallery cellar, curated seated tastings and an acclaimed sit-down restaurant. Its renowned Art Series wines carry labels featuring works by Australian contemporary artists.",
+    "famous_for": "Its internationally acclaimed Art Series Chardonnay and the art-and-wine destination experience",
+    "confidence": "high",
+    "sources": [
+      "https://leeuwinestate.com.au/visiting/cellar-door/",
+      "https://leeuwinestate.com.au/visiting/restaurant/",
+      "https://leeuwinestate.com.au/experiences/",
+      "https://leeuwinestate.com.au/our-story/"
+    ]
+  },
+  {
+    "id": "e831283e-09c2-eaca-e1f3-c2f4f1f41308",
+    "db_name": "LS Merchants",
+    "winery": "LS Merchants",
+    "wine_styles": [
+      "Small batch & Boutique",
+      "Natural & Minimal Intervention",
+      "Lesser known (off the beaten track)",
+      "Wines only available at cellar door"
+    ],
+    "winery_signals": [
+      "seated_tasting",
+      "cellar_door_tasting",
+      "dog_friendly",
+      "picnic_on_estate",
+      "byo_food",
+      "small_production",
+      "gold_medals"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Open 10:30 - 4:30 everyday (the winery's site states \"Open 10:30 - 4:30 everyday\"; some external listings note Saturday to 6:00pm)",
+    "lunch": {
+      "tier": "none",
+      "name": "BYO picnic; food trucks sometimes available (check events page)",
+      "price_hint": ""
+    },
+    "description": "A boutique Margaret River winery founded by grape explorer Dylan, sourcing small, special parcels of fruit from across Western Australia to craft interesting, approachable and delicious wines. The relaxed cellar door offers seated tastings of 8-10 wines including limited releases and back vintages, with scenic views, a BYO-picnic welcome and a pet-friendly policy.",
+    "famous_for": "Hand-crafted, minimal-intervention small-batch wines (notably their Butter Barrels Chardonnay, ranked #1 in the 2026 Top-Up Wines People's Choice Awards) that showcase the diversity of South West Australian terroir.",
+    "confidence": "high",
+    "sources": [
+      "https://www.lsmerchants.com.au",
+      "https://www.lsmerchants.com.au/cellar-door",
+      "https://www.lsmerchants.com.au/what-we-do"
+    ]
+  },
+  {
+    "id": "5d5bd129-3b5e-bb49-6605-6a6098ba8c72",
+    "db_name": "Marri Wood Park",
+    "winery": "Marri Wood Park",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Natural & Minimal Intervention",
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Lesser known (off the beaten track)"
+    ],
+    "winery_signals": [
+      "certified_organic",
+      "regenerative",
+      "small_production",
+      "vineyard_walk",
+      "guided_tasting",
+      "cellar_door_tasting",
+      "cheese_board",
+      "dog_friendly",
+      "child_friendly",
+      "gluten_free",
+      "vegetarian"
+    ],
+    "open_days": [
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Cellar door open Wednesday to Sunday, from 11am (listings cite 11am-3pm). Free guided vineyard tour + tasting + cheese board runs on the last Thursday of each month, by booking, max 8 people.",
+    "lunch": {
+      "tier": "platters",
+      "name": "Curated cheese board (served by the fire after the vineyard tour/tasting)",
+      "price_hint": ""
+    },
+    "description": "Marri Wood Park is a boutique, family-run Demeter certified biodynamic vineyard established in 1992 in Yallingup, farming sixteen acres of established vines with no chemicals, pesticides, fertiliser or irrigation. Its hand-picked, hand-sorted fruit is fermented in clay amphoras and oak barrels to make small-batch, estate-grown wines.",
+    "famous_for": "Demeter certified biodynamic, chemical-free, dry-grown estate wines (including texturally complex skin-contact sauvignon blanc) and a free guided biodynamic vineyard walk with tasting and cheese board.",
+    "confidence": "medium",
+    "sources": [
+      "https://marriwoodpark.com.au",
+      "https://doorexplorer.com/winery/marri-wood-park"
+    ]
+  },
+  {
+    "id": "773a08da-f201-c484-853b-cc5e693bcd5e",
+    "db_name": "McHenry Hohnen",
+    "winery": "McHenry Hohnen",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Natural & Minimal Intervention",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "guided_tasting",
+      "private_tasting",
+      "winery_lunch",
+      "certified_organic",
+      "regenerative",
+      "multi_generation",
+      "trophy_winner",
+      "halliday_5star",
+      "garden_picnic"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Cellar door open seven days a week, 10:30am to 4:30pm. (Vintners Wine Bar full menu Thu-Sun to 10pm; Mon lunch/snacks only.)",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Vintners Wine Bar (Vintner's Kitchen)",
+      "price_hint": ""
+    },
+    "description": "McHenry Hohnen pairs its cellar door with the Vintners Wine Bar in Witchcliffe, where you can taste biodynamically farmed, single-vineyard wines and settle in for a seasonal, Mediterranean-influenced sharing menu featuring McHenry Farms lamb and estate-grown produce. The setting includes cosy indoor spaces, a garden and a petanque court.",
+    "famous_for": "Biodynamic, minimal-intervention single-vineyard wines from family estate vineyards, with a pure expression of Margaret River place.",
+    "confidence": "high",
+    "sources": [
+      "https://www.mchenryhohnen.com.au/",
+      "https://www.mchenryhohnen.com.au/pages/cellar-door-1",
+      "https://www.mchenryhohnen.com.au/pages/vintners-wine-bar",
+      "https://www.mchenryhohnen.com.au/pages/about-us",
+      "https://www.mchenryhohnen.com.au/pages/biodynamics",
+      "https://www.mchenryhohnen.com.au/blog/McHenry-Hohnen-Earns-Biodynamic-Certification"
+    ]
+  },
+  {
+    "id": "b1222f17-4b74-754c-fa56-5a5bfc96a463",
+    "db_name": "Menzies Vineyard",
+    "winery": "Menzies Vineyard",
+    "wine_styles": [
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Lesser known (off the beaten track)",
+      "Red Wine Specialist"
+    ],
+    "winery_signals": [
+      "intimate_welcome",
+      "garden_picnic",
+      "dog_friendly",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "barrel_tasting",
+      "cellar_tour",
+      "small_production"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Monday to Sunday 11am to 4pm",
+    "lunch": {
+      "tier": "none",
+      "name": "",
+      "price_hint": ""
+    },
+    "description": "A small, family-owned and operated vineyard on the edge of Wilyabrup, where Robert and Emma Menzies grow estate fruit using high-density planting (vines just one metre apart) and organic principles, all hand-picked and hand-sorted. The cellar door offers a boutique, informative tasting plus a personalised behind-the-scenes tour of the barrel room with Rob.",
+    "famous_for": "High-density planted, estate-grown Bordeaux-style reds (Cabernet Sauvignon, Cabernet Franc, Merlot, Malbec) and Chardonnay from a boutique family vineyard.",
+    "confidence": "high",
+    "sources": [
+      "https://menziesvineyard.com.au",
+      "https://menziesvineyard.com.au/pages/about-us",
+      "https://menziesvineyard.com.au/pages/cellar-door"
+    ]
+  },
+  {
+    "id": "c22cbb53-a339-8a7b-6115-3128656645ce",
+    "db_name": "Mr. Barval",
+    "winery": "Mr Barval Fine Wines",
+    "wine_styles": [
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Red Wine Specialist",
+      "Lesser known (off the beaten track)"
+    ],
+    "winery_signals": [
+      "intimate_welcome",
+      "secluded",
+      "view_stunning",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "sunset_tasting",
+      "cellar_tour",
+      "vineyard_walk",
+      "cheese_board",
+      "small_production",
+      "multi_generation",
+      "child_friendly"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "11.00am to 5pm, seven days a week (closed for tastings Easter Friday and Sunday; CIBO food van operates normally)",
+    "lunch": {
+      "tier": "platters",
+      "name": "CIBO Italian food van (pizzas, snacks, kitchen-garden produce) plus local produce platters",
+      "price_hint": "platters from $30"
+    },
+    "description": "A relaxed, welcoming cellar door beside Calgardup Brook in Margaret River, framed by forest and vineyard with lake and sunset views, where founder Robert Gherardi pours handcrafted wines emphasising purity of fruit, balance and elegance. Tastings start at $10 for the core range, with a daily \"Taste The Tradition\" winery tour and grazing platter, plus an Italian-inspired CIBO food van on site.",
+    "famous_for": "Old-world, traditional Margaret River winemaking with an Italian influence, particularly Cabernet Sauvignon through the LIRICA label",
+    "confidence": "high",
+    "sources": [
+      "https://mrbarval.com",
+      "https://mrbarval.com/pages/our-cellar-door",
+      "https://mrbarval.com/pages/about-me"
+    ]
+  },
+  {
+    "id": "8d99b646-1362-04a2-9efb-b2e4a0fbbae8",
+    "db_name": "Passel Estate",
+    "winery": "Passel Estate",
+    "wine_styles": [
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Lesser known (off the beaten track)",
+      "Sparkling & Method traditionnelle Specialist",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "intimate_welcome",
+      "secluded",
+      "small_production",
+      "multi_generation",
+      "guided_tasting",
+      "cellar_door_tasting",
+      "private_tasting_room",
+      "vineyard_walk",
+      "sunset_tasting",
+      "cheese_board",
+      "charcuterie_board",
+      "wine_chocolate",
+      "picnic_on_estate",
+      "dog_friendly",
+      "trophy_winner",
+      "gold_medals",
+      "press_featured"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Open daily 10:30am–5:00pm (booking recommended). Closed Christmas Day, Boxing Day, New Year's Day, and Good Friday.",
+    "lunch": {
+      "tier": "platters",
+      "name": "Grazing platter / cheese platter (with Picnic Wine Tasting and Wine Sunsets experiences)",
+      "price_hint": "Picnic Wine Tasting $80 for two; Wine Sunsets $118pp"
+    },
+    "description": "A small, family-owned Margaret River estate established in 2011 on a property with a bushland conservation sanctuary that protects the critically endangered western ringtail possum. Visits are intimate guided experiences in a dedicated tasting room, ranging from a $10 guided tasting to private nature-and-wine walks, with cheese, charcuterie and chocolate-bonbon pairings.",
+    "famous_for": "Sustainably produced, small-quantity wines — especially the trophy-winning 'La Joie' méthode traditionnelle sparkling Chenin Blanc and award-winning Cabernet Sauvignon.",
+    "confidence": "high",
+    "sources": [
+      "https://www.passelestate.com/visit-our-margaret-river-cellar-door/",
+      "https://www.passelestate.com/about-our-family-owned-winery/",
+      "https://www.passelestate.com/awards-accolades/",
+      "https://passelestate.com/trophy-news-best-sparkling-honour-for-passel-estate/"
+    ]
+  },
+  {
+    "id": "786a007c-6447-c792-1c2d-c7eedcb1c80e",
+    "db_name": "Pierro",
+    "winery": "Pierro",
+    "wine_styles": [
+      "Well known Margaret River Name",
+      "White Wine Specialist",
+      "Estate-grown fruit only",
+      "Family-owned Estate",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "seated_tasting",
+      "guided_tasting",
+      "vineyard_walk",
+      "cellar_tour",
+      "wheelchair_access",
+      "step_free_entry",
+      "accessible_bathroom",
+      "accessible_parking",
+      "no_food"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Open 10-5pm Daily (10am-5pm, 7 days)",
+    "lunch": {
+      "tier": "none",
+      "name": "",
+      "price_hint": ""
+    },
+    "description": "Pierro is a family-operated Willyabrup estate founded by Dr Michael Peterkin, established as one of the original high-density vineyard plantings in Margaret River. The intimate cellar door welcomes visitors to taste and talk through the Pierro range, with personalized vineyard and winery tours offered on Fridays by request.",
+    "famous_for": "Exceptional, opulent Margaret River Chardonnay that became a role model for the style",
+    "confidence": "medium",
+    "sources": [
+      "https://www.pierro.com.au",
+      "https://www.pierro.com.au/our-story",
+      "https://www.pierro.com.au/contact",
+      "https://www.margaretriver.com.au/wineries-wine-region/pierro"
+    ]
+  },
+  {
+    "id": "49e41adf-d8bc-e9ef-9158-f33022a104ce",
+    "db_name": "Si Vintners",
+    "winery": "Si Vintners",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Natural & Minimal Intervention",
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Lesser known (off the beaten track)"
+    ],
+    "winery_signals": [
+      "certified_organic",
+      "regenerative",
+      "small_production",
+      "intimate_welcome",
+      "secluded",
+      "vineyard_walk",
+      "guided_tasting",
+      "cellar_door_tasting",
+      "dog_friendly",
+      "child_friendly",
+      "picnic_on_estate",
+      "byo_food",
+      "no_food",
+      "wedding_venue",
+      "corporate_events",
+      "female_winemaker"
+    ],
+    "open_days": [
+      "wed",
+      "thu",
+      "fri",
+      "sat"
+    ],
+    "opening_hours_note": "Winery's own site: tastings by appointment only (booked via Calendly/Humanitix). Regional and Looksi listings state Wednesday to Saturday, 11am-4pm.",
+    "lunch": {
+      "tier": "none",
+      "name": "No food served; guests welcome to bring a picnic",
+      "price_hint": ""
+    },
+    "description": "A small biodynamic, minimal-intervention estate at Rosa Glen founded in 2010 by husband-and-wife team Sarah Morris and Iwo Jakimowicz, where tastings are intimate and by appointment. Their one-hour Biodynamic Farm Tour & Tasting walks guests through the dry-grown home vineyard and biodynamic vegetable garden before a guided tasting; well-behaved dogs on leads and kids (there is a playground) are welcome.",
+    "famous_for": "Natural, DEMETER-certified biodynamic, estate-grown wines that are a true taste of place (the Halcyon Range from old dry-grown home vines, plus the approachable Sauce Range)",
+    "confidence": "medium",
+    "sources": [
+      "https://sivintners.com",
+      "https://sivintners.com/visit-us",
+      "https://looksi.com.au/listing/si-vintners/"
+    ]
+  },
+  {
+    "id": "82dc2053-1d49-5227-9f95-7274a025727a",
+    "db_name": "Skigh Wine",
+    "winery": "Skigh Wine",
+    "wine_styles": [
+      "Natural & Minimal Intervention",
+      "Organic & Biodynamic",
+      "Estate-grown fruit only",
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Lesser known (off the beaten track)"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "seated_tasting",
+      "guided_tasting",
+      "barrel_tasting",
+      "cheese_board",
+      "garden_picnic",
+      "view_stunning",
+      "certified_organic",
+      "small_production",
+      "wedding_venue"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Cellar door open 7 days, 10:30am - 5pm, for paid tastings; converted barn with garden, walk-ins welcome but bookings recommended.",
+    "lunch": {
+      "tier": "platters",
+      "name": "Cheese board (included in Backstage Pass experience)",
+      "price_hint": ""
+    },
+    "description": "Skigh Wine is a small, boutique Margaret River producer crafting minimal-intervention, natural wines from their organically certified vineyard in the Yallingup Hills, using spontaneous indigenous-yeast ferments and low sulphur. The cellar door is a relaxed converted barn with a sprawling garden, pouring Margaret River classics like Chardonnay and Cabernet alongside alternatives such as Tempranillo, Petit Verdot and Cabernet Franc.",
+    "famous_for": "Minimal-intervention natural wines from an organically certified estate vineyard, tasted in a relaxed converted barn.",
+    "confidence": "medium",
+    "sources": [
+      "https://www.skighwine.com.au/our-story",
+      "https://www.skighwine.com.au/experiences",
+      "https://www.skighwine.com.au/skighwinecellar",
+      "https://doorexplorer.com/winery/skigh-wines",
+      "https://www.tripadvisor.com.au/Attraction_Review-g488371-d26516186-Reviews-Skigh_Wine-Yallingup_Margaret_River_Region_Western_Australia.html",
+      "https://www.venueoneweddings.com/cellar-door",
+      "https://younggunofwine.com/winemaker/skigh-wine-skigh-mcmanus/"
+    ]
+  },
+  {
+    "id": "7097c5db-283a-6e0e-58ad-abd598d233e9",
+    "db_name": "Stella Bella",
+    "winery": "Stella Bella",
+    "wine_styles": [
+      "Well known Margaret River Name",
+      "Estate-grown fruit only",
+      "Internationally awarded",
+      "White Wine Specialist"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "guided_tasting",
+      "dog_friendly",
+      "byo_food",
+      "no_food",
+      "close_to_town",
+      "trophy_winner"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Mon-Sun: 10am to 5pm (closed Good Friday, Christmas Day & Boxing Day)",
+    "lunch": {
+      "tier": "none",
+      "name": "Wine By The Glass + BYO Picnic",
+      "price_hint": ""
+    },
+    "description": "Stella Bella's cellar door on Rosa Brook Road, just 4.6km from Margaret River town, offers personalised guided tastings through their southern Margaret River portfolio led by knowledgeable hosts. Visitors can enjoy wine by the glass and bring their own picnic to enjoy in the vineyard surrounds.",
+    "famous_for": "Finesse-driven southern Margaret River wines (notably award-winning Chardonnay); six wines in the 2026 Top 100, more than any other WA winery.",
+    "confidence": "high",
+    "sources": [
+      "https://www.stellabella.com.au",
+      "https://www.stellabella.com.au/Visit_Cellar_Door"
+    ]
+  },
+  {
+    "id": "6be3229f-dc8c-8265-b76f-a0fa486fa504",
+    "db_name": "Stormflower",
+    "winery": "Stormflower",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Natural & Minimal Intervention",
+      "Small batch & Boutique",
+      "Estate-grown fruit only",
+      "Lesser known (off the beaten track)",
+      "Sparkling & Method traditionnelle Specialist"
+    ],
+    "winery_signals": [
+      "certified_organic",
+      "small_production",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "seated_tasting",
+      "cheese_board",
+      "charcuterie_board",
+      "garden_picnic",
+      "picnic_on_estate",
+      "dog_friendly",
+      "child_friendly",
+      "byo_food",
+      "trophy_winner",
+      "gold_medals"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Open 7 days, 11am-5pm",
+    "lunch": {
+      "tier": "platters",
+      "name": "Stormflower Pantry build-your-own cheese & charcuterie platters",
+      "price_hint": ""
+    },
+    "description": "A homely, certified-organic cellar door set within the vineyard at Wilyabrup, where you can enjoy guided tastings of small-batch estate wines and relax with a build-your-own cheese and charcuterie platter on picnic rugs in the garden. It is dog friendly, has lawn games and bits for the kids, and welcomes outside food.",
+    "famous_for": "Boutique certified-organic Margaret River wines made solely from estate-grown fruit, including small-batch sparkling like Petillant Naturel and Cremant.",
+    "confidence": "high",
+    "sources": [
+      "https://stormflower.com.au",
+      "https://stormflower.com.au/pages/cellar-door",
+      "https://stormflower.com.au/pages/about",
+      "https://stormflower.com.au/pages/our-winery",
+      "https://austorganic.com/wilyabrup-winery-takes-organic-awards-by-storm/"
+    ]
+  },
+  {
+    "id": "11111111-1111-1111-1111-111111111111",
+    "db_name": "Vasse Felix",
+    "winery": "Vasse Felix",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Internationally awarded",
+      "Natural & Minimal Intervention",
+      "Historic Estate"
+    ],
+    "winery_signals": [
+      "historic_estate",
+      "view_stunning",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "seated_tasting",
+      "private_tasting_room",
+      "cellar_tour",
+      "vineyard_walk",
+      "winery_lunch",
+      "cheese_board",
+      "charcuterie_board",
+      "vegetarian",
+      "vegan",
+      "press_featured"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Estate open daily 10am - 5pm (cellar door / Wine Lounge); restaurant open daily 12pm - 3pm. Closed Good Friday, Dec 13, Christmas Day and Boxing Day.",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Vasse Felix Restaurant",
+      "price_hint": "$350pp five-course paired menu (within The Cellar/Epicurean experiences)"
+    },
+    "description": "Established in 1967, Vasse Felix is Margaret River's founding wine estate, home to the region's original vines and guided by the Holmes a Court family since 1987. Visitors can taste current-vintage wines at the bar, relax in the contemporary Wine Lounge overlooking the Home Vineyard, tour The Vault wine museum, and dine at the acclaimed on-site restaurant.",
+    "famous_for": "Margaret River's founding wine estate (1967), known for Cabernet Sauvignon and Chardonnay including the Heytesbury range.",
+    "confidence": "high",
+    "sources": [
+      "https://www.vassefelix.com.au",
+      "https://www.vassefelix.com.au/visit",
+      "https://www.vassefelix.com.au/restaurant",
+      "https://www.vassefelix.com.au/tasting-room"
+    ]
+  },
+  {
+    "id": "81c43507-fd2d-866e-7ce9-b3697ef1bb75",
+    "db_name": "Voyager Estate",
+    "winery": "Voyager Estate",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Organic & Biodynamic",
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "White Wine Specialist",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "historic_estate",
+      "female_winemaker",
+      "certified_organic",
+      "winery_lunch",
+      "guided_tasting",
+      "seated_tasting",
+      "private_tasting_room",
+      "vineyard_walk",
+      "cellar_door_tasting",
+      "wheelchair_access",
+      "accessible_parking",
+      "accessible_bathroom",
+      "step_free_entry",
+      "vegetarian",
+      "trophy_winner",
+      "press_featured"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Wine Room 10am to 5pm Monday to Sunday (bookings recommended); Restaurant 12pm to 5pm Wednesday to Sunday (reservations essential)",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Voyager Estate Restaurant (five-course seasonal tasting menu)",
+      "price_hint": "$170pp food only; $250pp with paired wines; Discover Voyager with seasonal lunch $330pp"
+    },
+    "description": "One of the founding wine estates of Margaret River, established in 1978 and still family-owned, Voyager Estate is a certified organic producer making 100% estate-grown and made wines, with a celebrated seated restaurant serving a five-course seasonal tasting menu paired with the estate's wines. Guided tastings in the Wine Room range from the intimate Savour Voyager through to the immersive Discover and Unearth experiences.",
+    "famous_for": "World-class Chardonnay and Cabernet Sauvignon from a certified organic, 100% estate-grown estate, plus an award-winning winery restaurant (2025 WA Good Food Guide Regional Restaurant of the Year)",
+    "confidence": "high",
+    "sources": [
+      "https://www.voyagerestate.com.au",
+      "https://www.voyagerestate.com.au/visit-us",
+      "https://www.voyagerestate.com.au/tastings-experiences",
+      "https://www.voyagerestate.com.au/restaurant",
+      "https://www.voyagerestate.com.au/our-story"
+    ]
+  },
+  {
+    "id": "5c8e4e4b-601e-70f2-3c90-3eb9bcacbf3d",
+    "db_name": "Wills Domain",
+    "winery": "Wills Domain",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "Sparkling & Method traditionnelle Specialist",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "view_stunning",
+      "winery_lunch",
+      "cheese_board",
+      "trophy_winner",
+      "press_featured",
+      "multi_generation",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "vegetarian",
+      "child_friendly",
+      "wedding_venue",
+      "halliday_5star"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Cellar Door open daily 10am-5pm. Restaurant Thursday-Monday 12pm-3pm; cellar door snacks/food 12pm-4pm Thursday-Monday.",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Wills Domain The Restaurant",
+      "price_hint": ""
+    },
+    "description": "Wills Domain is a Haunold family-owned estate in the Gunyulgup Valley at Yallingup, with sun-drenched vineyard views sloping toward the Indian Ocean, a friendly cellar door, and an acclaimed destination restaurant. Two old-vine vineyards established in 1992 supply estate-grown fruit for wines including Cabernet, Shiraz, Chardonnay and estate sparkling.",
+    "famous_for": "Its 5 Red Star Halliday rating and multi-hatted fine-dining restaurant, called one of the best fine-dining restaurants in Margaret River.",
+    "confidence": "high",
+    "sources": [
+      "https://willsdomain.com.au",
+      "https://willsdomain.com.au/pages/cellar-door",
+      "https://willsdomain.com.au/pages/restaurant",
+      "https://willsdomain.com.au/pages/estate"
+    ]
+  },
+  {
+    "id": "99889e7f-0541-3e5e-9cc9-a0219ec9dcdd",
+    "db_name": "Windows Estate",
+    "winery": "Windows Estate",
+    "wine_styles": [
+      "Organic & Biodynamic",
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Lesser known (off the beaten track)"
+    ],
+    "winery_signals": [
+      "cellar_door_tasting",
+      "guided_tasting",
+      "seated_tasting",
+      "vineyard_walk",
+      "accommodation",
+      "certified_organic",
+      "regenerative",
+      "small_production",
+      "press_featured"
+    ],
+    "open_days": [
+      "thu",
+      "fri",
+      "sat",
+      "sun",
+      "mon",
+      "tue"
+    ],
+    "opening_hours_note": "Cellar Door open Thursday to Tuesday 10am to 5pm; Wednesday by appointment only.",
+    "lunch": {
+      "tier": "none",
+      "name": "",
+      "price_hint": ""
+    },
+    "description": "Windows Estate is a small, certified-organic family vineyard at Yallingup in Margaret River, farming five plots across 15 acres with a focus on biodiversity, regenerative practices and gentle, hand-tended winemaking. Visitors can taste at the intimate cellar door or join an Organic Vineyard Tour & Tasting led by owners Chris or Jo, finishing with a private tasting using Zalto stemware.",
+    "famous_for": "Meticulous, detail-driven organic estate winemaking - the Halliday Wine Companion notes \"the attention to detail at Windows Estate is second to none.\"",
+    "confidence": "high",
+    "sources": [
+      "https://www.windowsestate.com",
+      "https://www.windowsestate.com/explore/",
+      "https://www.windowsestate.com/land",
+      "https://www.windowsestate.com/contact"
+    ]
+  },
+  {
+    "id": "44444444-4444-4444-4444-444444444444",
+    "db_name": "Woodlands",
+    "winery": "Woodlands",
+    "wine_styles": [
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Well known Margaret River Name",
+      "Red Wine Specialist",
+      "Organic & Biodynamic",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "historic_estate",
+      "multi_generation",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "seated_tasting",
+      "cheese_board",
+      "charcuterie_board",
+      "trophy_winner",
+      "certified_organic"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Open Monday to Sunday 10am-5pm, last tasting commences at 4pm; cellar door kitchen open 10am-4pm.",
+    "lunch": {
+      "tier": "platters",
+      "name": "Shared grazing board",
+      "price_hint": ""
+    },
+    "description": "Founded by David and Heather Watson at Easter 1973, Woodlands is one of Margaret River's first five vineyards, still family-owned across generations and producing premium Bordeaux-style Cabernet blends and Chardonnay from its certified-organic Wilyabrup estate. The cellar door offers complimentary guided seated tastings of at least 45 minutes alongside a shared grazing board of international cheeses, local charcuterie and house-baked focaccia.",
+    "famous_for": "Premium estate-grown Cabernet Sauvignon and Bordeaux-style blends; a pioneering Margaret River family estate.",
+    "confidence": "high",
+    "sources": [
+      "https://www.woodlandswines.com/",
+      "https://www.woodlandswines.com/products/wine-tasting",
+      "https://www.woodlandswines.com/pages/our-story",
+      "https://www.woodlandswines.com/pages/cellar-door"
+    ]
+  },
+  {
+    "id": "0220379d-36c2-41b8-34e2-762538e27955",
+    "db_name": "Xanadu Wines",
+    "winery": "Xanadu Wines",
+    "wine_styles": [
+      "Well known Margaret River Name",
+      "Family-owned Estate",
+      "Estate-grown fruit only",
+      "Red Wine Specialist",
+      "Internationally awarded"
+    ],
+    "winery_signals": [
+      "winery_lunch",
+      "cheese_board",
+      "charcuterie_board",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "private_tasting_room",
+      "seated_tasting",
+      "wedding_venue",
+      "corporate_events",
+      "close_to_town",
+      "halliday_5star",
+      "trophy_winner",
+      "press_featured"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Cellar Door open daily 10am-5pm (final tastings poured 4:30pm); closed Christmas Day & Good Friday. Restaurant open for lunch Wednesday to Sunday.",
+    "lunch": {
+      "tier": "restaurant",
+      "name": "Xanadu Restaurant",
+      "price_hint": "$75pp 2-course, $93pp 3-course, $125pp 6-course Chef's Tasting Menu"
+    },
+    "description": "Xanadu Wines is a family-owned Margaret River estate, established in 1977 and purchased by the Rathbone family in 2005, with a cellar door open daily for tastings overlooking the vineyard and an on-site restaurant pairing southwest produce and Italian traditions with estate wines. Tasting experiences range from the $15 Vinework Tasting to a $50 Museum Flagship Tasting, with cheese and charcuterie boards available.",
+    "famous_for": "Internationally awarded Cabernet Sauvignon - its 2023 Cabernet was named Champion Wine of Show at the National Wine Show of Australia and ranked #1 red wine in the world at the International Wine & Spirit Competition.",
+    "confidence": "high",
+    "sources": [
+      "https://xanaduwines.com",
+      "https://xanaduwines.com/cellar-door/",
+      "https://xanaduwines.com/restaurant/",
+      "https://xanaduwines.com/about/",
+      "https://www.rathbonewinegroup.com/about-us/our-wineries/xanadu/",
+      "https://www.amrtimes.com.au/news/augusta-margaret-river-times/xanadu-wines-glenn-goodall-among-margaret-river-wine-winners-at-halliday-awards-c-7813413"
+    ]
+  },
+  {
+    "id": "d1239ea2-d792-43c7-06b1-dd65a8b5e269",
+    "db_name": "Yeah Wine",
+    "winery": "Yeah Wine",
+    "wine_styles": [
+      "Natural & Minimal Intervention",
+      "Small batch & Boutique",
+      "Family-owned Estate",
+      "Lesser known (off the beaten track)"
+    ],
+    "winery_signals": [
+      "intimate_welcome",
+      "cellar_door_tasting",
+      "guided_tasting",
+      "cellar_tour",
+      "small_production",
+      "vegan"
+    ],
+    "open_days": [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun"
+    ],
+    "opening_hours_note": "Daily 10:30am to 5pm",
+    "lunch": {
+      "tier": "none",
+      "name": "",
+      "price_hint": ""
+    },
+    "description": "Yeah Wine is a small-batch, family-owned producer run by Sian and Andrew Dawson, who hand-make, hand-bottle and hand-label over twenty wines sourced from growers across Western Australia. Their rustic cellar door at 401 Wallcliffe Rd is \"literally a table and a couple of barrels in the corner of our little winery\" - deliberately authentic and unpretentious.",
+    "famous_for": "Handmade, minimal-intervention wines (unfined, unfiltered and vegan) championing lesser-known varieties and regions",
+    "confidence": "medium",
+    "sources": [
+      "https://www.yeahwine.com.au",
+      "https://www.yeahwine.com.au/cellar-door",
+      "https://www.yeahwine.com.au/about",
+      "https://www.yeahwine.com.au/contact"
+    ]
+  }
+]
