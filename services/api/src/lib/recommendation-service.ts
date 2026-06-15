@@ -7,6 +7,7 @@ import type {
   WineryAvailability,
 } from "../domain/models.js";
 import { makeId } from "../lib/crypto.js";
+import { selectPreferredPool } from "./winery-match.js";
 import { enhanceWithAiJustifications, type WineryFactsById } from "./recommendation-ai.js";
 import {
   buildTravelTimeMatrix,
@@ -85,6 +86,8 @@ const MAX_GROUP_SUBSETS_TO_EVALUATE = 40;
 // this fully explores up to a 4-stop day.
 const MAX_PERMUTATIONS_PER_SELECTION = 24;
 const MAX_FEASIBLE_ROUTES_TO_SCORE = 60;
+// How many top-matched wineries to carry into the scheduler as the candidate pool.
+const POOL_MAX_COUNT = 14;
 // Breathing room between consecutive stops, and the lunch break at the food venue,
 // by pace. The day starts near dayStart (no dead morning) and ends when it ends —
 // a relaxed 2-winery day is simply shorter, not stretched to fill the window.
@@ -332,7 +335,22 @@ export function describeWineryFood(winery: Winery): string {
 // food signals are still sparse, so gating on them would leave many days with no
 // lunch at all. describeWineryFood() supplies a sensible regional default when a
 // winery has no explicit food data, so a placed lunch always has a description.
-function computeRouteLunch(stops: PlannedStop[], dayEnd: number): RouteLunch | null {
+// Budget steers the lunch tier (tastings are cheap; budget is really about lunch +
+// day spend): indulgent leans to a sit-down winery restaurant, great-value to a
+// casual platter, premium/unspecified sits in between.
+function lunchFoodBonus(winery: Winery, budget?: string): number {
+  const sitDown = offersSitDownLunch(winery);
+  const anyFood = offersAnyFood(winery);
+  if (budget === "indulgent") {
+    return sitDown ? 170 : anyFood ? 40 : 0;
+  }
+  if (budget === "great-value") {
+    return sitDown ? 55 : anyFood ? 100 : 0;
+  }
+  return sitDown ? 120 : anyFood ? 60 : 0;
+}
+
+function computeRouteLunch(stops: PlannedStop[], dayEnd: number, budget?: string): RouteLunch | null {
   let best: { winery: Winery; startMinutes: number; endMinutes: number; score: number } | null = null;
   for (let i = 0; i < stops.length; i += 1) {
     const stop = stops[i];
@@ -350,9 +368,8 @@ function computeRouteLunch(stops: PlannedStop[], dayEnd: number): RouteLunch | n
     if (overlap < 20) {
       continue;
     }
-    // Prefer longer windows, midday timing, and (strongly) food-capable venues —
-    // a real sit-down lunch outranks platters, which outrank a plain cellar door.
-    const foodBonus = offersSitDownLunch(stop.winery) ? 120 : offersAnyFood(stop.winery) ? 60 : 0;
+    // Prefer longer windows, midday timing, and a budget-appropriate food venue.
+    const foodBonus = lunchFoodBonus(stop.winery, budget);
     const score = windowMinutes + overlap + foodBonus;
     if (!best || score > best.score) {
       best = { winery: stop.winery, startMinutes, endMinutes, score };
@@ -476,7 +493,7 @@ function scheduleOrderedRoute(params: {
     return null;
   }
 
-  const lunch = computeRouteLunch(stops, dayEnd);
+  const lunch = computeRouteLunch(stops, dayEnd, request.preferences?.budget);
   return { stops, totalDriveMinutes: driveTotal, totalIdleMinutes, lunch };
 }
 
@@ -985,7 +1002,33 @@ export async function recommendItineraries(params: {
   wineries: Winery[];
   availability: WineryAvailability[];
 }): Promise<RecommendItineraryResponse> {
-  const { request, wineries, availability } = params;
+  const { request: rawRequest, wineries, availability } = params;
+
+  // Resolve the candidate pool. Explicit preferred_wineries (e.g. the /custom page)
+  // win; otherwise, when quiz preferences are supplied, the backend scores wineries
+  // and selects the pool itself — the single source of truth for matching. Excluded
+  // wineries (earlier multi-day stops) are removed either way.
+  const excludeSet = new Set(rawRequest.exclude_winery_ids ?? []);
+  const hadExplicitPool = (rawRequest.preferred_wineries ?? []).length > 0;
+  let effectivePreferred = (rawRequest.preferred_wineries ?? []).filter((id) => !excludeSet.has(id));
+  if (!hadExplicitPool && rawRequest.preferences) {
+    effectivePreferred = selectPreferredPool({
+      wineries,
+      availability,
+      bookingDate: rawRequest.booking_date,
+      partySize: rawRequest.party_size,
+      preferences: rawRequest.preferences,
+      pickup: resolvePickupPoint(rawRequest),
+      excludeIds: excludeSet,
+      region: rawRequest.preferred_region,
+      maxCount: POOL_MAX_COUNT,
+    });
+  }
+  const request: RecommendItineraryRequest =
+    hadExplicitPool || rawRequest.preferences
+      ? { ...rawRequest, preferred_wineries: effectivePreferred }
+      : rawRequest;
+
   const preferredIds = request.preferred_wineries ?? [];
   const activeWineryIds = new Set(wineries.map((winery) => winery.wineryId));
   const recognizedPreferredIds = preferredIds.filter((id) => activeWineryIds.has(id));

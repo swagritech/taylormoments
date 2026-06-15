@@ -313,6 +313,19 @@ export type WeatherResponse = {
 // balanced = a comfortable full day; maximise = as many cellar doors as fit.
 export type SchedulePace = "relaxed" | "balanced" | "maximise";
 
+// The guest's quiz answers, used to score wineries for the day (soft matching).
+// Ids match the frontend option ids. Sparse/missing winery data degrades a
+// winery's score rather than excluding it — only genuine contraindications hard-fail.
+export type WineryMatchPreferences = {
+  wine_styles?: string[];
+  experiences?: string[];
+  occasion?: string;
+  budget?: string;
+  dietary?: string[];
+  accessibility?: string[];
+  include_lunch?: boolean;
+};
+
 export type RecommendItineraryRequest = {
   booking_date: string;
   party_size: number;
@@ -327,6 +340,11 @@ export type RecommendItineraryRequest = {
   pace?: SchedulePace;
   locale?: SupportedLocale;
   skip_justification?: boolean;
+  // When provided (and no explicit preferred_wineries), the backend scores wineries
+  // against these and selects the pool itself — the single source of truth for matching.
+  preferences?: WineryMatchPreferences;
+  // Wineries to leave out (e.g. already used on an earlier day of a multi-day trip).
+  exclude_winery_ids?: string[];
 };
 
 export type RecommendItineraryResponse = {

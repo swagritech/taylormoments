@@ -137,6 +137,19 @@ const baseItineraryRequestSchema = z.object({
   // planner for its exploratory/option calls so planning stays fast; the real
   // justification is fetched once, separately, for the chosen itinerary.
   skip_justification: z.boolean().optional(),
+  // Soft-matching inputs: the backend scores wineries against these and picks the pool.
+  preferences: z
+    .object({
+      wine_styles: z.array(z.string()).optional(),
+      experiences: z.array(z.string()).optional(),
+      occasion: z.string().optional(),
+      budget: z.string().optional(),
+      dietary: z.array(z.string()).optional(),
+      accessibility: z.array(z.string()).optional(),
+      include_lunch: z.boolean().optional(),
+    })
+    .optional(),
+  exclude_winery_ids: z.array(z.string()).optional(),
 });
 
 function hasCoordinatePair(value: {
