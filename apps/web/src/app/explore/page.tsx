@@ -32,6 +32,7 @@ import {
   type StepId,
 } from "./explore-i18n";
 import { Card, LangSelect, Pill, PlacesAutocomplete, RowCard, Wordmark, type PlaceSelection } from "./quiz-atoms";
+import { WineGlassLoader } from "./wine-loader";
 import "./explore-flow.css";
 
 type DayPace = ExploreDayPace;
@@ -257,6 +258,9 @@ export default function ExplorePage() {
   const [wizardStep, setWizardStep] = useState(0);
   const [wizardAttempted, setWizardAttempted] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  // Holds the loader on screen for a minimum beat so it doesn't flash when planning
+  // is near-instant; the loader stays until data is ready AND this elapses.
+  const [minLoaderElapsed, setMinLoaderElapsed] = useState(true);
   useEffect(() => {
     setLocaleState(getLocale());
   }, []);
@@ -756,6 +760,8 @@ export default function ExplorePage() {
   function craftDay() {
     setWizardAttempted(false);
     setShowResult(true);
+    setMinLoaderElapsed(false);
+    window.setTimeout(() => setMinLoaderElapsed(true), 2200);
     window.scrollTo({ top: 0, behavior: "smooth" });
     void handlePlanTrip();
   }
@@ -1000,10 +1006,8 @@ export default function ExplorePage() {
             </p>
           </div>
 
-          {requesting && resultDays.length === 0 ? (
-            <p className="result__note" style={{ marginTop: 40 }}>
-              {t.ui.loading}
-            </p>
+          {!minLoaderElapsed || (requesting && resultDays.length === 0) ? (
+            <WineGlassLoader messages={t.result.loaderCaptions} />
           ) : resultDays.length === 0 ? (
             <div style={{ marginTop: 30, textAlign: "center" }}>
               <p className="result__note">{error ?? t.errors.noPlan}</p>

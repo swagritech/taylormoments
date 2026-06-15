@@ -114,6 +114,7 @@ export type ExploreCopy = {
     weatherTypical: string;
     rainChance: string;
     dayHeading: string;
+    loaderCaptions: string[];
   };
   summary: {
     pageTitle: string;
@@ -271,6 +272,13 @@ const en: ExploreCopy = {
     weatherTypical: "Typical for this time of year",
     rainChance: "{n}% chance of rain",
     dayHeading: "Day {n}",
+    loaderCaptions: [
+      "Composing your day in the valley…",
+      "Pairing cellars to your palate…",
+      "Reserving your private tastings…",
+      "Mapping the gentlest route between estates…",
+      "Pouring the finishing touches…",
+    ],
   },
   summary: {
     pageTitle: "Tour summary",
@@ -472,6 +480,13 @@ const zhHans: ExploreCopy = {
     weatherTypical: "该时节的典型天气",
     rainChance: "{n}% 降雨概率",
     dayHeading: "第 {n} 天",
+    loaderCaptions: [
+      "正在为你编排山谷里的一天…",
+      "将酒庄与你的口味相配…",
+      "为你预留私人品鉴…",
+      "规划庄园之间最从容的路线…",
+      "正在斟上最后的点睛之笔…",
+    ],
   },
   summary: {
     pageTitle: "行程概览",
@@ -673,6 +688,13 @@ const vi: ExploreCopy = {
     weatherTypical: "Thường thấy vào thời điểm này",
     rainChance: "{n}% khả năng mưa",
     dayHeading: "Ngày {n}",
+    loaderCaptions: [
+      "Đang soạn ngày của bạn giữa thung lũng…",
+      "Ghép các hầm rượu với khẩu vị của bạn…",
+      "Giữ chỗ cho buổi nếm riêng của bạn…",
+      "Vạch lộ trình êm ái nhất giữa các điền trang…",
+      "Rót những nét hoàn thiện cuối cùng…",
+    ],
   },
   summary: {
     pageTitle: "Tổng quan hành trình",

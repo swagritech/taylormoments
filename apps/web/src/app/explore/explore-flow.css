@@ -417,6 +417,112 @@
 
 .tm-flow .result__bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 760px; margin: 0 auto; padding: 22px 22px 0; }
 
+/* ── Itinerary loader (wine glass fill) ────────────────────────────────────── */
+.tm-flow .tmLoader {
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+  gap: 30px;
+  text-align: center;
+  padding: 40px 28px;
+}
+.tm-flow .tmGlassWrap {
+  filter: drop-shadow(0 26px 30px rgba(69, 9, 26, 0.16));
+  animation: tmSway 6.5s ease-in-out infinite;
+}
+.tm-flow .tmGlassWrap svg {
+  width: 188px;
+  height: 360px;
+  overflow: visible;
+}
+.tm-flow .tmGlassFill { fill: rgba(214, 221, 216, 0.16); }
+.tm-flow .tmWine {
+  transform: translateY(150px);
+  animation: tmFill 5s cubic-bezier(0.55, 0, 0.4, 1) infinite;
+  will-change: transform;
+}
+@keyframes tmFill {
+  0% { transform: translateY(154px); }
+  8% { transform: translateY(150px); }
+  72% { transform: translateY(8px); }
+  86% { transform: translateY(8px); }
+  100% { transform: translateY(154px); }
+}
+.tm-flow .tmWave { animation: tmWaveScroll 3.1s linear infinite; will-change: transform; }
+@keyframes tmWaveScroll { from { transform: translateX(0); } to { transform: translateX(-120px); } }
+.tm-flow .tmWaveBack { opacity: 0.55; animation-duration: 4.3s; animation-direction: reverse; }
+.tm-flow .tmGlassGlint { fill: #ffffff; opacity: 0.5; }
+.tm-flow .tmMote { fill: var(--tm-accent-bright); opacity: 0; }
+.tm-flow .tmMote1 { animation: tmRise 4.4s ease-in 0.4s infinite; }
+.tm-flow .tmMote2 { animation: tmRise 5.2s ease-in 1.9s infinite; }
+.tm-flow .tmMote3 { animation: tmRise 4s ease-in 3.1s infinite; }
+@keyframes tmRise {
+  0% { transform: translateY(0); opacity: 0; }
+  14% { opacity: 0.5; }
+  78% { opacity: 0.32; }
+  100% { transform: translateY(-118px); opacity: 0; }
+}
+@keyframes tmSway { 0%, 100% { transform: rotate(-0.9deg); } 50% { transform: rotate(0.9deg); } }
+.tm-flow .tmGlassLine {
+  fill: none;
+  stroke: #c7cfc9;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tm-flow .tmGlassRim { fill: none; stroke: var(--tm-accent); stroke-width: 2.4; opacity: 0.92; }
+.tm-flow .tmCap { display: grid; justify-items: center; gap: 16px; max-width: 30ch; }
+.tm-flow .tmCapKicker {
+  font-family: var(--tm-brand);
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--tm-teal);
+}
+.tm-flow .tmCapLine {
+  font-family: var(--tm-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.6rem;
+  line-height: 1.18;
+  color: var(--tm-heading);
+  min-height: 2.1em;
+  text-wrap: balance;
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.tm-flow .tmCapLine.is-out { opacity: 0; transform: translateY(6px); }
+.tm-flow .tmMeter {
+  position: relative;
+  width: 150px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--tm-line);
+  overflow: hidden;
+}
+.tm-flow .tmMeter::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 42%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--tm-accent-bright), var(--tm-accent), transparent);
+  animation: tmSweep 2.1s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes tmSweep { 0% { transform: translateX(-130%); } 100% { transform: translateX(360%); } }
+.tm-flow[data-script="cjk"] .tmCapLine,
+.tm-flow[data-script="vi"] .tmCapLine { font-style: normal; }
+@media (prefers-reduced-motion: reduce) {
+  .tm-flow .tmWine { animation: none; transform: translateY(56px); }
+  .tm-flow .tmWave,
+  .tm-flow .tmWaveBack,
+  .tm-flow .tmMote,
+  .tm-flow .tmGlassWrap,
+  .tm-flow .tmMeter::after { animation: none; }
+  .tm-flow .tmGlassWrap { transform: none; }
+  .tm-flow .tmCapLine { transition: none; }
+}
+
 /* ── Per-script typography ─────────────────────────────────────────────────── */
 .tm-flow[data-script="cjk"] {
   --tm-display: var(--font-noto-serif-sc), var(--font-editorial), Georgia, serif;
