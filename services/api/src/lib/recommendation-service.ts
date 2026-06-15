@@ -976,10 +976,63 @@ export function buildCandidateItineraries(params: {
   };
 }
 
+const OCCASION_PHRASE: Record<string, string> = {
+  honeymoon: "on their honeymoon",
+  anniversary: "celebrating an anniversary",
+  birthday: "celebrating a birthday",
+  celebration: "marking a special celebration",
+  corporate: "on a corporate outing",
+};
+const STYLE_PHRASE: Record<string, string> = {
+  organic_biodynamic: "organic & biodynamic wines",
+  well_known_names: "iconic Margaret River names",
+  hidden_gems: "boutique, off-the-beaten-track producers",
+  family_estates: "family-owned estates",
+  award_winning: "award-winning wines",
+};
+const EXPERIENCE_PHRASE: Record<string, string> = {
+  winery_lunch: "a winery lunch",
+  cheese_wine: "cheese & wine",
+  wine_chocolate: "wine & chocolate",
+  cellar_tour: "a cellar tour",
+  blending_experience: "a wine-blending experience",
+  private_tasting_room: "a private tasting",
+  sunset_tasting: "a sunset tasting",
+  vineyard_walk: "a vineyard walk",
+};
+
+// A short plain-English description of the guest's stated occasion + tastes, used to
+// ground the AI justification so it connects the day to WHY they're visiting. These
+// are facts about the guest (not invented winery facts), so they're safe to reference.
+function describeGuestPreferences(preferences?: RecommendItineraryRequest["preferences"]): string | undefined {
+  if (!preferences) {
+    return undefined;
+  }
+  const parts: string[] = [];
+  const occasion = preferences.occasion ? OCCASION_PHRASE[preferences.occasion] : undefined;
+  if (occasion) {
+    parts.push(`The guest is ${occasion}.`);
+  }
+  const styles = (preferences.wine_styles ?? [])
+    .map((id) => STYLE_PHRASE[id])
+    .filter((value): value is string => Boolean(value));
+  if (styles.length > 0) {
+    parts.push(`They're drawn to ${styles.join(", ")}.`);
+  }
+  const experiences = (preferences.experiences ?? [])
+    .map((id) => EXPERIENCE_PHRASE[id])
+    .filter((value): value is string => Boolean(value));
+  if (experiences.length > 0) {
+    parts.push(`They'd love ${experiences.join(", ")}.`);
+  }
+  return parts.length > 0 ? parts.join(" ") : undefined;
+}
+
 export async function rankItinerariesWithAi(
   candidates: ItineraryOption[],
   factsById?: WineryFactsById,
   locale?: RecommendItineraryRequest["locale"],
+  guestContext?: string,
 ): Promise<ItineraryOption[]> {
   if (candidates.length === 0) {
     return [];
@@ -987,14 +1040,14 @@ export async function rankItinerariesWithAi(
 
   // Mark the expert pick deterministically, then (best-effort) replace the top
   // pick's justification with a real OpenAI-generated one grounded in the wineries'
-  // actual facts and written in the requested locale. If no key is set or the call
-  // fails/times out, the deterministic justifications stand unchanged.
+  // actual facts + the guest's occasion/tastes, written in the requested locale. If
+  // no key is set or the call fails/times out, the deterministic justifications stand.
   const ranked = candidates.map((candidate, index) => ({
     ...candidate,
     expertPick: index === 0,
   }));
 
-  return enhanceWithAiJustifications(ranked, factsById, locale ?? "en");
+  return enhanceWithAiJustifications(ranked, factsById, locale ?? "en", guestContext);
 }
 
 export async function recommendItineraries(params: {
@@ -1107,7 +1160,12 @@ export async function recommendItineraries(params: {
   // (the explore planner's exploratory/option calls). Still mark the expert pick.
   const ranked = request.skip_justification
     ? candidateBuild.itineraries.map((candidate, index) => ({ ...candidate, expertPick: index === 0 }))
-    : await rankItinerariesWithAi(candidateBuild.itineraries, wineryFactsById, request.locale);
+    : await rankItinerariesWithAi(
+        candidateBuild.itineraries,
+        wineryFactsById,
+        request.locale,
+        describeGuestPreferences(rawRequest.preferences),
+      );
   const selectedRouteQuality = evaluateSelectedRouteTravelQuality({
     itinerary: ranked[0],
     travelTimes,

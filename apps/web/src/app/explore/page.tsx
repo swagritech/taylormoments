@@ -506,6 +506,9 @@ export default function ExplorePage() {
             preferred_end_time: timeWindow.end,
             pace: dayPace,
             preferred_wineries: wineryUuids,
+            // Send preferences too so the justification can reference the occasion/tastes
+            // (the explicit winery list still pins the exact itinerary).
+            preferences,
           });
           const justification = response.itineraries[0]?.justification;
           if (justification) {

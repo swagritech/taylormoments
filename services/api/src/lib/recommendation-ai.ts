@@ -58,12 +58,14 @@ export async function generateExpertJustification(
   itinerary: ItineraryOption,
   factsById?: WineryFactsById,
   locale: SupportedLocale = "en",
+  guestContext?: string,
 ): Promise<string | null> {
   const apiKey = getOpenAIApiKey();
   if (!apiKey || itinerary.stops.length === 0) {
     return null;
   }
   const language = LOCALE_LANGUAGE[locale] ?? LOCALE_LANGUAGE.en;
+  const guestLine = guestContext ? `\n\nAbout the guest: ${guestContext}` : "";
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
@@ -83,9 +85,9 @@ export async function generateExpertJustification(
           {
             role: "system",
             content:
-              `You are a Margaret River wine-tour concierge for Tailor Moments. Write your reply in ${language}. In 1-2 warm, concrete sentences, explain why this curated day flows well. Use ONLY the facts provided for each winery (and the arrival times). Do NOT add wine varieties, ratings, awards, prices, or descriptors that are not in the provided facts — if a winery has no facts listed, just refer to it by name. Never contradict the facts given.`,
+              `You are a Margaret River wine-tour concierge for Tailor Moments. Write your reply in ${language}. In 1-2 warm, concrete sentences, explain why this curated day suits the guest. When the guest's occasion or tastes are given, connect the day to them naturally (e.g. a honeymoon, a love of organic wines). Use ONLY the facts provided for each winery (and the arrival times) — do NOT invent wine varieties, ratings, awards, prices, or descriptors not in the provided facts; if a winery has no facts listed, just refer to it by name. Never contradict the facts given.`,
           },
-          { role: "user", content: buildItinerarySummary(itinerary, factsById) },
+          { role: "user", content: `${buildItinerarySummary(itinerary, factsById)}${guestLine}` },
         ],
       }),
     });
@@ -111,6 +113,7 @@ export async function enhanceWithAiJustifications(
   candidates: ItineraryOption[],
   factsById?: WineryFactsById,
   locale: SupportedLocale = "en",
+  guestContext?: string,
 ): Promise<ItineraryOption[]> {
   if (candidates.length === 0 || !isAiJustificationEnabled()) {
     return candidates;
@@ -121,7 +124,7 @@ export async function enhanceWithAiJustifications(
     return candidates;
   }
 
-  const aiJustification = await generateExpertJustification(topPick, factsById, locale);
+  const aiJustification = await generateExpertJustification(topPick, factsById, locale, guestContext);
   if (!aiJustification) {
     return candidates;
   }
