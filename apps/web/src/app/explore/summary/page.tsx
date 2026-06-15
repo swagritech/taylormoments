@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
 import { ExploreSummaryMap } from "@/components/explore-summary-map";
-import { SectionCard } from "@/components/section-card";
 import { createBooking, formatDisplayTime, type BookingResponse } from "@/lib/live-api";
 import { loadExploreTourSummary } from "@/lib/explore-tour-summary";
 import { useRemoteWineryProfiles, type RemoteWineryProfile } from "@/lib/remote-winery-profiles";
 import { wineryCatalog } from "@/lib/winery-catalog";
 import { slugToWineryUuid } from "@/lib/winery-id";
-import { getLocale, type AppLocale } from "@/lib/locale";
-import { EXPLORE_I18N, fillTemplate, intlForLocale } from "../explore-i18n";
+import { getLocale, setLocale, type AppLocale } from "@/lib/locale";
+import { EXPLORE_I18N, fillTemplate, intlForLocale, scriptForLocale } from "../explore-i18n";
+import { LangSelect, Wordmark } from "../quiz-atoms";
+import "../explore-flow.css";
 
 export default function ExploreSummaryPage() {
   const router = useRouter();
@@ -232,233 +232,274 @@ export default function ExploreSummaryPage() {
     }
   }
 
+  const script = scriptForLocale(locale);
+
+  function changeLocale(code: AppLocale) {
+    setLocaleState(code);
+    setLocale(code);
+  }
+
+  function tastingPriceForStop(stop: { winery_id: string; tasting_price?: number }) {
+    const profile = profilesById[stop.winery_id];
+    return profile?.tasting_price ?? stop.tasting_price;
+  }
+
+  function renderStop(stop: (typeof orderedSummaryStops)[number], key: string) {
+    const arrival = formatDisplayTimeSafe(stop.arrival_time);
+    const departure = formatDisplayTimeSafe(stop.departure_time);
+    const price = tastingPriceForStop(stop);
+    return (
+      <div className="stop" key={`stop-${key}`}>
+        <div className="stop__time">{arrival || "—"}</div>
+        <div className="stop__body">
+          <div className="stop__row">
+            <span className="stop__name">{stop.winery_name}</span>
+            <span className="stop__tag">
+              {typeof price === "number" ? `$${price} ${t.result.pp}` : t.summary.tastingFeeTbd}
+            </span>
+          </div>
+          <p className="stop__fee">
+            {departure ? fillTemplate(t.summary.departAt, { time: departure }) : t.summary.timeTbd}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  function renderLunch(lunch: NonNullable<NonNullable<typeof summary>["lunch"]>, key: string) {
+    const arrival = formatDisplayTimeSafe(lunch.arrival_time);
+    const departure = formatDisplayTimeSafe(lunch.departure_time);
+    return (
+      <div className="stop stop--lunch" key={`lunch-${key}`}>
+        <div className="stop__time">{arrival || "—"}</div>
+        <div className="stop__body">
+          <div className="stop__row">
+            <span className="stop__name">
+              {t.result.lunchLabel} · {lunch.winery_name}
+            </span>
+          </div>
+          <p className="stop__note">{lunch.food_description || t.result.lunchNote}</p>
+          {departure ? (
+            <p className="stop__fee">{fillTemplate(t.summary.departAt, { time: departure })}</p>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  function renderWeather(weather: NonNullable<NonNullable<typeof summary>["weather"]>) {
+    return (
+      <div className="weather">
+        <div className="weather__head">
+          <span className="weather__summary">{weather.summary}</span>
+          <span className="weather__source">
+            {weather.source === "forecast" ? t.result.weatherForecast : t.result.weatherTypical}
+          </span>
+        </div>
+        <div className="weather__stats">
+          <span>
+            {weather.temp_min_c}° – {weather.temp_max_c}°C
+          </span>
+          <span>{fillTemplate(t.result.rainChance, { n: weather.rain_probability_percent })}</span>
+        </div>
+        <p className="weather__wearLabel">{t.result.weatherWear}</p>
+        <ul className="weather__list">
+          {weather.clothing.map((tip, index) => (
+            <li key={index}>{tip}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  type SummaryDay = {
+    index: number;
+    label?: string;
+    justification?: string;
+    stops: typeof orderedSummaryStops;
+    lunch: NonNullable<typeof summary>["lunch"];
+    weather: NonNullable<typeof summary>["weather"];
+  };
+
+  function renderDay(day: SummaryDay, multi: boolean) {
+    const rows: ReactNode[] = [];
+    let lunchPlaced = false;
+    day.stops.forEach((stop, index) => {
+      rows.push(renderStop(stop, `${day.index}-${index}`));
+      if (day.lunch && !lunchPlaced && day.lunch.winery_id === stop.winery_id) {
+        rows.push(renderLunch(day.lunch, `${day.index}`));
+        lunchPlaced = true;
+      }
+    });
+    if (day.lunch && !lunchPlaced) {
+      rows.push(renderLunch(day.lunch, `${day.index}`));
+    }
+    return (
+      <Fragment key={`day-${day.index}`}>
+        {day.label ? (
+          <div className="itinDay">
+            <span className="itinDay__label">{day.label}</span>
+          </div>
+        ) : null}
+        {multi && day.justification ? (
+          <div className="itinDay">
+            <span className="stop__note">{day.justification}</span>
+          </div>
+        ) : null}
+        {rows}
+        {day.weather ? renderWeather(day.weather) : null}
+      </Fragment>
+    );
+  }
+
+  const isMulti = Boolean(summary?.days && summary.days.length > 1);
+  const days: SummaryDay[] = !summary
+    ? []
+    : isMulti
+      ? summary.days!.map((day) => ({
+          index: day.day_index,
+          label: `${fillTemplate(t.result.dayHeading, { n: day.day_index + 1 })} · ${formatSummaryDate(day.date)}`,
+          justification: day.justification,
+          stops: day.stops,
+          lunch: day.lunch,
+          weather: day.weather,
+        }))
+      : [
+          {
+            index: 0,
+            stops: orderedSummaryStops,
+            lunch: summary.lunch,
+            weather: summary.weather,
+          },
+        ];
+
   return (
-    <AppShell
-      eyebrow="Explore"
-      title={t.summary.pageTitle}
-      intro={t.summary.pageIntro}
-      showWorkflowStatus={false}
-      navMode="public"
-    >
-      <div className="exploreLayout">
-        {!summary ? (
-          <SectionCard title={t.summary.noSummaryTitle} description={t.summary.noSummaryDesc}>
-            <div className="ctaRow">
-              <button type="button" className="buttonPrimary" onClick={() => router.push("/explore")}>
-                {t.summary.backToExplore}
-              </button>
+    <div className="tm-flow" lang={locale} data-script={script}>
+      <div className="result">
+        <div className="result__bar">
+          <Wordmark />
+          <LangSelect locale={locale} onChange={changeLocale} label={t.ui.language} />
+        </div>
+        <div className="result__inner">
+          {!summary ? (
+            <div style={{ textAlign: "center", marginTop: 40 }}>
+              <p className="tm-kicker">{t.summary.pageTitle}</p>
+              <h1 className="result__title tm-display" style={{ marginTop: 10 }}>
+                {t.summary.noSummaryTitle}
+              </h1>
+              <p className="result__note">{t.summary.noSummaryDesc}</p>
+              <div className="result__actions">
+                <button type="button" className="btn btn--primary" onClick={() => router.push("/explore")}>
+                  {t.summary.backToExplore}
+                </button>
+              </div>
             </div>
-          </SectionCard>
-        ) : (
-          <>
-            <SectionCard
-              title={t.summary.itinTitle}
-              description={fillTemplate(t.summary.previewMeta, {
-                date: formatSummaryDate(summary.preview_date),
-                n: summary.party_size,
-              })}
-            >
-              <div className="summaryPageSplit">
-                <div className="summaryPageLeft">
-                  {!summary.days || summary.days.length <= 1
-                    ? summary.justification
-                      ? (
-                        <div className="summaryWhyCard">
-                          <p className="summaryWhyLabel">{t.result.whyLabel}</p>
-                          <p>{summary.justification}</p>
-                        </div>
-                      )
-                      : null
-                    : null}
-                  <div className="schedulePreviewCard">
-                    {(() => {
-                      const renderStopRow = (
-                        stop: (typeof orderedSummaryStops)[number],
-                        index: number,
-                        keyPrefix: string,
-                      ) => {
-                        const arrival = formatDisplayTimeSafe(stop.arrival_time);
-                        const departure = formatDisplayTimeSafe(stop.departure_time);
-                        const profile = profilesById[stop.winery_id];
-                        const tastingPrice = profile?.tasting_price ?? stop.tasting_price;
-                        return (
-                          <div key={`${keyPrefix}-${stop.winery_id}-${index}`} className="tourSummaryRow">
-                            <div>
-                              {arrival ? <p className="timelineTime">{arrival}</p> : null}
-                              <h3>{stop.winery_name}</h3>
-                              {departure ? (
-                                <p className="subtle">{fillTemplate(t.summary.departAt, { time: departure })}</p>
-                              ) : (
-                                <p className="subtle">{t.summary.timeTbd}</p>
-                              )}
-                            </div>
-                            <div className="tourSummaryPrice">
-                              {typeof tastingPrice === "number" ? `$${tastingPrice}` : t.summary.tastingFeeTbd}
-                            </div>
-                          </div>
-                        );
-                      };
+          ) : (
+            <>
+              <div className="result__hero reveal">
+                <p className="tm-kicker">{t.summary.pageTitle}</p>
+                <h1 className="result__title tm-display">
+                  {fillTemplate(t.result.title, { name: leadName.trim() || t.guestFallback })}
+                </h1>
+                <p className="result__em">{formatSummaryDate(summary.preview_date)}</p>
+              </div>
 
-                      const renderLunchRow = (
-                        lunch: NonNullable<typeof summary.lunch>,
-                        keyPrefix: string,
-                      ) => {
-                        const arrival = formatDisplayTimeSafe(lunch.arrival_time);
-                        const departure = formatDisplayTimeSafe(lunch.departure_time);
-                        return (
-                          <div key={`${keyPrefix}-lunch`} className="tourSummaryRow tourSummaryLunchRow">
-                            <div>
-                              {arrival ? <p className="timelineTime">{arrival}</p> : null}
-                              <h3>{t.result.lunchLabel} · {lunch.winery_name}</h3>
-                              {lunch.food_description ? (
-                                <p className="subtle">{lunch.food_description}</p>
-                              ) : null}
-                              {departure ? <p className="subtle">{fillTemplate(t.summary.departAt, { time: departure })}</p> : null}
-                            </div>
-                            <div className="tourSummaryPrice">{t.result.lunchLabel}</div>
-                          </div>
-                        );
-                      };
+              <div className="result__meta">
+                <span className="result__metaItem">
+                  <b>{summary.party_size}</b>
+                  <span>{t.result.metaGuests}</span>
+                </span>
+                <span className="result__metaItem">
+                  <b>{orderedSummaryStops.length}</b>
+                  <span>{t.result.metaCellar}</span>
+                </span>
+                <span className="result__metaItem">
+                  <b>{t.pace[summary.day_pace].label}</b>
+                  <span>{t.result.metaPace}</span>
+                </span>
+              </div>
 
-                      const renderWeatherCard = (
-                        weather: NonNullable<typeof summary.weather>,
-                        keyPrefix: string,
-                      ) => (
-                        <div key={`${keyPrefix}-weather`} className="summaryWeatherCard">
-                          <h4>{weather.summary}</h4>
-                          <p className="summaryWeatherSource">
-                            {weather.source === "forecast" ? t.result.weatherForecast : t.result.weatherTypical}
-                          </p>
-                          <div className="summaryWeatherStats">
-                            <span>
-                              {weather.temp_min_c}&deg; – {weather.temp_max_c}&deg;C
-                            </span>
-                            <span>{fillTemplate(t.result.rainChance, { n: weather.rain_probability_percent })}</span>
-                          </div>
-                          <ul>
-                            {weather.clothing.map((tip, index) => (
-                              <li key={index}>{tip}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-
-                      // Render the stops in order, slotting the lunch row in right
-                      // after the winery that hosts it (lunch occupies the gap after
-                      // that tasting), so the timeline stays chronological. If the
-                      // host winery isn't among these stops, append lunch at the end.
-                      const renderStopsWithLunch = (
-                        stops: typeof orderedSummaryStops,
-                        lunch: typeof summary.lunch,
-                        keyPrefix: string,
-                      ) => {
-                        const rows: ReactNode[] = [];
-                        let lunchPlaced = false;
-                        stops.forEach((stop, index) => {
-                          rows.push(renderStopRow(stop, index, keyPrefix));
-                          if (lunch && !lunchPlaced && lunch.winery_id === stop.winery_id) {
-                            rows.push(renderLunchRow(lunch, keyPrefix));
-                            lunchPlaced = true;
-                          }
-                        });
-                        if (lunch && !lunchPlaced) {
-                          rows.push(renderLunchRow(lunch, keyPrefix));
-                        }
-                        return rows;
-                      };
-
-                      // Multi-day plans render one labelled section per day; single-day
-                      // plans keep the original flat list (combined `stops`).
-                      if (summary.days && summary.days.length > 1) {
-                        return summary.days.map((day) => (
-                          <div key={`day-${day.day_index}`} className="multiDaySummarySection">
-                            <h4 className="multiDaySummaryHeading">
-                              {fillTemplate(t.result.dayHeading, { n: day.day_index + 1 })} - {formatSummaryDate(day.date)}
-                            </h4>
-                            {day.justification ? (
-                              <div className="summaryWhyCard">
-                                <p className="summaryWhyLabel">{t.summary.whyDay}</p>
-                                <p>{day.justification}</p>
-                              </div>
-                            ) : null}
-                            {renderStopsWithLunch(day.stops, day.lunch, `day-${day.day_index}`)}
-                            {day.weather ? renderWeatherCard(day.weather, `day-${day.day_index}`) : null}
-                          </div>
-                        ));
-                      }
-
-                      return (
-                        <>
-                          {renderStopsWithLunch(orderedSummaryStops, summary.lunch, "all")}
-                          {summary.weather ? renderWeatherCard(summary.weather, "all") : null}
-                        </>
-                      );
-                    })()}
-                  </div>
-                  <div className="callout">
-                    <p>
-                      <strong>{t.summary.subtotalLabel}:</strong> ${pricing.subtotal.toFixed(2)}
-                    </p>
-                    <p className="subtle">
-                      {fillTemplate(t.summary.pricedNote, {
-                        priced: pricing.pricedStops,
-                        missing: pricing.missingStops,
-                      })}
-                    </p>
-                    <p className="subtle">{t.summary.transportNote}</p>
-                  </div>
-                  <div className="field">
-                    <label htmlFor="summary-name">{t.summary.contactTitle}</label>
-                    <input
-                      id="summary-name"
-                      className="inputLike inputField"
-                      value={leadName}
-                      placeholder={t.summary.contactNamePh}
-                      aria-label={t.summary.contactName}
-                      onChange={(event) => setLeadName(event.target.value)}
-                    />
-                    <input
-                      className="inputLike inputField"
-                      type="email"
-                      value={leadEmail}
-                      placeholder={t.summary.contactEmailPh}
-                      aria-label={t.summary.contactEmail}
-                      onChange={(event) => setLeadEmail(event.target.value)}
-                      style={{ marginTop: 8 }}
-                    />
-                  </div>
-                  <div className="ctaRow">
-                    <button type="button" className="buttonGhost" onClick={() => router.push("/custom")}>
-                      {t.summary.customise}
-                    </button>
-                    <button type="button" className="buttonPrimary" onClick={handleBook} disabled={submitting}>
-                      {submitting ? t.summary.booking : t.summary.bookTour}
-                    </button>
-                  </div>
-                  {booking ? (
-                    <div className="callout successCallout">
-                      {fillTemplate(t.summary.bookingCreated, { ref: booking.bookingId })}
-                    </div>
-                  ) : null}
-                  {error ? <div className="callout errorCallout">{error}</div> : null}
+              {!isMulti && summary.justification ? (
+                <div className="concierge reveal">
+                  <p className="tm-kicker concierge__kicker">{t.result.whyLabel}</p>
+                  <p className="concierge__body">{summary.justification}</p>
                 </div>
-                <div className="summaryPageRight">
-                  <div className="summaryMapCard">
-                    <h3>{t.summary.mapTitle}</h3>
-                    <p className="subtle">{t.summary.mapNote}</p>
-                    <ExploreSummaryMap stops={routeMapStops} pickupLocation={summary.pickup_location} />
-                    {stopsMissingCoordinates > 0 ? (
-                      <p className="subtle">
-                        {fillTemplate(t.summary.mapMissing, { n: stopsMissingCoordinates })}
-                      </p>
-                    ) : null}
+              ) : null}
+
+              <div className="itin">
+                {days.map((day) => renderDay(day, isMulti))}
+                <div className="result__footer">
+                  <div className="result__subtotal">
+                    {t.summary.subtotalLabel} <b>${pricing.subtotal.toFixed(0)}</b>
                   </div>
                 </div>
               </div>
-            </SectionCard>
-          </>
-        )}
+
+              <p className="result__note">
+                {fillTemplate(t.summary.pricedNote, { priced: pricing.pricedStops, missing: pricing.missingStops })}
+              </p>
+              <p className="result__note">{t.summary.transportNote}</p>
+
+              <div className="concierge" style={{ marginTop: 22 }}>
+                <p className="tm-kicker concierge__kicker">{t.summary.contactTitle}</p>
+                <div className="field">
+                  <label className="field__label" htmlFor="summary-name">{t.summary.contactName}</label>
+                  <input
+                    id="summary-name"
+                    className="input"
+                    value={leadName}
+                    placeholder={t.summary.contactNamePh}
+                    onChange={(event) => setLeadName(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label className="field__label" htmlFor="summary-email">{t.summary.contactEmail}</label>
+                  <input
+                    id="summary-email"
+                    className="input"
+                    type="email"
+                    value={leadEmail}
+                    placeholder={t.summary.contactEmailPh}
+                    onChange={(event) => setLeadEmail(event.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="result__actions">
+                <button type="button" className="btn btn--ghost" onClick={() => router.push("/custom")}>
+                  {t.summary.customise}
+                </button>
+                <button type="button" className="btn btn--primary" onClick={handleBook} disabled={submitting}>
+                  {submitting ? t.summary.booking : t.summary.bookTour}
+                </button>
+              </div>
+              {booking ? (
+                <p className="result__note" style={{ color: "var(--tm-teal)" }}>
+                  {fillTemplate(t.summary.bookingCreated, { ref: booking.bookingId })}
+                </p>
+              ) : null}
+              {error ? (
+                <p className="result__note" style={{ color: "var(--tm-danger)" }}>
+                  {error}
+                </p>
+              ) : null}
+
+              <div className="itin" style={{ marginTop: 24 }}>
+                <div style={{ padding: "20px 24px" }}>
+                  <p className="chapter__label">{t.summary.mapTitle}</p>
+                  <p className="stop__note" style={{ margin: "8px 0 14px" }}>{t.summary.mapNote}</p>
+                  <ExploreSummaryMap stops={routeMapStops} pickupLocation={summary.pickup_location} />
+                  {stopsMissingCoordinates > 0 ? (
+                    <p className="stop__note" style={{ marginTop: 10 }}>
+                      {fillTemplate(t.summary.mapMissing, { n: stopsMissingCoordinates })}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
-    </AppShell>
+    </div>
   );
 }
