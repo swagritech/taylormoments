@@ -276,6 +276,39 @@ export type PasswordResetToken = {
 
 export type SupportedLocale = "en" | "zh-Hans" | "vi";
 
+// Weather shown alongside the itinerary. "forecast" = a real near-term forecast
+// (date within the forecast horizon); "climate_normal" = typical conditions for
+// that time of year, used when the date is too far out to forecast.
+export type WeatherSource = "forecast" | "climate_normal";
+
+export type DayWeather = {
+  date: string;
+  source: WeatherSource;
+  tempMinC: number;
+  tempMaxC: number;
+  rainProbabilityPercent: number;
+  rainfallMm?: number;
+  // Short plain-language headline, e.g. "Warm and mostly dry".
+  summary: string;
+  // What to wear / bring, written for overseas visitors unfamiliar with the climate.
+  clothing: string[];
+};
+
+export type WeatherResponse = {
+  generated_at: string;
+  location: string;
+  days: Array<{
+    date: string;
+    source: WeatherSource;
+    temp_min_c: number;
+    temp_max_c: number;
+    rain_probability_percent: number;
+    rainfall_mm?: number;
+    summary: string;
+    clothing: string[];
+  }>;
+};
+
 // How densely to pack the day: relaxed = fewer stops + room to breathe;
 // balanced = a comfortable full day; maximise = as many cellar doors as fit.
 export type SchedulePace = "relaxed" | "balanced" | "maximise";

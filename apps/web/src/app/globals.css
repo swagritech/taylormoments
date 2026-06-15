@@ -819,6 +819,112 @@ button {
   padding: 10px 12px;
 }
 
+.bespokeWeather {
+  margin: 4px 0 2px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(95, 122, 106, 0.28);
+  background: linear-gradient(180deg, rgba(95, 122, 106, 0.10), rgba(95, 122, 106, 0.03));
+}
+
+.bespokeWeatherHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bespokeWeatherSummary {
+  font-family: var(--font-display), serif;
+  font-size: 1.1rem;
+  font-style: italic;
+  color: var(--sage);
+}
+
+.bespokeWeatherSource {
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6f654b;
+  opacity: 0.85;
+}
+
+.bespokeWeatherStats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  color: #40362d;
+  font-size: 0.96rem;
+  font-weight: 600;
+}
+
+.bespokeWeatherWearLabel {
+  margin: 10px 0 4px;
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+}
+
+.bespokeWeatherList {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.bespokeWeatherList li {
+  color: #4f4a40;
+  line-height: 1.55;
+  font-size: 0.94rem;
+}
+
+.summaryWeatherCard {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(95, 122, 106, 0.28);
+  background: rgba(95, 122, 106, 0.06);
+}
+
+.summaryWeatherCard h4 {
+  margin: 0 0 4px;
+  font-family: var(--font-display), serif;
+  font-size: 1.05rem;
+  color: var(--sage);
+}
+
+.summaryWeatherCard .summaryWeatherStats {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 4px 0 8px;
+  font-weight: 600;
+  color: #40362d;
+}
+
+.summaryWeatherCard ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 3px;
+}
+
+.summaryWeatherCard ul li {
+  font-size: 0.9rem;
+  color: #4f4a40;
+  line-height: 1.5;
+}
+
+.summaryWeatherSource {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6f654b;
+}
+
 .bespokeWineryLink {
   font: inherit;
   color: inherit;

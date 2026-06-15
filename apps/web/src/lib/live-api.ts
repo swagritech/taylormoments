@@ -367,6 +367,45 @@ async function parseJson<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
+export type DayWeather = {
+  date: string;
+  source: "forecast" | "climate_normal";
+  temp_min_c: number;
+  temp_max_c: number;
+  rain_probability_percent: number;
+  rainfall_mm?: number;
+  summary: string;
+  clothing: string[];
+};
+
+export type WeatherResponse = {
+  generated_at: string;
+  location: string;
+  days: DayWeather[];
+};
+
+// Best-effort weather lookup for the chosen touring date(s). Returns null on any
+// failure so the itinerary still renders without it.
+export async function fetchWeatherForDates(dates: string[]): Promise<DayWeather[] | null> {
+  const unique = Array.from(new Set(dates.filter(Boolean)));
+  if (unique.length === 0) {
+    return null;
+  }
+  try {
+    const response = await fetch(
+      `${getRequiredApiBaseUrl()}/api/v1/weather?dates=${encodeURIComponent(unique.join(","))}`,
+      { method: "GET" },
+    );
+    if (!response.ok) {
+      return null;
+    }
+    const body = (await response.json()) as WeatherResponse;
+    return body.days ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function recommendItineraries(payload: {
   booking_date: string;
   pickup_location: string;

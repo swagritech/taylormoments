@@ -4,9 +4,11 @@ import { Fragment, startTransition, useEffect, useMemo, useRef, useState } from 
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import {
+  fetchWeatherForDates,
   formatDisplayTime,
   listWineries,
   recommendItineraries,
+  type DayWeather,
   type Recommendation,
   type WineryListResponse,
 } from "@/lib/live-api";
@@ -583,6 +585,8 @@ export default function ExplorePage() {
   const [selectedRecommendationIndex, setSelectedRecommendationIndex] = useState(0);
   // Per-day itineraries when tripDays > 1 (each entry is one full touring day).
   const [multiDayPlan, setMultiDayPlan] = useState<MultiDayResult[]>([]);
+  // Weather + clothing guidance keyed by touring date (best-effort; may be empty).
+  const [weatherByDate, setWeatherByDate] = useState<Record<string, DayWeather>>({});
   const [error, setError] = useState<string | null>(null);
   const [hasPlanned, setHasPlanned] = useState(false);
   const [isPreferencesCollapsed, setIsPreferencesCollapsed] = useState(false);
@@ -741,6 +745,22 @@ export default function ExplorePage() {
     return () => window.clearTimeout(timer);
   }, [hasPlanned, recommendation, itineraryReplaySeed]);
 
+  // Best-effort weather lookup; merges results into state keyed by date so the
+  // itinerary card and summary can show conditions + what to wear. Never throws.
+  async function loadWeatherForDates(dates: string[]) {
+    const days = await fetchWeatherForDates(dates);
+    if (!days || days.length === 0) {
+      return;
+    }
+    setWeatherByDate((current) => {
+      const next = { ...current };
+      for (const day of days) {
+        next[day.date] = day;
+      }
+      return next;
+    });
+  }
+
   async function handlePlanTrip() {
     setSubmitAttempted(true);
     if (selectedWineStyles.length === 0) {
@@ -762,6 +782,7 @@ export default function ExplorePage() {
     setRecommendationOptions([]);
     setSelectedRecommendationIndex(0);
     setMultiDayPlan([]);
+    setWeatherByDate({});
     setItineraryReplaySeed(0);
 
     try {
@@ -1015,6 +1036,7 @@ export default function ExplorePage() {
         setRecommendationOptions(result.options);
         setSelectedRecommendationIndex(0);
         setMultiDayPlan([]);
+        void loadWeatherForDates([result.usedDate]);
         return;
       }
 
@@ -1067,6 +1089,7 @@ export default function ExplorePage() {
       setRecommendationOptions([firstDay.recommendation]);
       setSelectedRecommendationIndex(0);
       setMultiDayPlan(collectedDays);
+      void loadWeatherForDates(collectedDays.map((day) => day.date));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to plan trip right now.");
     } finally {
@@ -1114,6 +1137,7 @@ export default function ExplorePage() {
             date: day.date,
             stops: enrichStops(day.recommendation.stops),
             lunch: day.recommendation.lunch ?? null,
+            weather: weatherByDate[day.date] ?? null,
             matched_winery_ids:
               daySlugs.length > 0 ? daySlugs : day.pool.map((entry) => entry.id),
             justification: day.recommendation.justification,
@@ -1146,6 +1170,7 @@ export default function ExplorePage() {
           : matchedWineries.slice(0, combinedStops.length).map((entry) => entry.id),
       stops: enrichStops(combinedStops),
       lunch: isMultiDay ? null : recommendation.lunch ?? null,
+      weather: isMultiDay ? null : weatherByDate[previewDate] ?? null,
       days: daysPayload,
       justification: recommendation.justification,
       label: recommendation.label,
@@ -1175,6 +1200,33 @@ export default function ExplorePage() {
       (entry) => entry.name.trim().toLowerCase() === normalized,
     );
     return match;
+  }
+
+  // A compact weather + what-to-wear panel for one touring date. Many of our
+  // guests travel from overseas and won't know the local climate, so we show the
+  // temperature range, the chance of rain (a real forecast when close, the
+  // seasonal average otherwise), and concrete clothing guidance.
+  function renderWeatherPanel(weather: DayWeather) {
+    const sourceLabel =
+      weather.source === "forecast" ? "Forecast" : "Typical for this time of year";
+    return (
+      <div className="bespokeWeather">
+        <div className="bespokeWeatherHead">
+          <span className="bespokeWeatherSummary">{weather.summary}</span>
+          <span className="bespokeWeatherSource">{sourceLabel}</span>
+        </div>
+        <div className="bespokeWeatherStats">
+          <span>{weather.temp_min_c}&deg; – {weather.temp_max_c}&deg;C</span>
+          <span>{weather.rain_probability_percent}% chance of rain</span>
+        </div>
+        <p className="bespokeWeatherWearLabel">What to wear</p>
+        <ul className="bespokeWeatherList">
+          {weather.clothing.map((tip, index) => (
+            <li key={index}>{tip}</li>
+          ))}
+        </ul>
+      </div>
+    );
   }
 
   // Renders one bespoke day card. Used once for the single-day flow and once
@@ -1234,6 +1286,7 @@ export default function ExplorePage() {
           <span>{PACE_LABELS[dayPace]} pace</span>
           <span>transport {needTransport}</span>
         </div>
+        {weatherByDate[dateValue] ? renderWeatherPanel(weatherByDate[dateValue]!) : null}
         <div className="bespokeChapterStack">
           {chapters.map((chapter) => (
             <section key={chapter.label} className="bespokeChapter">

@@ -1,11 +1,12 @@
 import type { ExplorePreferences } from "@/lib/explore-preferences";
-import type { RecommendationLunch, RecommendationStop } from "@/lib/live-api";
+import type { DayWeather, RecommendationLunch, RecommendationStop } from "@/lib/live-api";
 
 export type ExploreTourSummaryStop = RecommendationStop & {
   tasting_price?: number;
 };
 
 export type ExploreTourSummaryLunch = RecommendationLunch;
+export type ExploreTourSummaryWeather = DayWeather;
 
 // One touring day within a multi-day plan. The top-level `stops` /
 // `matched_winery_ids` remain the *combined* set across all days so the
@@ -15,6 +16,7 @@ export type ExploreTourSummaryDay = {
   date: string;
   stops: ExploreTourSummaryStop[];
   lunch?: ExploreTourSummaryLunch | null;
+  weather?: ExploreTourSummaryWeather | null;
   matched_winery_ids: string[];
   justification?: string;
   label?: string;
@@ -36,6 +38,9 @@ export type ExploreTourSummary = {
   // The placed lunch for the (combined/single) day, if the scheduler found a
   // food-capable venue with a midday gap. Null when no lunch was placed.
   lunch?: ExploreTourSummaryLunch | null;
+  // Weather + clothing guidance for the (single) touring date. For multi-day
+  // plans the per-day weather lives on each `days` entry instead.
+  weather?: ExploreTourSummaryWeather | null;
   // Present (length >= 1) for multi-day plans; absent/undefined for single-day.
   days?: ExploreTourSummaryDay[];
   // The AI expert-pick commentary for this itinerary, carried through so the

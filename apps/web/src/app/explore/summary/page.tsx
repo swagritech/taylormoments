@@ -277,6 +277,31 @@ export default function ExploreSummaryPage() {
                         );
                       };
 
+                      const renderWeatherCard = (
+                        weather: NonNullable<typeof summary.weather>,
+                        keyPrefix: string,
+                      ) => (
+                        <div key={`${keyPrefix}-weather`} className="summaryWeatherCard">
+                          <h4>{weather.summary}</h4>
+                          <p className="summaryWeatherSource">
+                            {weather.source === "forecast"
+                              ? "Forecast"
+                              : "Typical for this time of year"}
+                          </p>
+                          <div className="summaryWeatherStats">
+                            <span>
+                              {weather.temp_min_c}&deg; – {weather.temp_max_c}&deg;C
+                            </span>
+                            <span>{weather.rain_probability_percent}% chance of rain</span>
+                          </div>
+                          <ul>
+                            {weather.clothing.map((tip, index) => (
+                              <li key={index}>{tip}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+
                       // Multi-day plans render one labelled section per day; single-day
                       // plans keep the original flat list (combined `stops`).
                       if (summary.days && summary.days.length > 1) {
@@ -289,6 +314,7 @@ export default function ExploreSummaryPage() {
                               renderStopRow(stop, index, `day-${day.day_index}`),
                             )}
                             {day.lunch ? renderLunchRow(day.lunch, `day-${day.day_index}`) : null}
+                            {day.weather ? renderWeatherCard(day.weather, `day-${day.day_index}`) : null}
                           </div>
                         ));
                       }
@@ -297,6 +323,7 @@ export default function ExploreSummaryPage() {
                         <>
                           {orderedSummaryStops.map((stop, index) => renderStopRow(stop, index, "all"))}
                           {summary.lunch ? renderLunchRow(summary.lunch, "all") : null}
+                          {summary.weather ? renderWeatherCard(summary.weather, "all") : null}
                         </>
                       );
                     })()}
