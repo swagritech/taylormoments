@@ -99,6 +99,8 @@ export type ExploreCopy = {
     depart: string;
     driveYes: string;
     driveNo: string;
+    driveFromYes: string;
+    driveFromNo: string;
     subtotal: string;
     forGuests: string;
     forGuest: string;
@@ -254,6 +256,8 @@ const en: ExploreCopy = {
     depart: "depart",
     driveYes: "{n} min chauffeured drive to the next stop",
     driveNo: "{n} min leisurely drive to the next stop",
+    driveFromYes: "{n} min chauffeured drive from your pickup to the first cellar door",
+    driveFromNo: "{n} min drive from your starting point to the first cellar door",
     subtotal: "Tasting subtotal",
     forGuests: "for {n} guests",
     forGuest: "for {n} guest",
@@ -453,6 +457,8 @@ const zhHans: ExploreCopy = {
     depart: "离开",
     driveYes: "{n} 分钟专车车程至下一站",
     driveNo: "{n} 分钟悠然车程至下一站",
+    driveFromYes: "{n} 分钟专车车程，从接送点前往第一家酒庄",
+    driveFromNo: "{n} 分钟车程，从你的出发点前往第一家酒庄",
     subtotal: "品鉴小计",
     forGuests: "共 {n} 位宾客",
     forGuest: "共 {n} 位宾客",
@@ -652,6 +658,8 @@ const vi: ExploreCopy = {
     depart: "rời đi",
     driveYes: "{n} phút di chuyển bằng xe riêng đến điểm tiếp theo",
     driveNo: "{n} phút lái xe thong thả đến điểm tiếp theo",
+    driveFromYes: "{n} phút di chuyển bằng xe riêng từ điểm đón đến hầm rượu đầu tiên",
+    driveFromNo: "{n} phút lái xe từ điểm xuất phát đến hầm rượu đầu tiên",
     subtotal: "Tạm tính nếm thử",
     forGuests: "cho {n} khách",
     forGuest: "cho {n} khách",

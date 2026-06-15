@@ -1233,11 +1233,21 @@ export default function ExplorePage() {
     const chapters = buildItineraryChapters(rec.stops);
     const flat = rec.stops;
     const lunch = rec.lunch ?? null;
+    // The first stop's drive_minutes is the leg from the pickup/start to the first
+    // cellar door — surface it so guests see the journey out, not just between stops.
+    const firstLegMinutes = flat[0]?.drive_minutes ?? 0;
     return (
       <Fragment key={dateValue}>
         {dayLabel ? (
           <div className="itinDay">
             <span className="itinDay__label">{dayLabel}</span>
+          </div>
+        ) : null}
+        {firstLegMinutes > 0 ? (
+          <div className="drive">
+            {fillTemplate(needTransport === "yes" ? t.result.driveFromYes : t.result.driveFromNo, {
+              n: firstLegMinutes,
+            })}
           </div>
         ) : null}
         {chapters.map((chapter) => (
