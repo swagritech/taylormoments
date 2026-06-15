@@ -29,6 +29,8 @@ export type ExploreCopy = {
     transport: string;
     pickup: string;
     pickupPlaceholder: string;
+    startingAddress: string;
+    startingAddressHint: string;
     wineStyles: string;
     wineStylesHint: string;
     experiences: string;
@@ -171,6 +173,8 @@ const en: ExploreCopy = {
     transport: "Will you need transport?",
     pickup: "Pickup address",
     pickupPlaceholder: "Start typing your address",
+    startingAddress: "Where will you set off from?",
+    startingAddressHint: "Optional — your starting address helps us plan the most efficient route.",
     wineStyles: "What kind of wines interest you?",
     wineStylesHint: "Pick as many as you like — even “Surprise me” works beautifully.",
     experiences: "Any experiences you'd love?",
@@ -366,6 +370,8 @@ const zhHans: ExploreCopy = {
     transport: "需要我们安排接送吗？",
     pickup: "接送地址",
     pickupPlaceholder: "开始输入你的地址",
+    startingAddress: "你将从哪里出发？",
+    startingAddressHint: "选填——填写出发地址有助于我们规划最顺畅的路线。",
     wineStyles: "你对哪类葡萄酒感兴趣？",
     wineStylesHint: "可多选——即使选「给我惊喜」也很合适。",
     experiences: "有想体验的项目吗？",
@@ -563,6 +569,8 @@ const vi: ExploreCopy = {
     transport: "Bạn có cần đưa đón không?",
     pickup: "Địa chỉ đón",
     pickupPlaceholder: "Bắt đầu nhập địa chỉ của bạn",
+    startingAddress: "Bạn sẽ khởi hành từ đâu?",
+    startingAddressHint: "Tùy chọn — địa chỉ xuất phát giúp chúng tôi lên lộ trình hiệu quả nhất.",
     wineStyles: "Bạn quan tâm đến loại rượu vang nào?",
     wineStylesHint: "Chọn bao nhiêu tùy thích — chọn “Gây bất ngờ cho tôi” cũng rất hợp.",
     experiences: "Có trải nghiệm nào bạn yêu thích?",

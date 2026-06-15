@@ -31,7 +31,7 @@ import {
   scriptForLocale,
   type StepId,
 } from "./explore-i18n";
-import { Card, LangSelect, Pill, RowCard, Wordmark } from "./quiz-atoms";
+import { Card, LangSelect, Pill, PlacesAutocomplete, RowCard, Wordmark, type PlaceSelection } from "./quiz-atoms";
 import "./explore-flow.css";
 
 type DayPace = ExploreDayPace;
@@ -633,8 +633,9 @@ export default function ExplorePage() {
     try {
       let requestPickupLatitude = pickupLatitude;
       let requestPickupLongitude = pickupLongitude;
+      // Resolve coordinates from the chosen place (pickup OR self-drive starting
+      // address) when the autocomplete didn't already provide them.
       if (
-        needTransport === "yes" &&
         pickupPlaceId &&
         (requestPickupLatitude === undefined || requestPickupLongitude === undefined) &&
         googleApiKey
@@ -676,12 +677,13 @@ export default function ExplorePage() {
       const pickupLocationLabel =
         needTransport === "yes"
           ? pickupAddress.trim() || "Margaret River Visitor Centre"
-          : "Self-drive (no transport required)";
+          : pickupAddress.trim() || "Self-drive (no transport required)";
 
+      // The route origin. For self-drivers this is now their starting address (when
+      // given), so the planner measures travel times and biases the winery pool from
+      // where they actually begin — regardless of transport mode.
       const routeStartPoint =
-        needTransport === "yes" &&
-        requestPickupLatitude !== undefined &&
-        requestPickupLongitude !== undefined
+        requestPickupLatitude !== undefined && requestPickupLongitude !== undefined
           ? { latitude: requestPickupLatitude, longitude: requestPickupLongitude }
           : undefined;
 
@@ -813,9 +815,9 @@ export default function ExplorePage() {
           const response = await recommendItineraries({
             booking_date: candidateDate,
             pickup_location: pickupLocationLabel,
-            pickup_place_id: needTransport === "yes" ? pickupPlaceId || undefined : undefined,
-            pickup_latitude: needTransport === "yes" ? requestPickupLatitude : undefined,
-            pickup_longitude: needTransport === "yes" ? requestPickupLongitude : undefined,
+            pickup_place_id: pickupPlaceId || undefined,
+            pickup_latitude: requestPickupLatitude,
+            pickup_longitude: requestPickupLongitude,
             party_size: groupSize,
             preferred_start_time: timeWindow.start,
             preferred_end_time: timeWindow.end,
@@ -844,9 +846,9 @@ export default function ExplorePage() {
               const alternateResponse = await recommendItineraries({
                 booking_date: candidateDate,
                 pickup_location: pickupLocationLabel,
-                pickup_place_id: needTransport === "yes" ? pickupPlaceId || undefined : undefined,
-                pickup_latitude: needTransport === "yes" ? requestPickupLatitude : undefined,
-                pickup_longitude: needTransport === "yes" ? requestPickupLongitude : undefined,
+                pickup_place_id: pickupPlaceId || undefined,
+                pickup_latitude: requestPickupLatitude,
+                pickup_longitude: requestPickupLongitude,
                 party_size: groupSize,
                 preferred_start_time: timeWindow.start,
                 preferred_end_time: timeWindow.end,
@@ -878,9 +880,9 @@ export default function ExplorePage() {
           const response = await recommendItineraries({
             booking_date: dateValue,
             pickup_location: pickupLocationLabel,
-            pickup_place_id: needTransport === "yes" ? pickupPlaceId || undefined : undefined,
-            pickup_latitude: needTransport === "yes" ? requestPickupLatitude : undefined,
-            pickup_longitude: needTransport === "yes" ? requestPickupLongitude : undefined,
+            pickup_place_id: pickupPlaceId || undefined,
+            pickup_latitude: requestPickupLatitude,
+            pickup_longitude: requestPickupLongitude,
             party_size: groupSize,
             preferred_start_time: timeWindow.start,
             preferred_end_time: timeWindow.end,
@@ -987,7 +989,7 @@ export default function ExplorePage() {
     const pickupLocation =
       needTransport === "yes"
         ? pickupAddress.trim() || "Margaret River Visitor Centre"
-        : "Self-drive (no transport required)";
+        : pickupAddress.trim() || "Self-drive (no transport required)";
 
     const uuidToSlug = new Map(
       wineryCatalog.map((winery) => [slugToWineryUuid(winery.id), winery.id] as const),
@@ -1138,6 +1140,24 @@ export default function ExplorePage() {
     setShowResult(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
     void handlePlanTrip();
+  }
+
+  // Address handlers shared by the pickup (transport) and starting-address
+  // (self-drive) fields. Typing clears any resolved place/coordinates; selecting a
+  // suggestion captures the place id + coordinates for accurate routing.
+  function handlePickupTextChange(value: string) {
+    setPickupAddress(value);
+    setPickupPlaceId("");
+    setPickupLatitude(undefined);
+    setPickupLongitude(undefined);
+  }
+  function handlePickupSelect(selection: PlaceSelection) {
+    setPickupPlaceId(selection.placeId);
+    if (selection.formattedAddress) {
+      setPickupAddress(selection.formattedAddress);
+    }
+    setPickupLatitude(selection.latitude);
+    setPickupLongitude(selection.longitude);
   }
 
   function nextStep() {
@@ -1548,24 +1568,36 @@ export default function ExplorePage() {
           <p className="field__hint">{needTransport === "yes" ? t.transport.hintYes : t.transport.hintNo}</p>
         </div>
 
+        {/* Address with Google Places autocomplete. Shown for both modes: a pickup
+            point when transport is needed, or a starting address for self-drivers so
+            the planner can route accurately from where the day begins. */}
         {needTransport === "yes" ? (
           <div className="field reveal">
             <label className="field__label" htmlFor="tm-pickup">{t.fields.pickup}</label>
-            <input
+            <PlacesAutocomplete
               id="tm-pickup"
-              className="input"
               value={pickupAddress}
+              locale={locale}
               placeholder={t.fields.pickupPlaceholder}
-              onChange={(event) => {
-                setPickupAddress(event.target.value);
-                setPickupPlaceId("");
-                setPickupLatitude(undefined);
-                setPickupLongitude(undefined);
-              }}
+              onChange={handlePickupTextChange}
+              onSelect={handlePickupSelect}
             />
             {showErr.pickup ? <p className="errmsg">✕ {showErr.pickup}</p> : null}
           </div>
-        ) : null}
+        ) : (
+          <div className="field reveal">
+            <label className="field__label" htmlFor="tm-start">{t.fields.startingAddress}</label>
+            <p className="field__hint">{t.fields.startingAddressHint}</p>
+            <PlacesAutocomplete
+              id="tm-start"
+              value={pickupAddress}
+              locale={locale}
+              placeholder={t.fields.pickupPlaceholder}
+              onChange={handlePickupTextChange}
+              onSelect={handlePickupSelect}
+            />
+          </div>
+        )}
       </div>
     );
   }
