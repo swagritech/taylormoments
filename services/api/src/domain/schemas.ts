@@ -133,6 +133,10 @@ const baseItineraryRequestSchema = z.object({
   preferred_end_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   pace: z.enum(["relaxed", "balanced", "maximise"]).optional(),
   locale: z.enum(["en", "zh-Hans", "vi"]).optional(),
+  // When true, skip the (slow) OpenAI justification pass. Used by the explore
+  // planner for its exploratory/option calls so planning stays fast; the real
+  // justification is fetched once, separately, for the chosen itinerary.
+  skip_justification: z.boolean().optional(),
 });
 
 function hasCoordinatePair(value: {

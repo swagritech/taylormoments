@@ -1027,7 +1027,11 @@ export async function recommendItineraries(params: {
       description: winery.description,
     };
   }
-  const ranked = await rankItinerariesWithAi(candidateBuild.itineraries, wineryFactsById, request.locale);
+  // Skip the slow OpenAI justification when the caller only needs the schedule
+  // (the explore planner's exploratory/option calls). Still mark the expert pick.
+  const ranked = request.skip_justification
+    ? candidateBuild.itineraries.map((candidate, index) => ({ ...candidate, expertPick: index === 0 }))
+    : await rankItinerariesWithAi(candidateBuild.itineraries, wineryFactsById, request.locale);
   const selectedRouteQuality = evaluateSelectedRouteTravelQuality({
     itinerary: ranked[0],
     travelTimes,

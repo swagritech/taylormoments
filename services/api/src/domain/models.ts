@@ -326,6 +326,7 @@ export type RecommendItineraryRequest = {
   preferred_end_time?: string;
   pace?: SchedulePace;
   locale?: SupportedLocale;
+  skip_justification?: boolean;
 };
 
 export type RecommendItineraryResponse = {

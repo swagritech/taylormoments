@@ -821,6 +821,9 @@ export default function ExplorePage() {
             preferred_end_time: timeWindow.end,
             pace: dayPace,
             preferred_wineries: pool.map((winery) => slugToWineryUuid(winery.id)),
+            // Keep planning fast: skip the slow AI justification here. The real
+            // concierge justification is fetched once for the chosen day below.
+            skip_justification: true,
           });
 
           if (response.itineraries.length === 0) {
@@ -849,6 +852,7 @@ export default function ExplorePage() {
                 preferred_end_time: timeWindow.end,
                 pace: dayPace,
                 preferred_wineries: alternatePreferredWineries,
+                skip_justification: true,
               });
 
               const alternateOption = alternateResponse.itineraries.sort(
@@ -866,6 +870,34 @@ export default function ExplorePage() {
         return null;
       };
 
+      // Fetch the real (slow) AI justification once for the chosen day and patch it
+      // into the concierge note — progressive enhancement so planning never blocks on
+      // OpenAI. Until it arrives (or if it fails), the localized template note shows.
+      const refreshJustification = async (dateValue: string, pool: WineryCatalogItem[]) => {
+        try {
+          const response = await recommendItineraries({
+            booking_date: dateValue,
+            pickup_location: pickupLocationLabel,
+            pickup_place_id: needTransport === "yes" ? pickupPlaceId || undefined : undefined,
+            pickup_latitude: needTransport === "yes" ? requestPickupLatitude : undefined,
+            pickup_longitude: needTransport === "yes" ? requestPickupLongitude : undefined,
+            party_size: groupSize,
+            preferred_start_time: timeWindow.start,
+            preferred_end_time: timeWindow.end,
+            pace: dayPace,
+            preferred_wineries: pool.map((winery) => slugToWineryUuid(winery.id)),
+          });
+          const justification = response.itineraries[0]?.justification;
+          if (justification) {
+            setRecommendationOptions((current) =>
+              current.length > 0 ? [{ ...current[0]!, justification }, ...current.slice(1)] : current,
+            );
+          }
+        } catch {
+          // Keep the localized template concierge note on any failure.
+        }
+      };
+
       const requestedDate = previewDate || toIsoDate(7);
       const daysRequested = Math.max(1, Math.min(3, tripDays));
 
@@ -878,10 +910,15 @@ export default function ExplorePage() {
         }
         setMatchedWineries(result.pool);
         setPreviewDate(result.usedDate);
-        setRecommendationOptions(result.options);
+        // Blank the deterministic justification so the localized template concierge
+        // note shows immediately; the AI one is patched in by refreshJustification.
+        setRecommendationOptions(
+          result.options.map((option, index) => (index === 0 ? { ...option, justification: "" } : option)),
+        );
         setSelectedRecommendationIndex(0);
         setMultiDayPlan([]);
         void loadWeatherForDates([result.usedDate]);
+        void refreshJustification(result.usedDate, result.pool);
         return;
       }
 
@@ -931,10 +968,11 @@ export default function ExplorePage() {
       );
       setMatchedWineries(dedupedCombinedPool);
       setPreviewDate(firstDay.date);
-      setRecommendationOptions([firstDay.recommendation]);
+      setRecommendationOptions([{ ...firstDay.recommendation, justification: "" }]);
       setSelectedRecommendationIndex(0);
       setMultiDayPlan(collectedDays);
       void loadWeatherForDates(collectedDays.map((day) => day.date));
+      void refreshJustification(firstDay.date, firstDay.pool);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to plan trip right now.");
     } finally {

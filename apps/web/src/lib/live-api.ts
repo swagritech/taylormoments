@@ -420,6 +420,7 @@ export async function recommendItineraries(payload: {
   preferred_end_time?: string;
   pace?: "relaxed" | "balanced" | "maximise";
   locale?: AppLocale;
+  skip_justification?: boolean;
 }) {
   const response = await fetch(`${getRequiredApiBaseUrl()}/api/v1/itinerary/recommend`, {
     method: "POST",
