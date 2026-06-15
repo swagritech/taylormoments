@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { ExploreSummaryMap } from "@/components/explore-summary-map";
@@ -312,6 +312,30 @@ export default function ExploreSummaryPage() {
                         </div>
                       );
 
+                      // Render the stops in order, slotting the lunch row in right
+                      // after the winery that hosts it (lunch occupies the gap after
+                      // that tasting), so the timeline stays chronological. If the
+                      // host winery isn't among these stops, append lunch at the end.
+                      const renderStopsWithLunch = (
+                        stops: typeof orderedSummaryStops,
+                        lunch: typeof summary.lunch,
+                        keyPrefix: string,
+                      ) => {
+                        const rows: ReactNode[] = [];
+                        let lunchPlaced = false;
+                        stops.forEach((stop, index) => {
+                          rows.push(renderStopRow(stop, index, keyPrefix));
+                          if (lunch && !lunchPlaced && lunch.winery_id === stop.winery_id) {
+                            rows.push(renderLunchRow(lunch, keyPrefix));
+                            lunchPlaced = true;
+                          }
+                        });
+                        if (lunch && !lunchPlaced) {
+                          rows.push(renderLunchRow(lunch, keyPrefix));
+                        }
+                        return rows;
+                      };
+
                       // Multi-day plans render one labelled section per day; single-day
                       // plans keep the original flat list (combined `stops`).
                       if (summary.days && summary.days.length > 1) {
@@ -326,10 +350,7 @@ export default function ExploreSummaryPage() {
                                 <p>{day.justification}</p>
                               </div>
                             ) : null}
-                            {day.stops.map((stop, index) =>
-                              renderStopRow(stop, index, `day-${day.day_index}`),
-                            )}
-                            {day.lunch ? renderLunchRow(day.lunch, `day-${day.day_index}`) : null}
+                            {renderStopsWithLunch(day.stops, day.lunch, `day-${day.day_index}`)}
                             {day.weather ? renderWeatherCard(day.weather, `day-${day.day_index}`) : null}
                           </div>
                         ));
@@ -337,8 +358,7 @@ export default function ExploreSummaryPage() {
 
                       return (
                         <>
-                          {orderedSummaryStops.map((stop, index) => renderStopRow(stop, index, "all"))}
-                          {summary.lunch ? renderLunchRow(summary.lunch, "all") : null}
+                          {renderStopsWithLunch(orderedSummaryStops, summary.lunch, "all")}
                           {summary.weather ? renderWeatherCard(summary.weather, "all") : null}
                         </>
                       );
