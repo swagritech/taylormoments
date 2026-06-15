@@ -9,6 +9,14 @@ export type RecommendationStop = {
   drive_minutes: number;
 };
 
+export type RecommendationLunch = {
+  winery_id: string;
+  winery_name: string;
+  food_description: string;
+  arrival_time: string;
+  departure_time: string;
+};
+
 export type Recommendation = {
   itinerary_id: string;
   expert_pick: boolean;
@@ -16,6 +24,7 @@ export type Recommendation = {
   score: number;
   label: string;
   stops: RecommendationStop[];
+  lunch?: RecommendationLunch | null;
 };
 
 export type RecommendResponse = {

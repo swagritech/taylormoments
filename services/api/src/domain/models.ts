@@ -181,6 +181,14 @@ export type ItineraryStop = {
   driveMinutes: number;
 };
 
+export type ItineraryLunch = {
+  wineryId: string;
+  wineryName: string;
+  foodDescription: string;
+  arrivalTime: string;
+  departureTime: string;
+};
+
 export type ItineraryOption = {
   itineraryId: string;
   expertPick: boolean;
@@ -188,6 +196,7 @@ export type ItineraryOption = {
   score: number;
   label: string;
   stops: ItineraryStop[];
+  lunch?: ItineraryLunch | null;
 };
 
 export type ActionToken = {
@@ -302,6 +311,13 @@ export type RecommendItineraryResponse = {
       departure_time: string;
       drive_minutes: number;
     }>;
+    lunch?: {
+      winery_id: string;
+      winery_name: string;
+      food_description: string;
+      arrival_time: string;
+      departure_time: string;
+    } | null;
   }>;
   scheduling_trace?: {
     requested_wineries_count: number;

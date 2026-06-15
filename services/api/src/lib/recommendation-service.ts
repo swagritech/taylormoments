@@ -24,11 +24,18 @@ type PlannedStop = {
   departureMinutes: number;
 };
 type WinerySlotGroup = { winery: Winery; slots: WineryAvailability[] };
+// A placed lunch: which winery hosts it and the time window it occupies (usually the
+// gap after that winery's tasting). null when the day has nowhere sensible for lunch.
+type RouteLunch = {
+  winery: Winery;
+  startMinutes: number;
+  endMinutes: number;
+};
 type FeasibleRoute = {
   stops: PlannedStop[];
   totalDriveMinutes: number;
   totalIdleMinutes: number;
-  hasLunch: boolean;
+  lunch: RouteLunch | null;
 };
 type EvaluatedRoute = {
   route: FeasibleRoute;
@@ -67,7 +74,6 @@ const MIN_STOPS_PER_DAY = 2;
 const ACCEPTABLE_DRIVE_MINUTES_PER_STOP = 30;
 const LUNCH_WINDOW_START = 11 * 60 + 30;
 const LUNCH_WINDOW_END = 14 * 60;
-const LUNCH_BREAK_MINUTES = 45;
 const DEFAULT_TASTING_DURATION_MINUTES = 45;
 const CANDIDATE_BUILD_TIME_BUDGET_MS = 1200;
 const MAX_GROUP_SUBSETS_TO_EVALUATE = 10;
@@ -301,6 +307,83 @@ function buildSlotCombinations(
   return combinations;
 }
 
+const LUNCH_OFFER_RE = /lunch|restaurant|degustation|dining|feast|tapas|long table|grazing|kitchen|caf[eé]|bistro|share plates?/i;
+const FOOD_OFFER_RE = /lunch|restaurant|degustation|dining|feast|tapas|grazing|platter|board|cheese|charcuterie|nougat|chocolate|picnic|kitchen|caf[eé]|bistro|share|tasting plate/i;
+
+function wineryFoodOffers(winery: Winery): string[] {
+  return (winery.uniqueExperienceOffers ?? [])
+    .map((offer) => offer.name)
+    .filter((name) => FOOD_OFFER_RE.test(name));
+}
+function offersSitDownLunch(winery: Winery): boolean {
+  return (
+    winery.winerySignals.includes("winery_lunch") ||
+    (winery.uniqueExperienceOffers ?? []).some((offer) => LUNCH_OFFER_RE.test(offer.name))
+  );
+}
+function offersAnyFood(winery: Winery): boolean {
+  return (
+    offersSitDownLunch(winery) ||
+    winery.offersCheeseBoard ||
+    winery.winerySignals.includes("cheese_board") ||
+    winery.winerySignals.includes("charcuterie_board") ||
+    winery.winerySignals.includes("picnic_on_estate") ||
+    winery.winerySignals.includes("garden_picnic") ||
+    winery.winerySignals.includes("wine_chocolate") ||
+    wineryFoodOffers(winery).length > 0
+  );
+}
+export function describeWineryFood(winery: Winery): string {
+  const offers = wineryFoodOffers(winery);
+  if (offers.length > 0) {
+    return offers.slice(0, 2).join("; ");
+  }
+  const parts: string[] = [];
+  if (winery.winerySignals.includes("winery_lunch")) parts.push("winery restaurant");
+  if (winery.winerySignals.includes("charcuterie_board")) parts.push("charcuterie boards");
+  if (winery.winerySignals.includes("cheese_board") || winery.offersCheeseBoard) parts.push("cheese boards");
+  if (winery.winerySignals.includes("picnic_on_estate") || winery.winerySignals.includes("garden_picnic")) {
+    parts.push("estate picnic");
+  }
+  if (winery.winerySignals.includes("wine_chocolate")) parts.push("wine & chocolate");
+  return parts.length > 0 ? parts.slice(0, 2).join("; ") : "cellar-door platters";
+}
+
+// Place lunch in the gap after the stop that best lands around midday. We PREFER a
+// food-capable venue (and a real sit-down lunch most of all), but we do not require
+// one: most Margaret River cellar doors offer at least platters, and the catalog's
+// food signals are still sparse, so gating on them would leave many days with no
+// lunch at all. describeWineryFood() supplies a sensible regional default when a
+// winery has no explicit food data, so a placed lunch always has a description.
+function computeRouteLunch(stops: PlannedStop[], dayEnd: number): RouteLunch | null {
+  let best: { winery: Winery; startMinutes: number; endMinutes: number; score: number } | null = null;
+  for (let i = 0; i < stops.length; i += 1) {
+    const stop = stops[i];
+    if (!stop) {
+      continue;
+    }
+    const next = stops[i + 1];
+    const startMinutes = stop.departureMinutes;
+    const endMinutes = next ? next.arrivalMinutes : Math.min(dayEnd, startMinutes + 75);
+    const windowMinutes = endMinutes - startMinutes;
+    if (windowMinutes < 30) {
+      continue;
+    }
+    const overlap = Math.min(endMinutes, LUNCH_WINDOW_END) - Math.max(startMinutes, LUNCH_WINDOW_START);
+    if (overlap < 20) {
+      continue;
+    }
+    // Prefer longer windows, midday timing, and (strongly) food-capable venues —
+    // a real sit-down lunch outranks platters, which outrank a plain cellar door.
+    const foodBonus = offersSitDownLunch(stop.winery) ? 120 : offersAnyFood(stop.winery) ? 60 : 0;
+    const score = windowMinutes + overlap + foodBonus;
+    if (!best || score > best.score) {
+      best = { winery: stop.winery, startMinutes, endMinutes, score };
+    }
+  }
+  return best ? { winery: best.winery, startMinutes: best.startMinutes, endMinutes: best.endMinutes } : null;
+}
+
 function buildFeasibleRoute(params: {
   request: RecommendItineraryRequest;
   selection: Array<{ winery: Winery; slot: WineryAvailability }>;
@@ -315,7 +398,6 @@ function buildFeasibleRoute(params: {
   let totalDriveMinutes = 0;
   let totalIdleMinutes = 0;
   const stops: PlannedStop[] = [];
-  const idleWindows: Array<{ start: number; end: number }> = [];
 
   for (const item of selection) {
     const slotStart = toTimeValue(item.slot.startTime);
@@ -329,7 +411,6 @@ function buildFeasibleRoute(params: {
       return null;
     }
     if (slotStart > earliestArrival) {
-      idleWindows.push({ start: earliestArrival, end: slotStart });
       totalIdleMinutes += slotStart - earliestArrival;
     }
 
@@ -352,28 +433,17 @@ function buildFeasibleRoute(params: {
   }
   totalDriveMinutes += returnDrive;
 
-  const hasLunchBreak = idleWindows.some((window) => {
-    const overlapStart = Math.max(window.start, LUNCH_WINDOW_START);
-    const overlapEnd = Math.min(window.end, LUNCH_WINDOW_END);
-    return overlapEnd - overlapStart >= LUNCH_BREAK_MINUTES;
-  });
-  const hasLunchAtStop = stops.some((stop) => {
-    const stopStart = stop.arrivalMinutes;
-    const stopEnd = stop.departureMinutes;
-    const overlapStart = Math.max(stopStart, LUNCH_WINDOW_START);
-    const overlapEnd = Math.min(stopEnd, LUNCH_WINDOW_END);
-    return overlapEnd - overlapStart >= LUNCH_BREAK_MINUTES;
-  });
+  // Place lunch at a food-capable winery whose following gap lands around midday.
+  // A relaxed lunch window is a strong PREFERENCE, not a hard requirement (rejecting
+  // every route without one was a primary cause of "no feasible routes"). Routes
+  // without a lunch are still valid; they just score lower (see scoreRoute).
+  const lunch = computeRouteLunch(stops, dayEnd);
 
-  // A relaxed lunch window is a strong PREFERENCE, not a hard requirement.
-  // Rejecting every route without one was a primary cause of "no feasible routes"
-  // (especially on half-day windows). Routes without lunch are still valid; they
-  // just score lower (see scoreRoute).
   return {
     stops,
     totalDriveMinutes,
     totalIdleMinutes,
-    hasLunch: hasLunchBreak || hasLunchAtStop,
+    lunch,
   };
 }
 
@@ -416,8 +486,10 @@ function scoreRoute(params: {
   const idlePenalty = (route.totalIdleMinutes / 12) * weights.idleWeight;
   const stopBonus = route.stops.length * weights.scoreStopBonus;
   // Lunch is a preference, not a gate (the old hard gate caused empty results).
-  const lunchBonus = route.hasLunch ? weights.lunchBonus : 0;
-  const lunchPenalty = route.hasLunch ? 0 : 8;
+  // A longer lunch window scores better, which matters most for the relaxed pace.
+  const lunchMinutes = route.lunch ? route.lunch.endMinutes - route.lunch.startMinutes : 0;
+  const lunchBonus = route.lunch ? weights.lunchBonus + Math.min(6, lunchMinutes / 20) : 0;
+  const lunchPenalty = route.lunch ? 0 : 8;
   const score = Math.max(
     55,
     Math.min(99, Math.round(80 + stopBonus + qualityBonus + lunchBonus - drivePenalty - idlePenalty)),
@@ -598,6 +670,7 @@ function buildRelaxedFallbackItinerary(params: {
     score,
     label: "TailorMoments Expert Pick",
     stops,
+    lunch: null,
   };
 }
 
@@ -838,6 +911,15 @@ export function buildCandidateItineraries(params: {
         departureTime: toLocalIso(stop.slot.serviceDate, toClockValue(stop.departureMinutes)),
         driveMinutes: stop.driveMinutes,
       })),
+      lunch: route.lunch
+        ? {
+            wineryId: route.lunch.winery.wineryId,
+            wineryName: route.lunch.winery.name,
+            foodDescription: describeWineryFood(route.lunch.winery),
+            arrivalTime: toLocalIso(request.booking_date, toClockValue(route.lunch.startMinutes)),
+            departureTime: toLocalIso(request.booking_date, toClockValue(route.lunch.endMinutes)),
+          }
+        : null,
     })),
     diagnostics,
     usedFallback: false,
@@ -967,6 +1049,15 @@ export async function recommendItineraries(params: {
         departure_time: stop.departureTime,
         drive_minutes: stop.driveMinutes,
       })),
+      lunch: itinerary.lunch
+        ? {
+            winery_id: itinerary.lunch.wineryId,
+            winery_name: itinerary.lunch.wineryName,
+            food_description: itinerary.lunch.foodDescription,
+            arrival_time: itinerary.lunch.arrivalTime,
+            departure_time: itinerary.lunch.departureTime,
+          }
+        : null,
     })),
     scheduling_trace: {
       requested_wineries_count: preferredIds.length,

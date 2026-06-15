@@ -256,6 +256,27 @@ export default function ExploreSummaryPage() {
                         );
                       };
 
+                      const renderLunchRow = (
+                        lunch: NonNullable<typeof summary.lunch>,
+                        keyPrefix: string,
+                      ) => {
+                        const arrival = formatDisplayTimeSafe(lunch.arrival_time);
+                        const departure = formatDisplayTimeSafe(lunch.departure_time);
+                        return (
+                          <div key={`${keyPrefix}-lunch`} className="tourSummaryRow tourSummaryLunchRow">
+                            <div>
+                              {arrival ? <p className="timelineTime">{arrival}</p> : null}
+                              <h3>Lunch - {lunch.winery_name}</h3>
+                              {lunch.food_description ? (
+                                <p className="subtle">{lunch.food_description}</p>
+                              ) : null}
+                              {departure ? <p className="subtle">Depart {departure}</p> : null}
+                            </div>
+                            <div className="tourSummaryPrice">Lunch</div>
+                          </div>
+                        );
+                      };
+
                       // Multi-day plans render one labelled section per day; single-day
                       // plans keep the original flat list (combined `stops`).
                       if (summary.days && summary.days.length > 1) {
@@ -267,11 +288,17 @@ export default function ExploreSummaryPage() {
                             {day.stops.map((stop, index) =>
                               renderStopRow(stop, index, `day-${day.day_index}`),
                             )}
+                            {day.lunch ? renderLunchRow(day.lunch, `day-${day.day_index}`) : null}
                           </div>
                         ));
                       }
 
-                      return orderedSummaryStops.map((stop, index) => renderStopRow(stop, index, "all"));
+                      return (
+                        <>
+                          {orderedSummaryStops.map((stop, index) => renderStopRow(stop, index, "all"))}
+                          {summary.lunch ? renderLunchRow(summary.lunch, "all") : null}
+                        </>
+                      );
                     })()}
                   </div>
                   <div className="callout">

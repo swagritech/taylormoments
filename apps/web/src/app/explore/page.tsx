@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import {
@@ -1113,6 +1113,7 @@ export default function ExplorePage() {
             day_index: day.dayIndex,
             date: day.date,
             stops: enrichStops(day.recommendation.stops),
+            lunch: day.recommendation.lunch ?? null,
             matched_winery_ids:
               daySlugs.length > 0 ? daySlugs : day.pool.map((entry) => entry.id),
             justification: day.recommendation.justification,
@@ -1144,6 +1145,7 @@ export default function ExplorePage() {
           ? combinedSlugs
           : matchedWineries.slice(0, combinedStops.length).map((entry) => entry.id),
       stops: enrichStops(combinedStops),
+      lunch: isMultiDay ? null : recommendation.lunch ?? null,
       days: daysPayload,
       justification: recommendation.justification,
       label: recommendation.label,
@@ -1268,8 +1270,20 @@ export default function ExplorePage() {
                   const stopTitleDelay = reserveItineraryDelay(stopTitleText, 72, 180);
                   const stopBodyDelay = reserveItineraryDelay(stopBodyText, 58, 240);
                   const travelDelay = reserveItineraryDelay(travelNote, 52, 280);
+                  // Lunch is placed in the gap after the food-capable winery that
+                  // hosts it. Render it as its own interlude directly beneath that stop.
+                  const lunch = rec.lunch && rec.lunch.winery_id === stop.winery_id ? rec.lunch : null;
+                  const lunchTimeText = lunch
+                    ? `${formatDisplayTime(lunch.arrival_time)} - ${formatDisplayTime(lunch.departure_time)}`
+                    : "";
+                  const lunchBodyText = lunch
+                    ? `Settle in for a relaxed lunch at ${lunch.winery_name}. ${lunch.food_description ? `On offer: ${lunch.food_description}.` : ""}`.trim()
+                    : "";
+                  const lunchTimeDelay = lunch ? reserveItineraryDelay(lunchTimeText, 82, 150) : 0;
+                  const lunchBodyDelay = lunch ? reserveItineraryDelay(lunchBodyText, 58, 240) : 0;
                   return (
-                    <article key={`${stop.winery_id}-${chapterIndex}`} className="bespokeStop">
+                    <Fragment key={`${stop.winery_id}-${chapterIndex}`}>
+                    <article className="bespokeStop">
                       <p className="bespokeStopTime">
                         <AnimatedWords
                           text={stopTimeText}
@@ -1309,6 +1323,27 @@ export default function ExplorePage() {
                         />
                       </p>
                     </article>
+                    {lunch ? (
+                      <article className="bespokeStop bespokeLunch">
+                        <p className="bespokeStopTime">
+                          <AnimatedWords
+                            text={lunchTimeText}
+                            animationKey={`${animationKeyBase}-${stop.winery_id}-lunch-time`}
+                            delayMs={lunchTimeDelay}
+                            intervalMs={82}
+                          />
+                        </p>
+                        <h5 className="bespokeLunchTitle">Lunch - {lunch.winery_name}</h5>
+                        <p className="bespokeStopBody">
+                          <AnimatedWords
+                            text={lunchBodyText}
+                            animationKey={`${animationKeyBase}-${stop.winery_id}-lunch-body`}
+                            delayMs={lunchBodyDelay}
+                          />
+                        </p>
+                      </article>
+                    ) : null}
+                    </Fragment>
                   );
                 })}
               </div>
