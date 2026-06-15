@@ -1257,7 +1257,10 @@ export default function ExplorePage() {
         <div className="bespokeIntro">
           {(() => {
             const greetingText = `Dear ${name || "guest"},`;
+            // The real concierge "why we chose this" — AI-written and grounded in the
+            // actual wineries when a key is configured, otherwise a graceful default.
             const introText =
+              rec.justification?.trim() ||
               "We have prepared a polished winery journey shaped around your preferences, pace, and the smoothest travel flow available for the day.";
             const greetingDelay = reserveItineraryDelay(greetingText, 58, 320);
             const introDelay = reserveItineraryDelay(introText, 58, 380);
@@ -1270,6 +1273,7 @@ export default function ExplorePage() {
                     delayMs={greetingDelay}
                   />
                 </p>
+                <p className="bespokeWhyLabel">Why we've chosen this for you</p>
                 <p>
                   <AnimatedWords
                     text={introText}

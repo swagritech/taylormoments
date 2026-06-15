@@ -393,7 +393,8 @@ export async function fetchWeatherForDates(dates: string[]): Promise<DayWeather[
   }
   try {
     const response = await fetch(
-      `${getRequiredApiBaseUrl()}/api/v1/weather?dates=${encodeURIComponent(unique.join(","))}`,
+      `${getRequiredApiBaseUrl()}/api/v1/weather?dates=${encodeURIComponent(unique.join(","))}` +
+        `&locale=${encodeURIComponent(getLocale())}`,
       { method: "GET" },
     );
     if (!response.ok) {

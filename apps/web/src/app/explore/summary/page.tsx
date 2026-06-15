@@ -227,6 +227,16 @@ export default function ExploreSummaryPage() {
             >
               <div className="summaryPageSplit">
                 <div className="summaryPageLeft">
+                  {!summary.days || summary.days.length <= 1
+                    ? summary.justification
+                      ? (
+                        <div className="summaryWhyCard">
+                          <p className="summaryWhyLabel">Why we&apos;ve chosen this for you</p>
+                          <p>{summary.justification}</p>
+                        </div>
+                      )
+                      : null
+                    : null}
                   <div className="schedulePreviewCard">
                     {(() => {
                       const renderStopRow = (
@@ -310,6 +320,12 @@ export default function ExploreSummaryPage() {
                             <h4 className="multiDaySummaryHeading">
                               Day {day.day_index + 1} - {day.date}
                             </h4>
+                            {day.justification ? (
+                              <div className="summaryWhyCard">
+                                <p className="summaryWhyLabel">Why we&apos;ve chosen this day</p>
+                                <p>{day.justification}</p>
+                              </div>
+                            ) : null}
                             {day.stops.map((stop, index) =>
                               renderStopRow(stop, index, `day-${day.day_index}`),
                             )}

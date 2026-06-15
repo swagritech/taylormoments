@@ -1,11 +1,17 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { ok, badRequest, internalServerError } from "../lib/http.js";
 import { getWeatherForDates } from "../lib/weather-provider.js";
-import type { WeatherResponse } from "../domain/models.js";
+import { enhanceWeatherWithAi } from "../lib/weather-ai.js";
+import type { SupportedLocale, WeatherResponse } from "../domain/models.js";
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_DATES = 7;
 const REGION_LABEL = "Margaret River, Western Australia";
+const SUPPORTED_LOCALES: SupportedLocale[] = ["en", "zh-Hans", "vi"];
+
+function parseLocale(value: string | null): SupportedLocale {
+  return SUPPORTED_LOCALES.includes(value as SupportedLocale) ? (value as SupportedLocale) : "en";
+}
 
 export async function weatherHandler(
   request: HttpRequest,
@@ -30,7 +36,11 @@ export async function weatherHandler(
       return badRequest("Dates must be in YYYY-MM-DD format.");
     }
 
-    const days = await getWeatherForDates(unique);
+    const locale = parseLocale(request.query.get("locale"));
+    const baseDays = await getWeatherForDates(unique);
+    // Warm concierge voice + translation (best-effort; falls back to the grounded
+    // deterministic English text if OpenAI is unset or the call fails).
+    const days = await enhanceWeatherWithAi(baseDays, locale);
     const response: WeatherResponse = {
       generated_at: new Date().toISOString(),
       location: REGION_LABEL,
