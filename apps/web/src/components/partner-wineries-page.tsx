@@ -1,10 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
-import { SectionCard } from "@/components/section-card";
+import { PortalGate, PortalShell, PortalToast, type PortalNavItem } from "@/components/portal-shell";
 import { useAuth } from "@/lib/auth-state";
 import { optimizeWineryUploadImage } from "@/lib/image-utils";
 import {
@@ -22,19 +20,14 @@ import {
   type WineryPortalItem,
 } from "@/lib/live-api";
 
+type View = "requests" | "profile" | "media" | "availability";
+type RequestFilter = "pending" | "accepted" | "declined" | "all";
+
 function formatDateTime(value?: string) {
   if (!value) {
     return "-";
   }
-
-  return new Date(value).toLocaleString("en-AU", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
-
-function statusClass(value: string) {
-  return value.replace(/[^a-z]+/gi, "").toLowerCase();
+  return new Date(value).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" });
 }
 
 function humanizeNote(value: string) {
@@ -53,19 +46,11 @@ function BookingSafetyNotes({ booking }: { booking: WineryPortalItem["booking"] 
     return null;
   }
   return (
-    <div className="callout" style={{ marginTop: 8 }}>
-      {dietary.length > 0 ? (
-        <p><strong>Dietary:</strong> {dietary.map(humanizeNote).join(", ")}</p>
-      ) : null}
-      {accessibility.length > 0 ? (
-        <p><strong>Accessibility:</strong> {accessibility.map(humanizeNote).join(", ")}</p>
-      ) : null}
-      {booking.occasion ? (
-        <p><strong>Occasion:</strong> {humanizeNote(booking.occasion)}</p>
-      ) : null}
-      {booking.specialRequests ? (
-        <p><strong>Notes:</strong> {booking.specialRequests}</p>
-      ) : null}
+    <div className="pt-context" style={{ display: "grid", gap: 6, alignItems: "start" }}>
+      {dietary.length > 0 ? <span><strong>Dietary:</strong> {dietary.map(humanizeNote).join(", ")}</span> : null}
+      {accessibility.length > 0 ? <span><strong>Accessibility:</strong> {accessibility.map(humanizeNote).join(", ")}</span> : null}
+      {booking.occasion ? <span><strong>Occasion:</strong> {humanizeNote(booking.occasion)}</span> : null}
+      {booking.specialRequests ? <span><strong>Notes:</strong> {booking.specialRequests}</span> : null}
     </div>
   );
 }
@@ -79,16 +64,21 @@ function tokenFromActionUrl(actionUrl: string) {
   }
 }
 
-type ExperienceDraft = {
-  id: string;
-  name: string;
-  price: string;
-};
+function pillClass(status: string) {
+  if (status === "accepted") {
+    return "pt-pill pt-pill--accepted";
+  }
+  if (status === "declined") {
+    return "pt-pill pt-pill--declined";
+  }
+  return "pt-pill pt-pill--pending";
+}
+
+type ExperienceDraft = { id: string; name: string; price: string };
 
 type ProfileSectionKey =
   | "basics"
   | "password"
-  | "gallery"
   | "wine-styles"
   | "setting-atmosphere"
   | "wine-quality"
@@ -128,216 +118,143 @@ const WINE_STYLE_OPTIONS = [
 const WELL_KNOWN_STYLE = "Well known Margaret River Name";
 const LESSER_KNOWN_STYLE = "Lesser known (off the beaten track)";
 const OPEN_DAY_SIGNALS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
-const ADVANCE_NOTICE_SIGNALS = [
-  "same_day",
-  "24_hours",
-  "48_hours",
-  "72_hours",
-  "1_week",
-  "2_weeks",
-] as const;
+const ADVANCE_NOTICE_SIGNALS = ["same_day", "24_hours", "48_hours", "72_hours", "1_week", "2_weeks"] as const;
 
 const WINERY_SIGNAL_GROUPS = [
-  {
-    heading: "Setting & Atmosphere",
-    options: [
-      { value: "view_stunning", label: "Stunning vineyard views" },
-      { value: "intimate_welcome", label: "Intimate, small-group welcome" },
-      { value: "historic_estate", label: "Historic estate" },
-      { value: "secluded", label: "Secluded and unhurried - no crowds" },
-      { value: "garden_picnic", label: "Beautiful garden picnic grounds" },
-    ],
-  },
-  {
-    heading: "Wine Quality & Recognition",
-    options: [
-      { value: "halliday_5star", label: "James Halliday 5-Star winery" },
-      { value: "gold_medals", label: "Gold medals at international shows" },
-      { value: "exported_asia", label: "Wines exported to Asia" },
-      { value: "trophy_winner", label: "Consistent trophy winner at MR Wine Show" },
-      { value: "press_featured", label: "Featured in Decanter, Wine Spectator, or Halliday" },
-    ],
-  },
-  {
-    heading: "Story & People",
-    options: [
-      { value: "multi_generation", label: "Three generations of family winemaking" },
-      { value: "female_winemaker", label: "Female winemaker and founder" },
-      { value: "certified_organic", label: "Certified organic" },
-      { value: "regenerative", label: "Regenerative farming practices" },
-      { value: "small_production", label: "Produces fewer than 5,000 cases per year" },
-    ],
-  },
-  {
-    heading: "Asian Market Relevance",
-    options: [
-      { value: "mandarin_staff", label: "Mandarin-speaking staff available" },
-      { value: "vietnamese_staff", label: "Vietnamese-speaking staff available" },
-      { value: "asian_pairing", label: "Asian cuisine pairing experiences" },
-      { value: "wechat_line", label: "WeChat / Line friendly" },
-      { value: "hosted_asian_groups", label: "We've hosted groups from Singapore, Vietnam & beyond" },
-    ],
-  },
-  {
-    heading: "Practical",
-    options: [
-      { value: "wheelchair_access", label: "Wheelchair accessible" },
-      { value: "minibus_parking", label: "Easy parking for minibuses" },
-      { value: "dog_friendly", label: "Dog-friendly grounds" },
-      { value: "child_friendly", label: "Child-friendly - non-wine options available" },
-      { value: "close_to_town", label: "10 minutes from Margaret River town" },
-    ],
-  },
-  {
-    heading: "Tastings & Pairings",
-    options: [
-      { value: "cellar_door_tasting", label: "Standard cellar door tasting" },
-      { value: "guided_tasting", label: "Guided / hosted tasting" },
-      { value: "private_tasting_room", label: "Private tasting room" },
-      { value: "barrel_tasting", label: "Barrel tasting" },
-      { value: "sunset_tasting", label: "Sunset tasting session" },
-    ],
-  },
-  {
-    heading: "Food & Wine",
-    options: [
-      { value: "winery_lunch", label: "Lunch at the winery" },
-      { value: "cheese_board", label: "Cheese & wine pairing" },
-      { value: "wine_chocolate", label: "Wine & chocolate pairing" },
-      { value: "charcuterie_board", label: "Charcuterie & wine" },
-      { value: "cooking_class", label: "Food & wine cooking class" },
-      { value: "picnic_on_estate", label: "Picnic on the estate" },
-    ],
-  },
-  {
-    heading: "Behind the Scenes",
-    options: [
-      { value: "vineyard_walk", label: "Guided vineyard walk" },
-      { value: "cellar_tour", label: "Cellar & barrel hall tour" },
-      { value: "blending_experience", label: "Blending & winemaking experience" },
-      { value: "harvest_experience", label: "Harvest season experience" },
-    ],
-  },
-  {
-    heading: "Special Occasions",
-    options: [
-      { value: "accommodation", label: "Accommodation on-site" },
-      { value: "corporate_events", label: "Corporate & private events" },
-      { value: "wedding_venue", label: "Wedding venue" },
-    ],
-  },
-  {
-    heading: "Mobility & Access",
-    options: [
-      { value: "wheelchair_pathways", label: "Wheelchair-accessible pathways" },
-      { value: "wheelchair_tasting", label: "Wheelchair-accessible tasting area" },
-      { value: "accessible_bathroom", label: "Accessible bathroom on-site" },
-      { value: "step_free_entry", label: "Step-free entry to all areas" },
-      { value: "accessible_parking", label: "Accessible parking bays" },
-      { value: "minibus_access", label: "Minibus / large vehicle drop-off" },
-    ],
-  },
-  {
-    heading: "Sensory & Communication",
-    options: [
-      { value: "hearing_loop", label: "Hearing loop / induction system" },
-      { value: "large_print", label: "Large-print menus & tasting notes" },
-      { value: "seated_tasting", label: "All tastings fully seated" },
-      { value: "quiet_space", label: "Quiet space available on request" },
-    ],
-  },
-  {
-    heading: "Dietary Preferences",
-    options: [
-      { value: "vegetarian", label: "Vegetarian food options" },
-      { value: "vegan", label: "Vegan food options" },
-      { value: "dairy_free", label: "Dairy-free options" },
-    ],
-  },
-  {
-    heading: "Allergies & Intolerances",
-    options: [
-      { value: "gluten_free", label: "Gluten-free options available" },
-      { value: "gluten_free_strict", label: "Strictly gluten-free kitchen" },
-      { value: "nut_free", label: "Nut-free kitchen" },
-    ],
-  },
-  {
-    heading: "Religious Requirements",
-    options: [
-      { value: "halal", label: "Halal-certified food" },
-      { value: "kosher", label: "Kosher food available" },
-    ],
-  },
-  {
-    heading: "Food Policy",
-    options: [
-      { value: "no_food", label: "No food served" },
-      { value: "byo_food", label: "Guests welcome to bring food" },
-      { value: "custom_on_request", label: "Most needs accommodated with notice" },
-    ],
-  },
-  {
-    heading: "Open Days",
-    options: [
-      { value: "mon", label: "Monday" },
-      { value: "tue", label: "Tuesday" },
-      { value: "wed", label: "Wednesday" },
-      { value: "thu", label: "Thursday" },
-      { value: "fri", label: "Friday" },
-      { value: "sat", label: "Saturday" },
-      { value: "sun", label: "Sunday" },
-    ],
-  },
-  {
-    heading: "Advance Notice",
-    options: [
-      { value: "same_day", label: "Same day - we're flexible" },
-      { value: "24_hours", label: "24 hours ahead" },
-      { value: "48_hours", label: "48 hours ahead (default)" },
-      { value: "72_hours", label: "3 days ahead" },
-      { value: "1_week", label: "1 week ahead" },
-      { value: "2_weeks", label: "2 weeks ahead" },
-    ],
-  },
-] as const;
+  { key: "setting-atmosphere" as const, heading: "Setting & atmosphere", options: [
+    { value: "view_stunning", label: "Stunning vineyard views" },
+    { value: "intimate_welcome", label: "Intimate, small-group welcome" },
+    { value: "historic_estate", label: "Historic estate" },
+    { value: "secluded", label: "Secluded and unhurried - no crowds" },
+    { value: "garden_picnic", label: "Beautiful garden picnic grounds" },
+  ] },
+  { key: "wine-quality" as const, heading: "Wine quality & recognition", options: [
+    { value: "halliday_5star", label: "James Halliday 5-Star winery" },
+    { value: "gold_medals", label: "Gold medals at international shows" },
+    { value: "exported_asia", label: "Wines exported to Asia" },
+    { value: "trophy_winner", label: "Consistent trophy winner at MR Wine Show" },
+    { value: "press_featured", label: "Featured in Decanter, Wine Spectator, or Halliday" },
+  ] },
+  { key: "story-people" as const, heading: "Story & people", options: [
+    { value: "multi_generation", label: "Three generations of family winemaking" },
+    { value: "female_winemaker", label: "Female winemaker and founder" },
+    { value: "certified_organic", label: "Certified organic" },
+    { value: "regenerative", label: "Regenerative farming practices" },
+    { value: "small_production", label: "Produces fewer than 5,000 cases per year" },
+  ] },
+  { key: "asian-market" as const, heading: "Asian market relevance", options: [
+    { value: "mandarin_staff", label: "Mandarin-speaking staff available" },
+    { value: "vietnamese_staff", label: "Vietnamese-speaking staff available" },
+    { value: "asian_pairing", label: "Asian cuisine pairing experiences" },
+    { value: "wechat_line", label: "WeChat / Line friendly" },
+    { value: "hosted_asian_groups", label: "We've hosted groups from Singapore, Vietnam & beyond" },
+  ] },
+  { key: "practical" as const, heading: "Practical", options: [
+    { value: "wheelchair_access", label: "Wheelchair accessible" },
+    { value: "minibus_parking", label: "Easy parking for minibuses" },
+    { value: "dog_friendly", label: "Dog-friendly grounds" },
+    { value: "child_friendly", label: "Child-friendly - non-wine options available" },
+    { value: "close_to_town", label: "10 minutes from Margaret River town" },
+  ] },
+  { key: "tastings-pairings" as const, heading: "Tastings & pairings", options: [
+    { value: "cellar_door_tasting", label: "Standard cellar door tasting" },
+    { value: "guided_tasting", label: "Guided / hosted tasting" },
+    { value: "private_tasting_room", label: "Private tasting room" },
+    { value: "barrel_tasting", label: "Barrel tasting" },
+    { value: "sunset_tasting", label: "Sunset tasting session" },
+  ] },
+  { key: "food-wine" as const, heading: "Food & wine", options: [
+    { value: "winery_lunch", label: "Lunch at the winery" },
+    { value: "cheese_board", label: "Cheese & wine pairing" },
+    { value: "wine_chocolate", label: "Wine & chocolate pairing" },
+    { value: "charcuterie_board", label: "Charcuterie & wine" },
+    { value: "cooking_class", label: "Food & wine cooking class" },
+    { value: "picnic_on_estate", label: "Picnic on the estate" },
+  ] },
+  { key: "behind-scenes" as const, heading: "Behind the scenes", options: [
+    { value: "vineyard_walk", label: "Guided vineyard walk" },
+    { value: "cellar_tour", label: "Cellar & barrel hall tour" },
+    { value: "blending_experience", label: "Blending & winemaking experience" },
+    { value: "harvest_experience", label: "Harvest season experience" },
+  ] },
+  { key: "special-occasions" as const, heading: "Special occasions", options: [
+    { value: "accommodation", label: "Accommodation on-site" },
+    { value: "corporate_events", label: "Corporate & private events" },
+    { value: "wedding_venue", label: "Wedding venue" },
+  ] },
+  { key: "mobility-access" as const, heading: "Mobility & access", options: [
+    { value: "wheelchair_pathways", label: "Wheelchair-accessible pathways" },
+    { value: "wheelchair_tasting", label: "Wheelchair-accessible tasting area" },
+    { value: "accessible_bathroom", label: "Accessible bathroom on-site" },
+    { value: "step_free_entry", label: "Step-free entry to all areas" },
+    { value: "accessible_parking", label: "Accessible parking bays" },
+    { value: "minibus_access", label: "Minibus / large vehicle drop-off" },
+  ] },
+  { key: "sensory-communication" as const, heading: "Sensory & communication", options: [
+    { value: "hearing_loop", label: "Hearing loop / induction system" },
+    { value: "large_print", label: "Large-print menus & tasting notes" },
+    { value: "seated_tasting", label: "All tastings fully seated" },
+    { value: "quiet_space", label: "Quiet space available on request" },
+  ] },
+  { key: "dietary-preferences" as const, heading: "Dietary preferences", options: [
+    { value: "vegetarian", label: "Vegetarian food options" },
+    { value: "vegan", label: "Vegan food options" },
+    { value: "dairy_free", label: "Dairy-free options" },
+  ] },
+  { key: "allergies-intolerances" as const, heading: "Allergies & intolerances", options: [
+    { value: "gluten_free", label: "Gluten-free options available" },
+    { value: "gluten_free_strict", label: "Strictly gluten-free kitchen" },
+    { value: "nut_free", label: "Nut-free kitchen" },
+  ] },
+  { key: "religious-requirements" as const, heading: "Religious requirements", options: [
+    { value: "halal", label: "Halal-certified food" },
+    { value: "kosher", label: "Kosher food available" },
+  ] },
+  { key: "food-policy" as const, heading: "Food policy", options: [
+    { value: "no_food", label: "No food served" },
+    { value: "byo_food", label: "Guests welcome to bring food" },
+    { value: "custom_on_request", label: "Most needs accommodated with notice" },
+  ] },
+  { key: "open-days" as const, heading: "Open days", options: [
+    { value: "mon", label: "Monday" },
+    { value: "tue", label: "Tuesday" },
+    { value: "wed", label: "Wednesday" },
+    { value: "thu", label: "Thursday" },
+    { value: "fri", label: "Friday" },
+    { value: "sat", label: "Saturday" },
+    { value: "sun", label: "Sunday" },
+  ] },
+  { key: "advance-notice" as const, heading: "Advance notice", options: [
+    { value: "same_day", label: "Same day - we're flexible" },
+    { value: "24_hours", label: "24 hours ahead" },
+    { value: "48_hours", label: "48 hours ahead (default)" },
+    { value: "72_hours", label: "3 days ahead" },
+    { value: "1_week", label: "1 week ahead" },
+    { value: "2_weeks", label: "2 weeks ahead" },
+  ] },
+];
 
-const PROFILE_SECTION_MENU: Array<{ key: ProfileSectionKey; label: string }> = [
+const PROFILE_SECTIONS: Array<{ key: ProfileSectionKey; label: string }> = [
   { key: "basics", label: "Basics" },
-  { key: "password", label: "Password" },
-  { key: "gallery", label: "Image gallery" },
   { key: "wine-styles", label: "Wine styles" },
-  { key: "setting-atmosphere", label: "Setting & atmosphere" },
-  { key: "wine-quality", label: "Wine quality" },
-  { key: "story-people", label: "Story & people" },
-  { key: "asian-market", label: "Asian market" },
-  { key: "practical", label: "Practical" },
-  { key: "tastings-pairings", label: "Tastings & pairings" },
-  { key: "food-wine", label: "Food & wine" },
-  { key: "behind-scenes", label: "Behind the scenes" },
-  { key: "special-occasions", label: "Special occasions" },
-  { key: "mobility-access", label: "Mobility & access" },
-  { key: "sensory-communication", label: "Sensory & communication" },
-  { key: "dietary-preferences", label: "Dietary preferences" },
-  { key: "allergies-intolerances", label: "Allergies & intolerances" },
-  { key: "religious-requirements", label: "Religious requirements" },
-  { key: "food-policy", label: "Food policy" },
-  { key: "open-days", label: "Open days" },
-  { key: "advance-notice", label: "Advance notice" },
+  ...WINERY_SIGNAL_GROUPS.map((group) => ({ key: group.key, label: group.heading })),
   { key: "experiences", label: "Experiences" },
+  { key: "password", label: "Password" },
 ];
 
 function makeExperienceDraft(entry?: { name: string; price: number }): ExperienceDraft {
-  return {
-    id: crypto.randomUUID(),
-    name: entry?.name ?? "",
-    price: entry?.price !== undefined ? String(entry.price) : "",
-  };
+  return { id: crypto.randomUUID(), name: entry?.name ?? "", price: entry?.price !== undefined ? String(entry.price) : "" };
 }
 
 export function PartnerWineriesPage() {
   const router = useRouter();
   const { user, token, loading: authLoading } = useAuth();
+  const [view, setView] = useState<View>("requests");
+  const [requestFilter, setRequestFilter] = useState<RequestFilter>("pending");
+  const [profileSection, setProfileSection] = useState<ProfileSectionKey>("basics");
+  const [toast, setToast] = useState("");
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
@@ -365,7 +282,6 @@ export function PartnerWineriesPage() {
   const [winerySignals, setWinerySignals] = useState<string[]>([]);
   const [experienceRows, setExperienceRows] = useState<ExperienceDraft[]>([]);
   const [profileSavedAt, setProfileSavedAt] = useState<string | null>(null);
-  const [activeProfileSection, setActiveProfileSection] = useState<ProfileSectionKey>("basics");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -377,12 +293,17 @@ export function PartnerWineriesPage() {
   const profileAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastProfileSignatureRef = useRef("");
 
+  function flashToast(message: string) {
+    setToast(message);
+    if (toastTimer.current) {
+      clearTimeout(toastTimer.current);
+    }
+    toastTimer.current = setTimeout(() => setToast(""), 2600);
+  }
+
   function normalizeProfileDraft() {
     const normalizedRows = experienceRows
-      .map((row) => ({
-        name: row.name.trim(),
-        price: Number(row.price),
-      }))
+      .map((row) => ({ name: row.name.trim(), price: Number(row.price) }))
       .filter((row) => row.name && Number.isFinite(row.price) && row.price >= 0);
     const normalizedSignals = new Set(winerySignals);
     const hasAdvanceNotice = ADVANCE_NOTICE_SIGNALS.some((signal) => normalizedSignals.has(signal));
@@ -460,7 +381,6 @@ export function PartnerWineriesPage() {
       setSummary({ pending: 0, accepted: 0, declined: 0, expired: 0 });
       return;
     }
-
     profileLoadedRef.current = false;
     if (profileAutosaveTimerRef.current) {
       clearTimeout(profileAutosaveTimerRef.current);
@@ -468,7 +388,6 @@ export function PartnerWineriesPage() {
     }
     setLoading(true);
     setError(null);
-
     try {
       const [requestsResponse, mediaResponse, profileResponse] = await Promise.all([
         getWineryPortalRequestsAuthed(wineryId, token),
@@ -484,13 +403,9 @@ export function PartnerWineriesPage() {
       setAddress(profileResponse.address ?? "");
       setWebsite(profileResponse.website ?? "");
       setOpeningHours(profileResponse.opening_hours ?? "");
-      setTastingPrice(
-        profileResponse.tasting_price !== undefined ? String(profileResponse.tasting_price) : "",
-      );
+      setTastingPrice(profileResponse.tasting_price !== undefined ? String(profileResponse.tasting_price) : "");
       setTastingDurationMinutes(
-        profileResponse.tasting_duration_minutes !== undefined
-          ? String(profileResponse.tasting_duration_minutes)
-          : "45",
+        profileResponse.tasting_duration_minutes !== undefined ? String(profileResponse.tasting_duration_minutes) : "45",
       );
       setWineryDescription(profileResponse.description ?? "");
       setFamousFor(profileResponse.famous_for ?? "");
@@ -498,8 +413,7 @@ export function PartnerWineriesPage() {
       if (profileResponse.offers_cheese_board) {
         loadedSignals.add("cheese_board");
       }
-      const hasAdvanceNotice = ADVANCE_NOTICE_SIGNALS.some((signal) => loadedSignals.has(signal));
-      if (!hasAdvanceNotice) {
+      if (!ADVANCE_NOTICE_SIGNALS.some((signal) => loadedSignals.has(signal))) {
         loadedSignals.add("48_hours");
       }
       setWineStyles(profileResponse.wine_styles ?? []);
@@ -535,14 +449,11 @@ export function PartnerWineriesPage() {
       return;
     }
     const currentUser = user;
-
     let active = true;
-
     async function loadWineries() {
       try {
         setLoading(true);
         setError(null);
-
         if (currentUser.role === "winery" && currentUser.winery_id) {
           const [response, profile] = await Promise.all([
             listWineries(),
@@ -552,33 +463,21 @@ export function PartnerWineriesPage() {
             return;
           }
           const found = response.wineries.find((item) => item.winery_id === currentUser.winery_id);
-          setWineries([{
-            winery_id: currentUser.winery_id,
-            name: found?.name ?? profile.name,
-            region: found?.region ?? profile.region,
-          }]);
+          setWineries([{ winery_id: currentUser.winery_id, name: found?.name ?? profile.name, region: found?.region ?? profile.region }]);
           setSelectedWineryId(currentUser.winery_id);
           return;
         }
-
         const response = await listWineries();
         if (!active) {
           return;
         }
-
-        const sorted = response.wineries.map((item) => ({
-          winery_id: item.winery_id,
-          name: item.name,
-          region: item.region,
-        }));
-
+        const sorted = response.wineries.map((item) => ({ winery_id: item.winery_id, name: item.name, region: item.region }));
         setWineries(sorted);
         setSelectedWineryId((current) => current || sorted[0]?.winery_id || "");
       } catch (loadError) {
         if (!active) {
           return;
         }
-
         setError(loadError instanceof Error ? loadError.message : "Unable to load winery list.");
       } finally {
         if (active) {
@@ -586,9 +485,7 @@ export function PartnerWineriesPage() {
         }
       }
     }
-
     void loadWineries();
-
     return () => {
       active = false;
     };
@@ -604,12 +501,12 @@ export function PartnerWineriesPage() {
       setError("Approval token could not be parsed for this booking.");
       return;
     }
-
     try {
       setApprovingRequestId(item.request_id);
       setError(null);
       await approveWineryToken(tokenId);
       await loadRequests(selectedWineryId);
+      flashToast("Request accepted — guest confirmed.");
     } catch (approveError) {
       setError(approveError instanceof Error ? approveError.message : "Unable to approve this booking.");
     } finally {
@@ -621,7 +518,6 @@ export function PartnerWineriesPage() {
     if (!selectedWineryId || !token || !selectedFile) {
       return;
     }
-
     try {
       setUploading(true);
       setError(null);
@@ -632,23 +528,17 @@ export function PartnerWineriesPage() {
         file_size_bytes: optimizedFile.size,
         caption: captionDraft.trim() || undefined,
       });
-
-      const uploadResponse = await fetch(ticket.upload_url, {
-        method: ticket.upload_method,
-        headers: ticket.upload_headers,
-        body: optimizedFile,
-      });
-
+      const uploadResponse = await fetch(ticket.upload_url, { method: ticket.upload_method, headers: ticket.upload_headers, body: optimizedFile });
       if (!uploadResponse.ok) {
         throw new Error(`Upload failed (${uploadResponse.status}). Check R2 bucket CORS settings.`);
       }
-
       await completeWineryMediaUpload(selectedWineryId, ticket.media_id, token);
       const refreshed = await getWineryMediaAuthed(selectedWineryId, token);
       setMediaAssets(refreshed.assets);
       setStorageConfigured(refreshed.storage_configured);
       setSelectedFile(null);
       setCaptionDraft("");
+      flashToast("Photo added to your gallery.");
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Unable to upload image.");
     } finally {
@@ -660,7 +550,6 @@ export function PartnerWineriesPage() {
     if (!selectedWineryId || !token) {
       return;
     }
-
     try {
       setDeletingMediaId(mediaId);
       setError(null);
@@ -674,15 +563,14 @@ export function PartnerWineriesPage() {
   }
 
   function updateExperienceRow(id: string, field: "name" | "price", value: string) {
-    setExperienceRows((current) =>
-      current.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
-    );
+    setExperienceRows((current) => current.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
   }
-
   function addExperienceRow() {
     setExperienceRows((current) => [...current, makeExperienceDraft()]);
   }
-
+  function removeExperienceRow(id: string) {
+    setExperienceRows((current) => (current.length > 1 ? current.filter((row) => row.id !== id) : current));
+  }
   function toggleWineStyle(style: string, checked: boolean) {
     setWineStyles((current) => {
       const next = new Set(current);
@@ -700,7 +588,6 @@ export function PartnerWineriesPage() {
       return Array.from(next);
     });
   }
-
   function toggleWinerySignal(signal: string, checked: boolean) {
     setWinerySignals((current) => {
       const next = new Set(current);
@@ -712,33 +599,12 @@ export function PartnerWineriesPage() {
       return Array.from(next);
     });
   }
-
-  function applyOpenDayShortcut(mode: "weekdays" | "weekend" | "all-week" | "clear") {
-    setWinerySignals((current) => {
-      const next = new Set(current.filter((signal) => !OPEN_DAY_SIGNALS.includes(signal as typeof OPEN_DAY_SIGNALS[number])));
-      if (mode === "weekdays") {
-        ["mon", "tue", "wed", "thu", "fri"].forEach((day) => next.add(day));
-      }
-      if (mode === "weekend") {
-        ["sat", "sun"].forEach((day) => next.add(day));
-      }
-      if (mode === "all-week") {
-        OPEN_DAY_SIGNALS.forEach((day) => next.add(day));
-      }
-      return Array.from(next);
-    });
-  }
-
   function setAdvanceNotice(signal: string) {
     setWinerySignals((current) => {
-      const next = new Set(current.filter((entry) => !ADVANCE_NOTICE_SIGNALS.includes(entry as typeof ADVANCE_NOTICE_SIGNALS[number])));
+      const next = new Set(current.filter((entry) => !ADVANCE_NOTICE_SIGNALS.includes(entry as (typeof ADVANCE_NOTICE_SIGNALS)[number])));
       next.add(signal);
       return Array.from(next);
     });
-  }
-
-  function removeExperienceRow(id: string) {
-    setExperienceRows((current) => (current.length > 1 ? current.filter((row) => row.id !== id) : current));
   }
 
   async function handleChangePassword(event: React.FormEvent<HTMLFormElement>) {
@@ -747,10 +613,8 @@ export function PartnerWineriesPage() {
       setPasswordError("Sign in first to change your password.");
       return;
     }
-
     setPasswordError(null);
     setPasswordMessage(null);
-
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError("Please complete all password fields.");
       return;
@@ -763,13 +627,9 @@ export function PartnerWineriesPage() {
       setPasswordError("New password confirmation does not match.");
       return;
     }
-
     try {
       setPasswordSaving(true);
-      const response = await changePassword(token, {
-        current_password: currentPassword,
-        new_password: newPassword,
-      });
+      const response = await changePassword(token, { current_password: currentPassword, new_password: newPassword });
       setPasswordMessage(response.message || "Password updated.");
       setCurrentPassword("");
       setNewPassword("");
@@ -781,15 +641,13 @@ export function PartnerWineriesPage() {
     }
   }
 
-  async function handleSaveProfile(options?: { silent?: boolean; autosave?: boolean }) {
+  const handleSaveProfile = useCallback(async (options?: { silent?: boolean; autosave?: boolean }) => {
     if (!selectedWineryId || !token) {
       return;
     }
-
     const silent = options?.silent ?? false;
     const autosave = options?.autosave ?? false;
-    const normalizedDraft = normalizeProfileDraft();
-    const { payload, normalizedCapacity, normalizedTastingDurationMinutes, signature } = normalizedDraft;
+    const { payload, normalizedCapacity, normalizedTastingDurationMinutes, signature } = normalizeProfileDraft();
     if (!Number.isFinite(normalizedCapacity) || normalizedCapacity <= 0) {
       if (!silent) {
         setError("Capacity must be greater than 0.");
@@ -805,7 +663,6 @@ export function PartnerWineriesPage() {
     if (autosave && signature === lastProfileSignatureRef.current) {
       return;
     }
-
     try {
       setProfileSaving(true);
       setProfileAutoSaving(autosave);
@@ -818,9 +675,7 @@ export function PartnerWineriesPage() {
       setWebsite(updated.website ?? "");
       setOpeningHours(updated.opening_hours ?? "");
       setTastingPrice(updated.tasting_price !== undefined ? String(updated.tasting_price) : "");
-      setTastingDurationMinutes(
-        updated.tasting_duration_minutes !== undefined ? String(updated.tasting_duration_minutes) : "45",
-      );
+      setTastingDurationMinutes(updated.tasting_duration_minutes !== undefined ? String(updated.tasting_duration_minutes) : "45");
       setWineryDescription(updated.description ?? "");
       setFamousFor(updated.famous_for ?? "");
       setWineStyles(updated.wine_styles ?? []);
@@ -839,8 +694,8 @@ export function PartnerWineriesPage() {
       );
       setProfileSavedAt(new Date().toISOString());
       lastProfileSignatureRef.current = profileSignatureFromResponse(updated);
-      if (autosave) {
-        setError(null);
+      if (!autosave) {
+        flashToast("Estate profile saved.");
       }
     } catch (saveError) {
       if (!silent) {
@@ -850,100 +705,96 @@ export function PartnerWineriesPage() {
       setProfileSaving(false);
       setProfileAutoSaving(false);
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWineryId, token, capacity, address, website, openingHours, tastingPrice, tastingDurationMinutes, wineryDescription, famousFor, wineStyles, winerySignals, experienceRows]);
 
   useEffect(() => {
     if (!selectedWineryId || !token || !profileLoadedRef.current || profileSaving) {
       return;
     }
-
     const draft = normalizeProfileDraft();
     if (draft.signature === lastProfileSignatureRef.current) {
       return;
     }
-
     if (profileAutosaveTimerRef.current) {
       clearTimeout(profileAutosaveTimerRef.current);
     }
     profileAutosaveTimerRef.current = setTimeout(() => {
       void handleSaveProfile({ silent: true, autosave: true });
     }, 700);
-
     return () => {
       if (profileAutosaveTimerRef.current) {
         clearTimeout(profileAutosaveTimerRef.current);
         profileAutosaveTimerRef.current = null;
       }
     };
-  }, [
-    selectedWineryId,
-    token,
-    profileSaving,
-    capacity,
-    address,
-    website,
-    openingHours,
-    tastingPrice,
-    tastingDurationMinutes,
-    wineryDescription,
-    famousFor,
-    wineStyles,
-    winerySignals,
-    experienceRows,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWineryId, token, profileSaving, capacity, address, website, openingHours, tastingPrice, tastingDurationMinutes, wineryDescription, famousFor, wineStyles, winerySignals, experienceRows]);
 
-  const pendingItems = useMemo(
-    () => requests.filter((item) => item.status === "pending"),
-    [requests],
-  );
-
-  const acceptedItems = useMemo(
-    () => requests.filter((item) => item.status === "accepted"),
-    [requests],
-  );
+  const filteredRequests = useMemo(() => {
+    if (requestFilter === "all") {
+      return requests;
+    }
+    return requests.filter((item) => item.status === requestFilter);
+  }, [requests, requestFilter]);
 
   if (!authLoading && !user) {
     return (
-      <AppShell
-        eyebrow="Winery portal"
-        title="Winery partner access"
-        intro="Log in with your winery account to view and approve booking requests."
-        showWorkflowStatus={false}
-        navMode="partner"
-      >
-        <div className="actionPageShell">
-          <SectionCard title="Sign in required" description="This portal is restricted to signed-in winery users and ops users.">
-            <div className="ctaRow">
-              <Link href="/login" className="buttonPrimary">Log in</Link>
-              <Link href="/register" className="buttonGhost">Create account</Link>
-            </div>
-          </SectionCard>
-        </div>
-      </AppShell>
+      <PortalGate
+        portalTag="Winery Portal"
+        title="Sign in to your estate"
+        lead="This portal is restricted to signed-in winery and ops accounts. Log in to review and approve booking requests."
+      />
     );
   }
 
+  const navItems: PortalNavItem[] = [
+    { key: "requests", label: "Booking requests", icon: "◷", badge: summary.pending || undefined },
+    { key: "profile", label: "Estate profile", icon: "▦" },
+    { key: "media", label: "Media library", icon: "▤" },
+    { key: "availability", label: "Availability", icon: "◔" },
+  ];
+
+  const accountName = user?.role === "winery"
+    ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.display_name || wineryName
+    : user?.display_name || "Operations";
+  const accountRole = user?.role === "winery" ? `${wineryName} · Winery partner` : "Operations · Full access";
+
   return (
-    <AppShell
-      eyebrow="Winery portal"
-      title="Booking requests"
-      intro="Review pending requests and approve bookings for your winery."
-      showWorkflowStatus={false}
-      navMode="partner"
-    >
-      <SectionCard
-        title="Winery queue"
-        description="Bookings waiting for action and those already accepted."
+    <>
+      <PortalShell
+        portalTag="Winery Portal"
+        navLabel="Estate"
+        navItems={navItems}
+        activeKey={view}
+        onSelect={(key) => setView(key as View)}
+        accountName={accountName}
+        accountRole={accountRole}
+        kicker="Winery Portal"
+        title={
+          view === "requests" ? "Booking requests" :
+          view === "profile" ? "Estate profile" :
+          view === "media" ? "Media library" : "Availability"
+        }
+        lead={
+          view === "requests" ? "Review pending requests and confirm seats for your estate." :
+          view === "profile" ? "Keep your estate details, guest signals and experiences current." :
+          view === "media" ? "Curate the photography guests see when planning their day." :
+          "Manage the tasting slots you offer across the week."
+        }
+        crossLink={user?.role === "ops" ? { href: "/partner/transport", label: "Transport portal →" } : undefined}
       >
-        <div className="fieldRow">
-          <div className="field">
-            <label htmlFor="winerySelect">Winery</label>
+        {error ? <div className="pt-callout pt-callout--error" style={{ marginBottom: 20 }}>{error}</div> : null}
+
+        {user?.role === "ops" && wineries.length > 0 ? (
+          <div className="pt-block" style={{ maxWidth: 420 }}>
+            <label className="pt-detail__k" htmlFor="winerySelect">Viewing estate</label>
             <select
               id="winerySelect"
-              className="inputLike inputField"
+              className="pt-select"
               value={selectedWineryId}
               onChange={(event) => setSelectedWineryId(event.target.value)}
-              disabled={loading || wineries.length === 0 || user?.role === "winery"}
+              disabled={loading}
             >
               {wineries.map((winery) => (
                 <option key={winery.winery_id} value={winery.winery_id}>
@@ -952,761 +803,260 @@ export function PartnerWineriesPage() {
               ))}
             </select>
           </div>
-        </div>
+        ) : null}
 
-        <div className="summaryRibbon" style={{ marginTop: 14 }}>
-          <div className="summaryChip">
-            <span className="miniLabel">Pending</span>
-            <strong>{summary.pending}</strong>
-          </div>
-          <div className="summaryChip">
-            <span className="miniLabel">Accepted</span>
-            <strong>{summary.accepted}</strong>
-          </div>
-          <div className="summaryChip">
-            <span className="miniLabel">Declined</span>
-            <strong>{summary.declined}</strong>
-          </div>
-          <div className="summaryChip">
-            <span className="miniLabel">Expired</span>
-            <strong>{summary.expired}</strong>
-          </div>
-        </div>
-      </SectionCard>
+        {view === "requests" ? (
+          <>
+            <div className="pt-stats">
+              <div className="pt-stat"><span className="pt-stat__num pt-stat__num--accent">{summary.pending}</span><span className="pt-stat__label">Awaiting your response</span></div>
+              <div className="pt-stat"><span className="pt-stat__num">{summary.accepted}</span><span className="pt-stat__label">Accepted</span></div>
+              <div className="pt-stat"><span className="pt-stat__num">{summary.declined}</span><span className="pt-stat__label">Declined</span></div>
+              <div className="pt-stat"><span className="pt-stat__num">{summary.expired}</span><span className="pt-stat__label">Expired</span></div>
+            </div>
 
-      {error ? <div className="callout errorCallout">{error}</div> : null}
-
-      <div className="grid two">
-        <SectionCard
-          title={`Pending approvals for ${wineryName}`}
-          description="These requests need a response."
-        >
-          <div className="list">
-            {pendingItems.length === 0 ? (
-              <div className="listRow">
-                <p className="subtle">No pending requests right now.</p>
-              </div>
-            ) : (
-              pendingItems.map((item) => (
-                <div key={item.request_id} className="listRow">
-                  <div className="listTop">
-                    <div>
-                      <h3>{item.booking?.leadName ?? "Guest booking"}</h3>
-                      <p className="subtle">
-                        {item.booking?.bookingDate} | {item.booking?.pickupLocation} | {item.booking?.partySize} guests
-                      </p>
-                    </div>
-                    <span className={`status ${statusClass(item.status)}`}>{item.status}</span>
-                  </div>
-                  <BookingSafetyNotes booking={item.booking} />
-                  <div className="metaRow">
-                    <span className="meta">Sent via {item.sent_channel}</span>
-                    <span className="meta">Recipient {item.sent_recipient ?? "(not configured)"}</span>
-                    <span className="meta">Sent {formatDateTime(item.sent_at)}</span>
-                  </div>
-                  <div className="ctaRow">
-                    <button
-                      type="button"
-                      className="buttonPrimary"
-                      onClick={() => handleApprove(item)}
-                      disabled={approvingRequestId === item.request_id}
-                    >
-                      {approvingRequestId === item.request_id ? "Approving..." : "Approve booking"}
-                    </button>
-                    <a className="buttonGhost" href={item.action_url} target="_blank" rel="noreferrer">
-                      Open magic link
-                    </a>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          title="Accepted requests"
-          description="History of accepted bookings."
-        >
-          <div className="list">
-            {acceptedItems.length === 0 ? (
-              <div className="listRow">
-                <p className="subtle">No accepted requests yet.</p>
-              </div>
-            ) : (
-              acceptedItems.map((item) => (
-                <div key={item.request_id} className="listRow">
-                  <div className="listTop">
-                    <div>
-                      <h3>{item.booking?.leadName ?? "Guest booking"}</h3>
-                      <p className="subtle">
-                        {item.booking?.bookingDate} | {item.booking?.pickupLocation} | {item.booking?.partySize} guests
-                      </p>
-                    </div>
-                    <span className={`status ${statusClass(item.status)}`}>{item.status}</span>
-                  </div>
-                  <BookingSafetyNotes booking={item.booking} />
-                  <div className="metaRow">
-                    <span className="meta">Approved {formatDateTime(item.approved_at)}</span>
-                    <span className="meta">Booking {item.booking_id}</span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </SectionCard>
-      </div>
-
-      <SectionCard
-        title="Winery profile settings"
-        description="Set tasting price, winery details, and experience offers shown to guests."
-      >
-        <div className="profileEditorLayout">
-          <aside className="profileEditorMenu" aria-label="Winery profile sections">
-            {PROFILE_SECTION_MENU.map((entry) => (
-              <button
-                key={entry.key}
-                type="button"
-                className={`profileMenuItem ${activeProfileSection === entry.key ? "active" : ""}`}
-                onClick={() => setActiveProfileSection(entry.key)}
-              >
-                {entry.label}
-              </button>
-            ))}
-          </aside>
-
-          <div className="profileEditorPane">
-            {activeProfileSection === "basics" ? (
-              <>
-                <div className="fieldRow profileCompactRow">
-                  <div className="field compactField">
-                    <label htmlFor="wineryCapacity">Guest capacity</label>
-                    <input
-                      id="wineryCapacity"
-                      type="number"
-                      min={1}
-                      step={1}
-                      className="inputLike inputField"
-                      value={capacity}
-                      onChange={(event) => setCapacity(event.target.value)}
-                      placeholder="20"
-                    />
-                  </div>
-                  <div className="field compactField">
-                    <label htmlFor="tastingPrice">Tasting price (AUD)</label>
-                    <div className="inputLike currencyField">
-                      <span className="currencyPrefix" aria-hidden="true">$</span>
-                      <input
-                        id="tastingPrice"
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        className="inputField currencyInput"
-                        value={tastingPrice}
-                        onChange={(event) => setTastingPrice(event.target.value)}
-                        placeholder="35"
-                      />
-                    </div>
-                  </div>
-                  <div className="field compactField tastingDurationField">
-                    <label htmlFor="tastingDurationMinutes">Tasting length (mins)</label>
-                    <input
-                      id="tastingDurationMinutes"
-                      type="number"
-                      min={1}
-                      max={480}
-                      step={1}
-                      className="inputLike inputField"
-                      value={tastingDurationMinutes}
-                      onChange={(event) => setTastingDurationMinutes(event.target.value)}
-                      placeholder="45"
-                    />
-                  </div>
-                </div>
-                <div className="fieldRow">
-                  <div className="field">
-                    <label htmlFor="famousFor">What is your winery famous for?</label>
-                    <input
-                      id="famousFor"
-                      className="inputLike inputField"
-                      value={famousFor}
-                      onChange={(event) => setFamousFor(event.target.value)}
-                      placeholder="Cabernet Sauvignon and Chardonnay"
-                    />
-                  </div>
-                </div>
-                <div className="fieldRow">
-                  <div className="field">
-                    <label htmlFor="wineryAddress">Address</label>
-                    <input
-                      id="wineryAddress"
-                      className="inputLike inputField"
-                      value={address}
-                      onChange={(event) => setAddress(event.target.value)}
-                      placeholder="123 Caves Rd, Wilyabrup WA 6280"
-                    />
-                  </div>
-                </div>
-                <div className="fieldRow">
-                  <div className="field">
-                    <label htmlFor="wineryWebsite">Website</label>
-                    <input
-                      id="wineryWebsite"
-                      type="url"
-                      className="inputLike inputField"
-                      value={website}
-                      onChange={(event) => setWebsite(event.target.value)}
-                      placeholder="https://"
-                    />
-                  </div>
-                </div>
-                {user?.role === "winery" ? (
-                  <div className="fieldRow">
-                    <div className="field">
-                      <label>Partner contact</label>
-                      <div className="explorePreferenceSummary">
-                        <p>
-                          <strong>{[user.first_name, user.last_name].filter(Boolean).join(" ") || user.display_name}</strong>
-                          {user.partner_role_title ? ` · ${user.partner_role_title}` : ""}
-                          {user.email ? ` · ${user.email}` : ""}
-                          {user.phone ? ` · ${user.phone}` : ""}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-                <div className="field">
-                  <label htmlFor="openingHours">Opening hours</label>
-                  <textarea
-                    id="openingHours"
-                    className="inputLike inputField"
-                    rows={3}
-                    value={openingHours}
-                    onChange={(event) => setOpeningHours(event.target.value)}
-                    placeholder={"Mon-Fri 10:00-17:00\nSat-Sun 09:00-18:00"}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="wineryDescription">Winery description</label>
-                  <textarea
-                    id="wineryDescription"
-                    className="inputLike inputField"
-                    rows={4}
-                    value={wineryDescription}
-                    onChange={(event) => setWineryDescription(event.target.value)}
-                    placeholder="Describe your winery, atmosphere, and guest experience."
-                  />
-                </div>
-              </>
-            ) : null}
-
-            {activeProfileSection === "password" ? (
-              <form className="formPreview" onSubmit={handleChangePassword}>
-                <p className="miniLabel">Update your partner login password</p>
-                <div className="field">
-                  <label htmlFor="currentPassword">Current password</label>
-                  <input
-                    id="currentPassword"
-                    type="password"
-                    className="inputLike inputField"
-                    value={currentPassword}
-                    onChange={(event) => setCurrentPassword(event.target.value)}
-                    autoComplete="current-password"
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="newPassword">New password</label>
-                  <input
-                    id="newPassword"
-                    type="password"
-                    minLength={8}
-                    className="inputLike inputField"
-                    value={newPassword}
-                    onChange={(event) => setNewPassword(event.target.value)}
-                    autoComplete="new-password"
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="confirmPassword">Confirm new password</label>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    minLength={8}
-                    className="inputLike inputField"
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    autoComplete="new-password"
-                  />
-                </div>
-                {passwordError ? <div className="callout errorCallout">{passwordError}</div> : null}
-                {passwordMessage ? <div className="callout successCallout">{passwordMessage}</div> : null}
-                <div className="ctaRow">
-                  <button type="submit" className="buttonPrimary profileSaveButton" disabled={passwordSaving}>
-                    {passwordSaving ? "Updating..." : "Update password"}
-                  </button>
-                </div>
-              </form>
-            ) : null}
-
-            {activeProfileSection === "gallery" ? (
-              <>
-                {!storageConfigured ? (
-                  <div className="callout errorCallout">
-                    R2 storage is not configured in the API yet. Add `TM_R2_*` app settings first.
-                  </div>
-                ) : null}
-
-                <div className="fieldRow">
-                  <div className="field">
-                    <label htmlFor="wineryImageUpload">Select image</label>
-                    <input
-                      id="wineryImageUpload"
-                      type="file"
-                      className="inputLike inputField"
-                      accept="image/*"
-                      onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-                    />
-                  </div>
-                  <div className="field">
-                    <label htmlFor="wineryImageCaption">Caption (optional)</label>
-                    <input
-                      id="wineryImageCaption"
-                      className="inputLike inputField"
-                      value={captionDraft}
-                      onChange={(event) => setCaptionDraft(event.target.value)}
-                      placeholder="Cellar door tasting room"
-                    />
-                  </div>
-                </div>
-
-                <div className="ctaRow">
+            <div className="pt-block__head">
+              <div className="pt-seg">
+                {([
+                  { key: "pending", label: `Pending · ${summary.pending}` },
+                  { key: "accepted", label: `Accepted · ${summary.accepted}` },
+                  { key: "declined", label: "Declined" },
+                  { key: "all", label: "All" },
+                ] as const).map((option) => (
                   <button
+                    key={option.key}
                     type="button"
-                    className="buttonPrimary profileSaveButton"
-                    onClick={handleUploadImage}
-                    disabled={!selectedFile || uploading || !storageConfigured}
+                    className={`pt-seg__btn ${requestFilter === option.key ? "is-active" : ""}`}
+                    onClick={() => setRequestFilter(option.key)}
                   >
-                    {uploading ? "Uploading..." : "Upload image"}
+                    {option.label}
                   </button>
-                </div>
+                ))}
+              </div>
+            </div>
 
-                <div className="mediaGrid">
-                  {mediaAssets.length === 0 ? (
-                    <div className="listRow">
-                      <p className="subtle">No images uploaded yet for this winery.</p>
-                    </div>
-                  ) : (
-                    mediaAssets.map((asset) => (
-                      <article key={asset.media_id} className="mediaCard">
-                        <button
-                          type="button"
-                          className="mediaDeleteButton"
-                          onClick={() => handleDeleteImage(asset.media_id)}
-                          disabled={deletingMediaId === asset.media_id}
-                          aria-label={`Delete ${asset.file_name}`}
-                          title="Delete image"
-                        >
-                          {deletingMediaId === asset.media_id ? "..." : "X"}
-                        </button>
-                        <img src={asset.public_url} alt={asset.caption || asset.file_name} loading="lazy" decoding="async" />
-                        <div className="mediaMeta">
-                          <p><strong>{asset.file_name}</strong></p>
-                          <p className="subtle">{asset.caption || "No caption"}</p>
+            <div className="pt-cards">
+              {loading ? (
+                <div className="pt-empty">Loading requests…</div>
+              ) : filteredRequests.length === 0 ? (
+                <div className="pt-empty">
+                  <div className="pt-empty__mark">◷</div>
+                  <p>No {requestFilter === "all" ? "" : requestFilter} requests right now.</p>
+                </div>
+              ) : (
+                filteredRequests.map((item) => {
+                  const isPending = item.status === "pending";
+                  return (
+                    <article key={item.request_id} className="pt-card">
+                      <div className="pt-card__top">
+                        <div className="pt-card__when">
+                          <span className="pt-card__date">{item.booking?.bookingDate ?? "Booking request"}</span>
+                          <span className="pt-card__time">{item.booking?.leadName ?? "Guest"}</span>
                         </div>
-                      </article>
-                    ))
-                  )}
-                </div>
-              </>
-            ) : null}
+                        <span className={pillClass(item.status)}>{item.status}</span>
+                      </div>
+                      <div className="pt-detail">
+                        <div className="pt-detail__item"><span className="pt-detail__k">Party</span><span className="pt-detail__v">{item.booking?.partySize ?? "—"} guests</span></div>
+                        <div className="pt-detail__item"><span className="pt-detail__k">Pickup</span><span className="pt-detail__v">{item.booking?.pickupLocation ?? "—"}</span></div>
+                        <div className="pt-detail__item"><span className="pt-detail__k">Sent via</span><span className="pt-detail__v">{item.sent_channel ?? "—"}</span></div>
+                        <div className="pt-detail__item"><span className="pt-detail__k">Sent</span><span className="pt-detail__v">{formatDateTime(item.sent_at)}</span></div>
+                      </div>
+                      <BookingSafetyNotes booking={item.booking} />
+                      <div className="pt-context">
+                        <span className="pt-context__dot" aria-hidden="true" />
+                        <span>Recipient <strong>{item.sent_recipient ?? "(not configured)"}</strong></span>
+                      </div>
+                      <div className="pt-card__foot">
+                        <span className="pt-card__msg">
+                          {isPending ? "Awaiting your response." : item.status === "accepted" ? `Booking ${item.booking_id ?? ""}` : "Resolved."}
+                        </span>
+                        {isPending ? (
+                          <div className="pt-actions">
+                            <a className="pt-btn pt-btn--ghost" href={item.action_url} target="_blank" rel="noreferrer">Open magic link</a>
+                            <button type="button" className="pt-btn pt-btn--primary" onClick={() => handleApprove(item)} disabled={approvingRequestId === item.request_id}>
+                              {approvingRequestId === item.request_id ? "Approving…" : "Accept seat"}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="pt-resolved"><span className="pt-resolved__check">✓</span> {item.status === "accepted" ? `Confirmed ${formatDateTime(item.approved_at)}` : "Declined"}</span>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })
+              )}
+            </div>
+          </>
+        ) : null}
 
-            {activeProfileSection === "wine-styles" ? (
-              <div className="field">
-                <label>Wine styles (multi-select)</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {WINE_STYLE_OPTIONS.map((style) => {
-                    const checked = wineStyles.includes(style);
-                    return (
-                      <label key={style} className="choicePill">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(event) => toggleWineStyle(style, event.target.checked)}
-                        />
-                        {style}
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "setting-atmosphere" ? (
-              <div className="field">
-                <label>Setting & atmosphere</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[0]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "wine-quality" ? (
-              <div className="field">
-                <label>Wine quality & recognition</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[1]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "story-people" ? (
-              <div className="field">
-                <label>Story & people</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[2]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "asian-market" ? (
-              <div className="field">
-                <label>Asian market relevance</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[3]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "practical" ? (
-              <div className="field">
-                <label>Practical</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[4]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "tastings-pairings" ? (
-              <div className="field">
-                <label>Tastings & pairings</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[5]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "food-wine" ? (
-              <div className="field">
-                <label>Food & wine</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[6]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "behind-scenes" ? (
-              <div className="field">
-                <label>Behind the scenes</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[7]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "special-occasions" ? (
-              <div className="field">
-                <label>Special occasions</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[8]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "mobility-access" ? (
-              <div className="field">
-                <label>Mobility & access</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[9]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "sensory-communication" ? (
-              <div className="field">
-                <label>Sensory & communication</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[10]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "dietary-preferences" ? (
-              <div className="field">
-                <label>Dietary preferences</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[11]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "allergies-intolerances" ? (
-              <div className="field">
-                <label>Allergies & intolerances</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[12]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "religious-requirements" ? (
-              <div className="field">
-                <label>Religious requirements</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[13]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "food-policy" ? (
-              <div className="field">
-                <label>Food policy</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[14]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "open-days" ? (
-              <div className="field">
-                <label>Open days</label>
-                <div className="ctaRow" style={{ marginBottom: 8 }}>
-                  <button type="button" className="buttonGhost" onClick={() => applyOpenDayShortcut("weekdays")}>Weekdays</button>
-                  <button type="button" className="buttonGhost" onClick={() => applyOpenDayShortcut("weekend")}>Weekend</button>
-                  <button type="button" className="buttonGhost" onClick={() => applyOpenDayShortcut("all-week")}>All week</button>
-                  <button type="button" className="buttonGhost" onClick={() => applyOpenDayShortcut("clear")}>Clear</button>
-                </div>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[15]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="checkbox"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={(event) => toggleWinerySignal(option.value, event.target.checked)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "advance-notice" ? (
-              <div className="field">
-                <label>Advance notice</label>
-                <div className="choiceRow profileChoiceGrid">
-                  {(WINERY_SIGNAL_GROUPS[16]?.options ?? []).map((option) => (
-                    <label key={option.value} className="choicePill">
-                      <input
-                        type="radio"
-                        name="advanceNotice"
-                        checked={winerySignals.includes(option.value)}
-                        onChange={() => setAdvanceNotice(option.value)}
-                      />
-                      {option.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeProfileSection === "experiences" ? (
-              <div className="field">
-                <label>Unique experiences and prices</label>
-                <div className="experienceList">
-                  {experienceRows.map((row) => (
-                    <div key={row.id} className="experienceRow">
-                      <input
-                        className="inputLike inputField"
-                        value={row.name}
-                        onChange={(event) => updateExperienceRow(row.id, "name", event.target.value)}
-                        placeholder="Experience name"
-                      />
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        className="inputLike inputField"
-                        value={row.price}
-                        onChange={(event) => updateExperienceRow(row.id, "price", event.target.value)}
-                        placeholder="Price (AUD)"
-                      />
-                      <button type="button" className="buttonGhost" onClick={() => removeExperienceRow(row.id)}>
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className="ctaRow">
-                  <button type="button" className="buttonGhost" onClick={addExperienceRow}>
-                    Add experience
+        {view === "profile" ? (
+          <>
+            <div className="pt-block__head">
+              <div className="pt-seg">
+                {PROFILE_SECTIONS.map((section) => (
+                  <button
+                    key={section.key}
+                    type="button"
+                    className={`pt-seg__btn ${profileSection === section.key ? "is-active" : ""}`}
+                    onClick={() => setProfileSection(section.key)}
+                  >
+                    {section.label}
                   </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-panel">
+              {profileSection === "basics" ? (
+                <>
+                  <div className="pt-panel__row">
+                    <div className="pt-panel__k"><span className="pt-panel__klabel">Capacity & tasting</span><span className="pt-panel__khint">Guest capacity, price and length of a standard tasting.</span></div>
+                    <div className="pt-grid3">
+                      <input className="pt-input" type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} placeholder="Capacity" aria-label="Guest capacity" />
+                      <input className="pt-input" type="number" min={0} step="0.01" value={tastingPrice} onChange={(e) => setTastingPrice(e.target.value)} placeholder="Tasting price (AUD)" aria-label="Tasting price" />
+                      <input className="pt-input" type="number" min={1} value={tastingDurationMinutes} onChange={(e) => setTastingDurationMinutes(e.target.value)} placeholder="Length (mins)" aria-label="Tasting length minutes" />
+                    </div>
+                  </div>
+                  <div className="pt-panel__row">
+                    <div className="pt-panel__k"><span className="pt-panel__klabel">Famous for</span><span className="pt-panel__khint">The wines or experiences your estate is known for.</span></div>
+                    <input className="pt-input" value={famousFor} onChange={(e) => setFamousFor(e.target.value)} placeholder="Cabernet Sauvignon and Chardonnay" />
+                  </div>
+                  <div className="pt-panel__row">
+                    <div className="pt-panel__k"><span className="pt-panel__klabel">Address & website</span><span className="pt-panel__khint">Where guests find you, and where to learn more.</span></div>
+                    <div className="pt-stack">
+                      <input className="pt-input" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Caves Rd, Wilyabrup WA 6280" />
+                      <input className="pt-input" type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
+                    </div>
+                  </div>
+                  <div className="pt-panel__row">
+                    <div className="pt-panel__k"><span className="pt-panel__klabel">Opening hours</span><span className="pt-panel__khint">When your cellar door welcomes guests.</span></div>
+                    <textarea className="pt-input" rows={3} value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} placeholder={"Mon-Fri 10:00-17:00\nSat-Sun 09:00-18:00"} />
+                  </div>
+                  <div className="pt-panel__row">
+                    <div className="pt-panel__k"><span className="pt-panel__klabel">About the estate</span><span className="pt-panel__khint">A short description shown to guests.</span></div>
+                    <textarea className="pt-input" rows={4} value={wineryDescription} onChange={(e) => setWineryDescription(e.target.value)} placeholder="Describe your winery, atmosphere, and guest experience." />
+                  </div>
+                </>
+              ) : null}
+
+              {profileSection === "wine-styles" ? (
+                <div className="pt-panel__row" style={{ gridTemplateColumns: "1fr", borderBottom: 0, paddingBottom: 0 }}>
+                  <div className="pt-panel__k"><span className="pt-panel__klabel">Wine styles</span><span className="pt-panel__khint">Select all that describe your wines.</span></div>
+                  <div className="pt-chiprow">
+                    {WINE_STYLE_OPTIONS.map((style) => {
+                      const on = wineStyles.includes(style);
+                      return (
+                        <label key={style} className={`pt-chip ${on ? "is-on" : ""}`}>
+                          <input type="checkbox" checked={on} onChange={(e) => toggleWineStyle(style, e.target.checked)} />
+                          {style}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
+              {WINERY_SIGNAL_GROUPS.filter((group) => group.key === profileSection).map((group) => (
+                <div key={group.key} className="pt-panel__row" style={{ gridTemplateColumns: "1fr", borderBottom: 0, paddingBottom: 0 }}>
+                  <div className="pt-panel__k"><span className="pt-panel__klabel">{group.heading}</span><span className="pt-panel__khint">{group.key === "advance-notice" ? "Choose the minimum notice you need." : "Select everything that applies."}</span></div>
+                  <div className="pt-chiprow">
+                    {group.options.map((option) => {
+                      const on = winerySignals.includes(option.value);
+                      const isAdvance = group.key === "advance-notice";
+                      return (
+                        <label key={option.value} className={`pt-chip ${on ? "is-on" : ""}`}>
+                          <input
+                            type={isAdvance ? "radio" : "checkbox"}
+                            name={isAdvance ? "advanceNotice" : undefined}
+                            checked={on}
+                            onChange={(e) => (isAdvance ? setAdvanceNotice(option.value) : toggleWinerySignal(option.value, e.target.checked))}
+                          />
+                          {option.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {profileSection === "experiences" ? (
+                <div className="pt-panel__row" style={{ gridTemplateColumns: "1fr", borderBottom: 0, paddingBottom: 0 }}>
+                  <div className="pt-panel__k"><span className="pt-panel__klabel">Unique experiences</span><span className="pt-panel__khint">Add bookable experiences and their per-guest price.</span></div>
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {experienceRows.map((row) => (
+                      <div key={row.id} className="pt-exprow">
+                        <input className="pt-input" value={row.name} onChange={(e) => updateExperienceRow(row.id, "name", e.target.value)} placeholder="Experience name" />
+                        <input className="pt-input" type="number" min={0} step="0.01" value={row.price} onChange={(e) => updateExperienceRow(row.id, "price", e.target.value)} placeholder="Price (AUD)" />
+                        <button type="button" className="pt-btn pt-btn--ghost" onClick={() => removeExperienceRow(row.id)}>Remove</button>
+                      </div>
+                    ))}
+                    <div><button type="button" className="pt-btn pt-btn--ghost" onClick={addExperienceRow}>+ Add experience</button></div>
+                  </div>
+                </div>
+              ) : null}
+
+              {profileSection === "password" ? (
+                <form onSubmit={handleChangePassword} style={{ display: "grid", gap: 16 }}>
+                  <div className="pt-panel__row"><div className="pt-panel__k"><span className="pt-panel__klabel">Current password</span></div><input className="pt-input" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoComplete="current-password" /></div>
+                  <div className="pt-panel__row"><div className="pt-panel__k"><span className="pt-panel__klabel">New password</span><span className="pt-panel__khint">At least 8 characters.</span></div><input className="pt-input" type="password" minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" /></div>
+                  <div className="pt-panel__row" style={{ borderBottom: 0, paddingBottom: 0 }}><div className="pt-panel__k"><span className="pt-panel__klabel">Confirm new password</span></div><input className="pt-input" type="password" minLength={8} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" /></div>
+                  {passwordError ? <div className="pt-callout pt-callout--error">{passwordError}</div> : null}
+                  {passwordMessage ? <div className="pt-callout pt-callout--ok">{passwordMessage}</div> : null}
+                  <div className="pt-panel__save"><button type="submit" className="pt-btn pt-btn--primary" disabled={passwordSaving}>{passwordSaving ? "Updating…" : "Update password"}</button></div>
+                </form>
+              ) : null}
+
+              {profileSection !== "password" ? (
+                <div className="pt-panel__save">
+                  {profileAutoSaving ? <span className="pt-block__note">Autosaving…</span> : profileSavedAt ? <span className="pt-block__note">Saved {formatDateTime(profileSavedAt)}</span> : <span className="pt-block__note">Autosave enabled</span>}
+                  <button type="button" className="pt-btn pt-btn--primary" onClick={() => void handleSaveProfile()} disabled={profileSaving}>{profileSaving ? "Saving…" : "Save changes"}</button>
+                </div>
+              ) : null}
+            </div>
+          </>
+        ) : null}
+
+        {view === "media" ? (
+          <>
+            {!storageConfigured ? (
+              <div className="pt-callout pt-callout--error" style={{ marginBottom: 18 }}>R2 storage is not configured in the API yet. Add the TM_R2_* app settings to enable uploads.</div>
+            ) : null}
+            <div className="pt-panel" style={{ marginBottom: 24 }}>
+              <div className="pt-panel__row" style={{ borderBottom: 0, paddingBottom: 0 }}>
+                <div className="pt-panel__k"><span className="pt-panel__klabel">Add a photo</span><span className="pt-panel__khint">High-quality landscape images look best on cards.</span></div>
+                <div style={{ display: "grid", gap: 12 }}>
+                  <input className="pt-input" type="file" accept="image/*" onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)} />
+                  <input className="pt-input" value={captionDraft} onChange={(e) => setCaptionDraft(e.target.value)} placeholder="Caption (optional)" />
+                  <div><button type="button" className="pt-btn pt-btn--primary" onClick={handleUploadImage} disabled={!selectedFile || uploading || !storageConfigured}>{uploading ? "Uploading…" : "Upload image"}</button></div>
                 </div>
               </div>
-            ) : null}
+            </div>
+            <div className="pt-media-grid">
+              {mediaAssets.length === 0 ? (
+                <div className="pt-empty" style={{ gridColumn: "1 / -1" }}><div className="pt-empty__mark">▤</div><p>No images uploaded yet.</p></div>
+              ) : (
+                mediaAssets.map((asset, index) => (
+                  <div key={asset.media_id} className="pt-media">
+                    {index === 0 ? <span className="pt-media__cover">Cover</span> : null}
+                    <button type="button" className="pt-media__del" onClick={() => handleDeleteImage(asset.media_id)} disabled={deletingMediaId === asset.media_id} aria-label={`Delete ${asset.file_name}`}>{deletingMediaId === asset.media_id ? "…" : "✕"}</button>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={asset.public_url} alt={asset.caption || asset.file_name} loading="lazy" decoding="async" />
+                    {asset.caption ? <span className="pt-media__cap">{asset.caption}</span> : null}
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        ) : null}
 
-            {activeProfileSection !== "password" ? (
-              <div className="ctaRow">
-                <button
-                  type="button"
-                  className="buttonPrimary profileSaveButton"
-                  onClick={() => void handleSaveProfile()}
-                  disabled={profileSaving}
-                >
-                  {profileSaving ? "Saving..." : "Save winery profile"}
-                </button>
-                {profileAutoSaving ? <span className="meta">Autosaving...</span> : null}
-                {profileSavedAt ? <span className="meta">Saved {formatDateTime(profileSavedAt)}</span> : null}
-                {!profileAutoSaving && !profileSavedAt ? <span className="meta">Autosave enabled</span> : null}
-              </div>
-            ) : null}
+        {view === "availability" ? (
+          <div className="pt-empty">
+            <div className="pt-empty__mark">◔</div>
+            <p>Tasting availability is managed by Tailor Moments operations for now.</p>
+            <p className="pt-block__note" style={{ marginTop: 8 }}>Reach out to your partner contact to adjust the slots offered for your estate.</p>
           </div>
-        </div>
-      </SectionCard>
-    </AppShell>
+        ) : null}
+      </PortalShell>
+      <PortalToast message={toast} show={Boolean(toast)} />
+    </>
   );
 }
-
