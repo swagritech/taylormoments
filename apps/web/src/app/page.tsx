@@ -6,7 +6,6 @@ import { getLocale, setLocale, type AppLocale } from "@/lib/locale";
 import {
   HOME_I18N,
   HOME_LOCALES,
-  TM_PARTNERS,
   type HomeCopy,
 } from "@/components/home/home-i18n";
 import "./home.css";
@@ -379,16 +378,6 @@ function Testimonials({ t }: { t: HomeCopy }) {
             </figure>
           ))}
         </div>
-        <div className="tm-testi__partners">
-          <p className="tm-kicker tm-kicker--center">{tst.partnersLabel}</p>
-          <ul className="tm-trust__logos">
-            {TM_PARTNERS.map((p) => (
-              <li key={p} className="tm-trust__logo">
-                {p}
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
     </section>
   );
@@ -500,7 +489,14 @@ function Footer({
     <footer className="tm-foot">
       <div className="tm-wrap tm-foot__inner">
         <div className="tm-foot__brand">
-          <Wordmark variant="foot" />
+          <button
+            type="button"
+            className="tm-foot__brandlink"
+            onClick={() => smoothJump("top")}
+            aria-label="Back to top"
+          >
+            <Wordmark variant="foot" />
+          </button>
           <p className="tm-foot__tag">{t.foot.tagline}</p>
           <div className="tm-foot__lang-note">{t.foot.supportedRegions}</div>
         </div>
