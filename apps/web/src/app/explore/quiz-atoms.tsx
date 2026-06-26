@@ -1,18 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { AppLocale } from "@/lib/locale";
 import { EXPLORE_LOCALES } from "./explore-i18n";
 
 // The Tailor Moments wordmark, rendered in the flow's brand face. `light` is used
-// on the dark concierge rail.
+// on the dark concierge rail. Links back to the top of the homepage.
 export function Wordmark({ light }: { light?: boolean }) {
   return (
-    <span className="tm-wordmark" style={{ color: light ? "var(--tm-cream)" : "var(--tm-heading)" }}>
+    <Link
+      href="/"
+      className="tm-wordmark"
+      style={{ color: light ? "var(--tm-cream)" : "var(--tm-heading)" }}
+      aria-label="Tailor Moments — back to homepage"
+    >
       <span className="tm-wordmark__name">Tailor Moments</span>
       <span className="tm-wordmark__rule" />
       <span className="tm-wordmark__tag">Your Way</span>
-    </span>
+    </Link>
   );
 }
 
