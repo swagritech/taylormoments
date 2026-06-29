@@ -6,32 +6,9 @@ import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { useAuth } from "@/lib/auth-state";
 import { listWineries } from "@/lib/live-api";
+import { PHONE_HINT, PHONE_PATTERN, friendlyRegistrationError, normalizePhone } from "@/lib/phone";
 
 type PartnerRole = "winery" | "transport";
-
-// Matches the API's phone rule (services/api schemas): optional leading "+"
-// then 8-15 digits, no leading 0, no spaces/punctuation. E.g. +61412345678.
-const PHONE_PATTERN = /^\+?[1-9]\d{7,14}$/;
-const PHONE_HINT = "Use international format with no spaces — e.g. +61412345678 (drop the leading 0).";
-
-// Strip spaces, brackets and dashes, keeping a single leading "+".
-function normalizePhone(value: string) {
-  const trimmed = value.trim();
-  const digits = trimmed.replace(/\D/g, "");
-  return trimmed.startsWith("+") ? `+${digits}` : digits;
-}
-
-// Backend validation errors arrive as a stringified Zod issues array. Never show
-// that raw JSON to the user — map it to something readable.
-function friendlyError(message: string) {
-  if (/phone/i.test(message) && /(regex|invalid_string|invalid)/i.test(message)) {
-    return PHONE_HINT;
-  }
-  if (/^\s*[[{]/.test(message) || /"validation"|"code"\s*:\s*"invalid/.test(message)) {
-    return "Some details need attention — please review the form and try again.";
-  }
-  return message;
-}
 
 export default function PartnerRegisterPage() {
   const router = useRouter();
@@ -94,7 +71,7 @@ export default function PartnerRegisterPage() {
         throw new Error("You must agree to the Partner Terms to continue.");
       }
       let normalizedPhone: string | undefined;
-      if (role === "winery") {
+      if (role === "winery" || role === "transport") {
         normalizedPhone = normalizePhone(phone);
         if (!PHONE_PATTERN.test(normalizedPhone)) {
           throw new Error(PHONE_HINT);
@@ -123,7 +100,7 @@ export default function PartnerRegisterPage() {
         router.push("/partner/transport");
       }
     } catch (requestError) {
-      setError(friendlyError(requestError instanceof Error ? requestError.message : "Unable to create account."));
+      setError(friendlyRegistrationError(requestError instanceof Error ? requestError.message : "Unable to create account."));
     } finally {
       setLoading(false);
     }
@@ -337,6 +314,19 @@ export default function PartnerRegisterPage() {
                     onChange={(event) => setTransportCompany(event.target.value)}
                     required
                   />
+                </div>
+                <div className="field">
+                  <label htmlFor="transportPhone">Your phone number</label>
+                  <input
+                    id="transportPhone"
+                    type="tel"
+                    required
+                    placeholder="+61412345678"
+                    className="inputLike inputField"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                  />
+                  <p className="subtle">{PHONE_HINT}</p>
                 </div>
               </>
             ) : null}

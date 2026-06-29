@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { useAuth } from "@/lib/auth-state";
 import { loadExplorePreferences } from "@/lib/explore-preferences";
+import { PHONE_HINT, PHONE_PATTERN, friendlyRegistrationError, normalizePhone } from "@/lib/phone";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -46,6 +47,10 @@ export default function RegisterPage() {
     setError(null);
 
     try {
+      const normalizedPhone = normalizePhone(phone);
+      if (!PHONE_PATTERN.test(normalizedPhone)) {
+        throw new Error(PHONE_HINT);
+      }
       await register({
         display_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
         email,
@@ -53,14 +58,14 @@ export default function RegisterPage() {
         role: "customer",
         first_name: firstName.trim(),
         last_name: lastName.trim(),
-        phone: phone.trim(),
+        phone: normalizedPhone,
         home_country: homeCountry.trim(),
         age_group: ageGroup || undefined,
         gender: gender || undefined,
       });
       router.push("/customer/dashboard");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Unable to create account.");
+      setError(friendlyRegistrationError(requestError instanceof Error ? requestError.message : "Unable to create account."));
     } finally {
       setLoading(false);
     }
@@ -108,10 +113,10 @@ export default function RegisterPage() {
                   required
                   className="inputLike inputField"
                   placeholder="+61412345678"
-                  pattern="^\+?[1-9]\d{7,14}$"
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
                 />
+                <p className="subtle">{PHONE_HINT}</p>
               </div>
               <div className="field">
                 <label htmlFor="email">Email (username)</label>
