@@ -9,6 +9,30 @@ import { listWineries } from "@/lib/live-api";
 
 type PartnerRole = "winery" | "transport";
 
+// Matches the API's phone rule (services/api schemas): optional leading "+"
+// then 8-15 digits, no leading 0, no spaces/punctuation. E.g. +61412345678.
+const PHONE_PATTERN = /^\+?[1-9]\d{7,14}$/;
+const PHONE_HINT = "Use international format with no spaces — e.g. +61412345678 (drop the leading 0).";
+
+// Strip spaces, brackets and dashes, keeping a single leading "+".
+function normalizePhone(value: string) {
+  const trimmed = value.trim();
+  const digits = trimmed.replace(/\D/g, "");
+  return trimmed.startsWith("+") ? `+${digits}` : digits;
+}
+
+// Backend validation errors arrive as a stringified Zod issues array. Never show
+// that raw JSON to the user — map it to something readable.
+function friendlyError(message: string) {
+  if (/phone/i.test(message) && /(regex|invalid_string|invalid)/i.test(message)) {
+    return PHONE_HINT;
+  }
+  if (/^\s*[[{]/.test(message) || /"validation"|"code"\s*:\s*"invalid/.test(message)) {
+    return "Some details need attention — please review the form and try again.";
+  }
+  return message;
+}
+
 export default function PartnerRegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
@@ -69,6 +93,13 @@ export default function PartnerRegisterPage() {
       if (role === "winery" && !termsAccepted) {
         throw new Error("You must agree to the Partner Terms to continue.");
       }
+      let normalizedPhone: string | undefined;
+      if (role === "winery") {
+        normalizedPhone = normalizePhone(phone);
+        if (!PHONE_PATTERN.test(normalizedPhone)) {
+          throw new Error(PHONE_HINT);
+        }
+      }
       const normalizedDisplayName = `${firstName} ${lastName}`.trim() || displayName.trim();
       const created = await register({
         display_name: normalizedDisplayName || "Partner",
@@ -78,7 +109,7 @@ export default function PartnerRegisterPage() {
         first_name: role === "winery" ? firstName.trim() : undefined,
         last_name: role === "winery" ? lastName.trim() : undefined,
         partner_role_title: role === "winery" ? partnerRoleTitle.trim() : undefined,
-        phone: role === "winery" ? phone.trim() : undefined,
+        phone: normalizedPhone,
         winery_id: role === "winery" ? wineryId || undefined : undefined,
         winery_address: role === "winery" ? wineryAddress.trim() || undefined : undefined,
         winery_website: role === "winery" ? wineryWebsite.trim() || undefined : undefined,
@@ -92,7 +123,7 @@ export default function PartnerRegisterPage() {
         router.push("/partner/transport");
       }
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Unable to create account.");
+      setError(friendlyError(requestError instanceof Error ? requestError.message : "Unable to create account."));
     } finally {
       setLoading(false);
     }
@@ -175,10 +206,12 @@ export default function PartnerRegisterPage() {
                       id="phone"
                       type="tel"
                       required
+                      placeholder="+61412345678"
                       className="inputLike inputField"
                       value={phone}
                       onChange={(event) => setPhone(event.target.value)}
                     />
+                    <p className="subtle">{PHONE_HINT}</p>
                   </div>
                 </div>
 
