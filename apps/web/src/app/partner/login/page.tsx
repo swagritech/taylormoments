@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
-import { SectionCard } from "@/components/section-card";
+import { AuthShell } from "@/components/auth-shell";
 import { useAuth } from "@/lib/auth-state";
 import { routeForUser } from "@/lib/auth-routing";
 import { forgotPassword } from "@/lib/live-api";
@@ -63,15 +62,12 @@ export default function PartnerLoginPage() {
   }
 
   return (
-    <AppShell
-      eyebrow="Partner access"
+    <AuthShell
+      tag="Partner access"
+      kicker="Partner access"
       title="Partner login"
       intro="Sign in as cellar door, transport, or ops."
-      showWorkflowStatus={false}
-      navMode="partner"
     >
-      <div className="actionPageShell">
-        <SectionCard title="Partner login" description="Use your partner account credentials.">
           <form className="formPreview" onSubmit={handleSubmit}>
             <div className="field">
               <label htmlFor="email">Email</label>
@@ -138,8 +134,6 @@ export default function PartnerLoginPage() {
             <span className="subtle">Need a new partner account?</span>
             <Link href="/partner/register" className="buttonGhost">Create account</Link>
           </div>
-        </SectionCard>
-      </div>
-    </AppShell>
+    </AuthShell>
   );
 }

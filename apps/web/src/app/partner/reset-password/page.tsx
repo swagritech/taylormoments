@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AppShell } from "@/components/app-shell";
-import { SectionCard } from "@/components/section-card";
+import { AuthShell } from "@/components/auth-shell";
 import { resetPassword } from "@/lib/live-api";
 
 export default function PartnerResetPasswordPage() {
@@ -53,15 +52,12 @@ export default function PartnerResetPasswordPage() {
   }
 
   return (
-    <AppShell
-      eyebrow="Partner access"
+    <AuthShell
+      tag="Partner access"
+      kicker="Partner access"
       title="Reset password"
       intro="Use your secure email link token to set a new password."
-      showWorkflowStatus={false}
-      navMode="partner"
     >
-      <div className="actionPageShell">
-        <SectionCard title="Secure reset" description="Paste the token from your email, then choose a new password.">
           <form className="formPreview" onSubmit={handleSubmit}>
             <div className="field">
               <label htmlFor="resetToken">Reset token</label>
@@ -109,8 +105,6 @@ export default function PartnerResetPasswordPage() {
             <span className="subtle">Back to sign in</span>
             <Link href="/partner/login" className="buttonGhost">Partner login</Link>
           </div>
-        </SectionCard>
-      </div>
-    </AppShell>
+    </AuthShell>
   );
 }
