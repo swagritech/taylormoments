@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
-import { SectionCard } from "@/components/section-card";
+import { AuthShell } from "@/components/auth-shell";
 import { useAuth } from "@/lib/auth-state";
 import { loadExplorePreferences } from "@/lib/explore-preferences";
 import { PHONE_HINT, PHONE_PATTERN, friendlyRegistrationError, normalizePhone } from "@/lib/phone";
@@ -72,15 +71,12 @@ export default function RegisterPage() {
   }
 
   return (
-    <AppShell
-      eyebrow="Customer account"
+    <AuthShell
+      tag="Customer account"
+      kicker="Customer account"
       title="Create customer account"
       intro="Create your customer account to plan and manage your winery day bookings."
-      showWorkflowStatus={false}
-      navMode="public"
     >
-      <div className="actionPageShell">
-        <SectionCard title="Customer registration" description="This signup is for customers only.">
           <form className="formPreview" onSubmit={handleSubmit}>
             <div className="fieldRow">
               <div className="field">
@@ -194,8 +190,6 @@ export default function RegisterPage() {
               {loading ? "Creating account..." : "Create customer account"}
             </button>
           </form>
-        </SectionCard>
-      </div>
-    </AppShell>
+    </AuthShell>
   );
 }

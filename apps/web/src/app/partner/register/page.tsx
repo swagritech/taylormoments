@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
-import { SectionCard } from "@/components/section-card";
+import { AuthShell } from "@/components/auth-shell";
 import { useAuth } from "@/lib/auth-state";
 import { listWineries } from "@/lib/live-api";
 import { PHONE_HINT, PHONE_PATTERN, friendlyRegistrationError, normalizePhone } from "@/lib/phone";
@@ -107,16 +106,14 @@ export default function PartnerRegisterPage() {
   }
 
   return (
-    <AppShell
-      eyebrow="Partner account"
+    <AuthShell
+      tag="Partner account"
+      kicker="Partner account"
       title="Create partner account"
       intro="Create a cellar door or transport partner account."
-      showWorkflowStatus={false}
-      navMode="partner"
+      maxWidth={620}
     >
-      <div className="actionPageShell">
-        <SectionCard title="Partner registration" description="Choose your partner type to continue.">
-          <form className="formPreview" onSubmit={handleSubmit}>
+      <form className="formPreview" onSubmit={handleSubmit}>
             <div className="field">
               <label htmlFor="partnerType">Partner type</label>
               <select
@@ -335,9 +332,7 @@ export default function PartnerRegisterPage() {
             <button type="submit" className="buttonPrimary fullWidthButton" disabled={loading}>
               {loading ? "Creating account..." : "Create partner account"}
             </button>
-          </form>
-        </SectionCard>
-      </div>
-    </AppShell>
+      </form>
+    </AuthShell>
   );
 }

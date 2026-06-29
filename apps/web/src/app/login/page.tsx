@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
-import { SectionCard } from "@/components/section-card";
+import { AuthShell } from "@/components/auth-shell";
 import { useAuth } from "@/lib/auth-state";
 import { routeForUser } from "@/lib/auth-routing";
 
@@ -39,15 +38,12 @@ export default function LoginPage() {
   }
 
   return (
-    <AppShell
-      eyebrow="Customer access"
+    <AuthShell
+      tag="Customer access"
+      kicker="Customer access"
       title="Customer login"
       intro="Sign in to manage your winery day bookings."
-      showWorkflowStatus={false}
-      navMode="public"
     >
-      <div className="actionPageShell">
-        <SectionCard title="Customer login" description="Use your customer email and password.">
           <form className="formPreview" onSubmit={handleSubmit}>
             <div className="field">
               <label htmlFor="email">Email</label>
@@ -80,8 +76,6 @@ export default function LoginPage() {
             <span className="subtle">Are you a partner?</span>
             <Link href="/partner/login" className="buttonGhost">Partner login</Link>
           </div>
-        </SectionCard>
-      </div>
-    </AppShell>
+    </AuthShell>
   );
 }
