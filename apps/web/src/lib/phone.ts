@@ -47,26 +47,25 @@ function tryParse(value: string): unknown {
   }
 }
 
-// The API returns `{ "error": "<stringified Zod issues array>" }`, and live-api
-// throws that whole body as the error message. Dig the issues array back out.
-function extractZodIssues(message: string): ZodIssue[] | null {
-  let data = tryParse(message);
-  if (data && typeof data === "object" && !Array.isArray(data)) {
-    const errField = (data as { error?: unknown }).error;
+// Turn a backend error into a clear message. The API returns either
+// `{ "error": "<plain message>" }` (e.g. duplicate email) or
+// `{ "error": "<stringified Zod issues array>" }` (field validation); live-api
+// throws that whole body as the error message. Never show raw JSON.
+export function friendlyRegistrationError(message: string): string {
+  // Unwrap `{ "error": ... }` to get the inner payload.
+  let inner = message;
+  const outer = tryParse(message);
+  if (outer && typeof outer === "object" && !Array.isArray(outer)) {
+    const errField = (outer as { error?: unknown }).error;
     if (typeof errField === "string") {
-      const inner = tryParse(errField);
-      data = Array.isArray(inner) ? inner : data;
+      inner = errField;
     }
   }
-  return Array.isArray(data) ? (data as ZodIssue[]) : null;
-}
 
-// Turn a backend validation error into a clear, field-specific message — never
-// show the raw Zod JSON.
-export function friendlyRegistrationError(message: string): string {
-  const issues = extractZodIssues(message);
-  if (issues && issues.length > 0) {
-    const fields = issues
+  // Field-specific message when the payload is a Zod issues array.
+  const issues = tryParse(inner);
+  if (Array.isArray(issues) && issues.length > 0) {
+    const fields = (issues as ZodIssue[])
       .map((issue) => String(issue.path?.[0] ?? ""))
       .filter((field, index, all) => field && all.indexOf(field) === index);
     const primary = fields[0] ?? "";
@@ -80,12 +79,15 @@ export function friendlyRegistrationError(message: string): string {
     return "Some details need attention — please review the form and try again.";
   }
 
-  // Fallbacks for non-JSON messages.
+  // Plain human-readable message (e.g. "An account with this email already exists.").
+  const trimmed = inner.trim();
+  if (trimmed && !/^[[{]/.test(trimmed)) {
+    return trimmed;
+  }
+
+  // Last-resort fallbacks for unparseable payloads.
   if (/phone/i.test(message) && /(regex|invalid_string|invalid)/i.test(message)) {
     return PHONE_HINT;
   }
-  if (/^\s*[[{]/.test(message) || /"validation"|"code"\s*:\s*"invalid/.test(message)) {
-    return "Some details need attention — please review the form and try again.";
-  }
-  return message;
+  return "Some details need attention — please review the form and try again.";
 }
