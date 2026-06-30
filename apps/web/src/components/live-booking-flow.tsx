@@ -22,12 +22,13 @@ import {
 } from "@/lib/live-api";
 import { wineryCatalog } from "@/lib/winery-catalog";
 import { experienceSummary } from "@/lib/remote-winery-profiles";
+import { toLocalIsoDate } from "@/lib/date";
 
 function defaultBookingDate(daysAhead = 7) {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
   date.setDate(date.getDate() + daysAhead);
-  return date.toISOString().slice(0, 10);
+  return toLocalIsoDate(date);
 }
 
 type LiveBookingFlowProps = {

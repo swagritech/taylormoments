@@ -22,6 +22,7 @@ import {
   type ExploreVibe,
   type ExploreYesNo,
 } from "@/lib/explore-preferences";
+import { toLocalIsoDate } from "@/lib/date";
 import { saveExploreTourSummary, type ExploreTourSummaryDay } from "@/lib/explore-tour-summary";
 import { getLocale, setLocale, type AppLocale } from "@/lib/locale";
 import {
@@ -118,7 +119,7 @@ function toIsoDate(dayOffset = 7) {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
   date.setDate(date.getDate() + dayOffset);
-  return date.toISOString().slice(0, 10);
+  return toLocalIsoDate(date);
 }
 
 function shiftIsoDate(dateValue: string, dayOffset = 0) {
@@ -127,7 +128,7 @@ function shiftIsoDate(dateValue: string, dayOffset = 0) {
     return toIsoDate(dayOffset);
   }
   date.setDate(date.getDate() + dayOffset);
-  return date.toISOString().slice(0, 10);
+  return toLocalIsoDate(date);
 }
 
 function chapterLabelForStop(timeValue: string): ItineraryChapter["label"] {

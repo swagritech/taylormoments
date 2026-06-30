@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/section-card";
 import { useAuth } from "@/lib/auth-state";
 import { getMyBookings, type MyBookingsResponse } from "@/lib/live-api";
+import { toLocalIsoDate } from "@/lib/date";
 
 type DashboardBooking = MyBookingsResponse["bookings"][number];
 
@@ -83,7 +84,7 @@ export default function CustomerDashboardPage() {
   const todayIso = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return today.toISOString().slice(0, 10);
+    return toLocalIsoDate(today);
   }, []);
 
   const { currentBookings, historicalBookings } = useMemo(() => {

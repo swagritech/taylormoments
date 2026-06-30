@@ -9,6 +9,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ExploreDayPace, ExploreYesNo } from "@/lib/explore-preferences";
+import { toLocalIsoDate } from "@/lib/date";
 
 type AddressSuggestion = {
   label: string;
@@ -38,7 +39,7 @@ function toIsoDate(dayOffset = 0) {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
   date.setDate(date.getDate() + dayOffset);
-  return date.toISOString().slice(0, 10);
+  return toLocalIsoDate(date);
 }
 
 export type TripSetupProps = {
