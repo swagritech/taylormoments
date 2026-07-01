@@ -362,6 +362,19 @@ export default function ExplorePage() {
     };
   }, []);
 
+  // This flow seeds state from localStorage (saved preferences, locale), so the
+  // static-export HTML differs from the first client render and React reports a
+  // hydration mismatch (error #418). Render nothing until mounted on the client
+  // so the server HTML and the first client render agree; real content paints on
+  // the next tick once the stored values are available.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+  if (!hydrated) {
+    return null;
+  }
+
 
   // Best-effort weather lookup; merges results into state keyed by date so the
   // itinerary card and summary can show conditions + what to wear. Never throws.
