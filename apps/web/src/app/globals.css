@@ -2687,3 +2687,200 @@ textarea.pt-input { min-height: 96px; resize: vertical; line-height: 1.55; }
 .auth-card .inlineLinkButton, .auth-card .textLinkUnderline { background: none; border: 0; color: var(--tm-teal); cursor: pointer; font: inherit; padding: 0; text-decoration: underline; }
 .auth-card a:not(.buttonPrimary):not(.buttonGhost) { color: var(--tm-teal); }
 @media (max-width: 560px) { .auth-card .fieldRow { grid-template-columns: 1fr; } }
+
+/* ============================================================================
+   Estate reskin for legacy AppShell pages (/plan, /customer/dashboard,
+   /partner, /partner/ops, /accept, /approve, /custom).
+   Scoped under .app-shell so the homepage, explore flow, portals and auth
+   pages are untouched. Layout is preserved; only the look changes.
+   ============================================================================ */
+.app-shell {
+  background: var(--sand);
+  font-family: var(--font-sans), "Inter", system-ui, sans-serif;
+}
+
+/* Topbar → Estate chrome */
+.app-shell .topbar {
+  background: rgba(252, 251, 248, 0.92);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  backdrop-filter: blur(14px) saturate(130%);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 30px -22px rgba(36, 55, 49, 0.35);
+}
+.app-shell .brand strong {
+  font-family: var(--font-display), "Cinzel", serif;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.98rem;
+  color: #3c4b43;
+}
+.app-shell .brand small {
+  font-family: var(--font-display), "Cinzel", serif;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  font-size: 0.55rem;
+  color: var(--gold);
+}
+.app-shell .navLink {
+  font-family: var(--font-sans), "Inter", sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  border-radius: 999px;
+  padding: 8px 14px;
+  transition: background 0.18s ease;
+}
+.app-shell .navLink:hover { background: var(--sand); }
+.app-shell .authName { font-size: 0.85rem; color: #3c4b43; font-weight: 600; }
+
+/* Page header + headings → editorial type */
+.app-shell .pageHeader {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: none;
+  padding: 26px 28px;
+}
+.app-shell .eyebrow {
+  font-family: var(--font-display), "Cinzel", serif;
+  letter-spacing: 0.22em;
+  font-weight: 600;
+  color: var(--teal);
+}
+.app-shell h1,
+.app-shell h2,
+.app-shell h3 {
+  font-family: var(--font-editorial), "Cormorant Garamond", Georgia, serif;
+  letter-spacing: -0.005em;
+  color: #3c4b43;
+}
+.app-shell .pageHeader h1 { font-size: clamp(1.8rem, 3vw, 2.4rem); font-weight: 600; line-height: 1.08; }
+.app-shell .heroCopy { color: var(--muted); }
+.app-shell .sectionHeader h2 { font-size: 1.45rem; font-weight: 600; color: #3c4b43; }
+.app-shell .listRow h3 { font-size: 1.15rem; font-weight: 600; }
+
+/* Cards → paper on sand */
+.app-shell .sectionCard,
+.app-shell .statCard,
+.app-shell .miniCard,
+.app-shell .listRow,
+.app-shell .timelineItem,
+.app-shell .heroPanel,
+.app-shell .brandPanel,
+.app-shell .journeyStep {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: none;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.app-shell .sectionCard { padding: 22px; }
+.app-shell .listRow:hover,
+.app-shell .statCard:hover {
+  box-shadow: 0 24px 50px -34px rgba(36, 55, 49, 0.4);
+}
+.app-shell .statValue {
+  font-family: var(--font-editorial), "Cormorant Garamond", Georgia, serif;
+  font-size: 1.9rem;
+  font-weight: 600;
+  color: #3c4b43;
+}
+.app-shell .summaryChip {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+/* Buttons → Estate pills */
+.app-shell .buttonPrimary,
+.app-shell .buttonGhost,
+.app-shell .buttonClear {
+  font-family: var(--font-sans), "Inter", sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.8em 1.4em;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.app-shell .buttonPrimary {
+  background: linear-gradient(135deg, var(--teal), var(--sage));
+  box-shadow: 0 10px 24px -12px rgba(36, 55, 49, 0.5);
+}
+.app-shell .buttonPrimary:hover { transform: translateY(-1px); box-shadow: 0 14px 30px -14px rgba(36, 55, 49, 0.6); }
+.app-shell .buttonPrimary:disabled { opacity: 0.6; transform: none; }
+.app-shell .buttonGhost {
+  background: transparent;
+  border-color: var(--line);
+}
+.app-shell .buttonGhost:hover { background: var(--sand); }
+
+/* Inputs → sand fields */
+.app-shell .inputLike {
+  background: var(--sand);
+  border: 1px solid var(--line);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+.app-shell .inputLike:focus-within,
+.app-shell .inputField:focus {
+  outline: none;
+  border-color: var(--teal);
+  background: #fff;
+}
+.app-shell .field label { color: #3c4b43; font-size: 0.82rem; font-weight: 600; }
+.app-shell .choicePill {
+  background: var(--sand);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+.app-shell .choicePill:hover { border-color: var(--teal); }
+
+/* Status pills → tinted */
+.app-shell .status { letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.7rem; }
+.app-shell .status.open,
+.app-shell .status.available,
+.app-shell .status.autoconfirm,
+.app-shell .status.ready,
+.app-shell .status.confirmed,
+.app-shell .status.accepted,
+.app-shell .status.transportplanning,
+.app-shell .status.queued {
+  background: color-mix(in srgb, var(--teal) 14%, transparent);
+  color: var(--teal);
+}
+.app-shell .status.review,
+.app-shell .status.busysoon,
+.app-shell .status.manualreview,
+.app-shell .status.needsaction,
+.app-shell .status.needsreview,
+.app-shell .status.needswineryconfirmation,
+.app-shell .status.draft,
+.app-shell .status.expired {
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
+  color: var(--gold-deep);
+}
+.app-shell .status.declined,
+.app-shell .status.cancelled {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+
+/* Callouts */
+.app-shell .callout {
+  border-radius: 12px;
+  background: var(--sand);
+  border: 1px solid var(--line);
+}
+.app-shell .errorCallout {
+  background: color-mix(in srgb, var(--danger) 8%, var(--paper));
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--line));
+  color: var(--danger);
+}
+.app-shell .successCallout {
+  background: color-mix(in srgb, var(--teal) 8%, var(--paper));
+  border-color: color-mix(in srgb, var(--teal) 30%, var(--line));
+  color: var(--teal);
+}
+
+/* Stack the AppShell brand lockup (name over tagline) */
+.app-shell .brand > span { display: grid; gap: 2px; line-height: 1.1; }
